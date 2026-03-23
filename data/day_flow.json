@@ -1,0 +1,42 @@
+[
+  {
+    "day": 1,
+    "title": "Day 1: Open Counters",
+    "subtitle": "Procedure still looks like a neutral surface.",
+    "objective": "Speak with the four figures, collect the paper trace each interaction creates, then file the stack at the Records Window.",
+    "ambient_notice": "Morning notice: standard civic services remain active with elevated verification latency.",
+    "public_address_fragments": [
+      "Standard civic services remain active. Elevated verification should not be mistaken for refusal.",
+      "Documentation visibility improves processing continuity across all counters.",
+      "Queue calm contributes to administrative efficiency and reputational stability."
+    ],
+    "records_description": "A narrow administrative aperture where lived experience is flattened into acceptable paper.",
+    "records_prompt": "File the day's traces at the Records Window.",
+    "records_result": "The clerk stamps each page without pausing over the sentence that hurt you.",
+    "apartment_title": "Night: The Room Recalculates",
+    "apartment_prompt": "Carry the filed day back into the apartment and see what remained of it.",
+    "turnstile_description": "Home remains inaccessible until the archive finishes translating what happened to you.",
+    "turnstile_prompt": "Locked. Day 1 still has to be filed.",
+    "palette": "cold"
+  },
+  {
+    "day": 2,
+    "title": "Day 2: Managed Friction",
+    "subtitle": "Yesterday's residue now returns as today's condition.",
+    "objective": "Absorb the second-wave consequences, collect the revised documents, file them, then pass through the Home Turnstile.",
+    "ambient_notice": "Morning notice: queue priority recalculated overnight. Compliance costs updated accordingly.",
+    "public_address_fragments": [
+      "Overnight recalibration completed. Previously stable conditions may no longer apply.",
+      "Reduced certainty is part of the updated service architecture.",
+      "Domestic access now depends on synchronized records and revised priority status."
+    ],
+    "records_description": "The archive now behaves less like memory and more like a forward-operating warning system.",
+    "records_prompt": "File the second day's traces to close the record.",
+    "records_result": "The archive accepts the revised stack as if it had predicted you all along.",
+    "apartment_title": "",
+    "apartment_prompt": "",
+    "turnstile_description": "A domestic exit disguised as infrastructure. It opens only after your reduction has been made legible.",
+    "turnstile_prompt": "Available only after Day 2 is filed.",
+    "palette": "amber"
+  }
+]

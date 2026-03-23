@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://cxqplayer2222"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_play"]
+[ext_resource type="Texture2D" path="res://assets/tiles/player_sprite.png" id="2_spr"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 12.0
+height = 24.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+collision_layer = 1
+script = ExtResource("1_play")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_spr")
+offset = Vector2(0, -16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -6)
+shape = SubResource("CapsuleShape2D_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.5, 1.5)
+position_smoothing_enabled = true
+
+[node name="InteractionRay" type="RayCast2D" parent="."]
+position = Vector2(0, -8)
+target_position = Vector2(0, 40)
+collision_mask = 2
+collide_with_areas = true
+collide_with_bodies = true

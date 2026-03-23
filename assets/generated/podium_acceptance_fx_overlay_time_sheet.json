@@ -1,0 +1,58 @@
+{
+  "id": "podium_acceptance_fx_overlay_time_sheet",
+  "label": "Podium Acceptance FX Overlay // time // F01 // sheet",
+  "category": "fx",
+  "profile": "production",
+  "pressure": "time",
+  "palette": "cold",
+  "seed": "podium-acceptance-fx-time",
+  "frameWidth": 920,
+  "frameHeight": 552,
+  "frameCount": 5,
+  "columns": 5,
+  "rows": 1,
+  "width": 4600,
+  "height": 552,
+  "frames": [
+    {
+      "index": 0,
+      "frame": 1,
+      "x": 0,
+      "y": 0,
+      "width": 920,
+      "height": 552
+    },
+    {
+      "index": 1,
+      "frame": 2,
+      "x": 920,
+      "y": 0,
+      "width": 920,
+      "height": 552
+    },
+    {
+      "index": 2,
+      "frame": 3,
+      "x": 1840,
+      "y": 0,
+      "width": 920,
+      "height": 552
+    },
+    {
+      "index": 3,
+      "frame": 4,
+      "x": 2760,
+      "y": 0,
+      "width": 920,
+      "height": 552
+    },
+    {
+      "index": 4,
+      "frame": 5,
+      "x": 3680,
+      "y": 0,
+      "width": 920,
+      "height": 552
+    }
+  ]
+}

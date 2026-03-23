@@ -1,0 +1,133 @@
+{
+  "package_name": "civic-nightmare-asset-prep",
+  "prepared_on": "2026-03-23",
+  "root_path": "C:\\Users\\dacan\\Desktop\\CivicNightmare_Assets\\ready_for_claude",
+  "raw_sources": {
+    "ninja_adventure": "C:\\Users\\dacan\\Desktop\\CivicNightmare_Assets\\raw\\ninja_adventure",
+    "modern_interiors_free": "C:\\Users\\dacan\\Desktop\\CivicNightmare_Assets\\raw\\modern_interiors_free"
+  },
+  "recommended_import_targets": {
+    "tilesets": "assets/tilesets",
+    "characters": "assets/characters",
+    "items_props": "assets/props",
+    "ui": "assets/ui"
+  },
+  "groups": [
+    {
+      "id": "overworld_ninja",
+      "path": "tilesets/overworld_ninja",
+      "kind": "tileset",
+      "theme": "outdoor",
+      "tile_scale": "16x16-oriented",
+      "file_count": 11,
+      "best_entry_files": [
+        "TilesetField.png",
+        "TilesetNature.png",
+        "TilesetWater.png",
+        "TilesetHouse.png"
+      ],
+      "notes": "Primary outdoor worldbuilding subset from Ninja Adventure."
+    },
+    {
+      "id": "interiors_ninja",
+      "path": "tilesets/interiors_ninja",
+      "kind": "tileset",
+      "theme": "interior",
+      "tile_scale": "16x16-oriented",
+      "file_count": 4,
+      "best_entry_files": [
+        "TilesetInterior.png",
+        "TilesetInteriorFloor.png",
+        "TilesetWallSimple.png"
+      ],
+      "notes": "Useful as filler or hybrid interior support."
+    },
+    {
+      "id": "interiors_modern_free",
+      "path": "tilesets/interiors_modern_free",
+      "kind": "tileset",
+      "theme": "modern interior",
+      "tile_scale": "16x16",
+      "file_count": 3,
+      "best_entry_files": [
+        "Interiors_free_16x16.png",
+        "Room_Builder_free_16x16.png"
+      ],
+      "notes": "Best fit for civic offices, lobbies, records rooms, and public interiors."
+    },
+    {
+      "id": "modern_office_characters",
+      "path": "characters/modern_office_16x16",
+      "kind": "character_sheets",
+      "theme": "modern civilians",
+      "tile_scale": "16x16",
+      "file_count": 32,
+      "base_characters": [
+        "Adam",
+        "Alex",
+        "Amelia",
+        "Bob"
+      ],
+      "poses": [
+        "default",
+        "idle",
+        "idle_anim",
+        "phone",
+        "run",
+        "sit",
+        "sit2",
+        "sit3"
+      ],
+      "notes": "Ready-made office and civilian NPCs."
+    },
+    {
+      "id": "ninja_props",
+      "path": "items_props/ninja",
+      "kind": "props",
+      "theme": "items and pickups",
+      "file_count": 50,
+      "subgroups": {
+        "Object": 11,
+        "Potion": 6,
+        "Resource": 15,
+        "Tool": 8,
+        "Treasure": 10
+      },
+      "notes": "Curated props for interactables, inventory, rewards, and dressing."
+    },
+    {
+      "id": "ninja_dialog_ui",
+      "path": "ui/ninja/dialog",
+      "kind": "ui",
+      "theme": "dialog",
+      "file_count": 8,
+      "notes": "Dialog boxes and simple decision prompts."
+    },
+    {
+      "id": "ninja_theme_wood_ui",
+      "path": "ui/ninja/theme_wood",
+      "kind": "ui",
+      "theme": "inventory and panels",
+      "file_count": 43,
+      "notes": "Wood-themed buttons, panels, tabs, inventory cells, and sliders."
+    },
+    {
+      "id": "ninja_hud",
+      "path": "ui/ninja/hud",
+      "kind": "ui",
+      "theme": "hud",
+      "file_count": 6,
+      "notes": "Hearts and life bar assets."
+    }
+  ],
+  "licensing": {
+    "modern_interiors_free": {
+      "local_license_file": "licenses/Modern_Interiors_LICENSE.txt",
+      "summary": "Free pack is non-commercial only."
+    },
+    "ninja_adventure": {
+      "source_url": "https://pixel-boy.itch.io/ninja-adventure-asset-pack",
+      "summary": "Verify current upstream terms before shipping."
+    }
+  }
+}

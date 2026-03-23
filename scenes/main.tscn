@@ -1,0 +1,156 @@
+[gd_scene load_steps=7 format=3 uid="uid://c83jmainw"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_play"]
+[ext_resource type="PackedScene" path="res://scenes/npc.tscn" id="3_npc"]
+[ext_resource type="Texture2D" path="res://assets/tiles/world_tiles.png" id="4_tiles"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]
+texture = ExtResource("4_tiles")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+0:1/0 = 0
+0:2/0 = 0
+0:3/0 = 0
+0:4/0 = 0
+0:5/0 = 0
+0:6/0 = 0
+0:7/0 = 0
+1:0/0 = 0
+1:1/0 = 0
+1:2/0 = 0
+1:3/0 = 0
+1:4/0 = 0
+1:5/0 = 0
+1:6/0 = 0
+1:7/0 = 0
+2:0/0 = 0
+2:1/0 = 0
+2:2/0 = 0
+2:3/0 = 0
+2:4/0 = 0
+2:5/0 = 0
+2:6/0 = 0
+2:7/0 = 0
+3:0/0 = 0
+3:1/0 = 0
+3:2/0 = 0
+3:3/0 = 0
+3:4/0 = 0
+3:5/0 = 0
+3:6/0 = 0
+3:7/0 = 0
+4:0/0 = 0
+4:1/0 = 0
+4:2/0 = 0
+4:3/0 = 0
+4:4/0 = 0
+4:5/0 = 0
+4:6/0 = 0
+4:7/0 = 0
+5:0/0 = 0
+5:1/0 = 0
+5:2/0 = 0
+5:3/0 = 0
+5:4/0 = 0
+5:5/0 = 0
+5:6/0 = 0
+5:7/0 = 0
+6:0/0 = 0
+6:1/0 = 0
+6:2/0 = 0
+6:3/0 = 0
+6:4/0 = 0
+6:5/0 = 0
+6:6/0 = 0
+6:7/0 = 0
+7:0/0 = 0
+7:1/0 = 0
+7:2/0 = 0
+7:3/0 = 0
+7:4/0 = 0
+7:5/0 = 0
+7:6/0 = 0
+7:7/0 = 0
+[sub_resource type="TileSet" id="TileSet_1"]
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_1")
+
+[node name="World" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="GroundMap" type="TileMap" parent="."]
+tile_set = SubResource("TileSet_1")
+format = 2
+
+[node name="Entities" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Player" parent="Entities" instance=ExtResource("2_play")]
+position = Vector2(0, 0)
+
+[node name="NPC_Trump" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(300, -200)
+character_id = "donald_trump"
+character_name = "Donald Trump"
+
+[node name="NPC_Musk" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(-300, -200)
+character_id = "elon_musk"
+character_name = "Elon Musk"
+
+[node name="NPC_VDL" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(500, 100)
+character_id = "ursula_von_der_leyen"
+character_name = "Ursula von der Leyen"
+
+[node name="NPC_Lagarde" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(500, 300)
+character_id = "christine_lagarde"
+character_name = "Christine Lagarde"
+
+[node name="NPC_Putin" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(-500, 100)
+character_id = "vladimir_putin"
+character_name = "Vladimir Putin"
+
+[node name="NPC_Macron" parent="Entities" instance=ExtResource("3_npc")]
+position = Vector2(-500, 300)
+character_id = "emmanuel_macron"
+character_name = "Emmanuel Macron"
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="DialogueBox" type="ColorRect" parent="UI"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -180.0
+offset_right = 300.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.12, 0.12, 0.18, 0.95)
+
+[node name="NameLabel" type="RichTextLabel" parent="UI/DialogueBox"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 584.0
+offset_bottom = 48.0
+theme_override_colors/default_color = Color(0.9, 0.8, 0.4, 1)
+theme_override_font_sizes/normal_font_size = 20
+text = "Character Name"
+
+[node name="TextLabel" type="RichTextLabel" parent="UI/DialogueBox"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 56.0
+offset_right = 584.0
+offset_bottom = 144.0
+theme_override_font_sizes/normal_font_size = 18
+text = "This is a placeholder for dialogue text."

@@ -1,0 +1,239 @@
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #06080d;
+  color: #85bcd8;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+body {
+  padding: 18px;
+}
+
+.shell {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(11, 18, 26, 0.96), rgba(7, 11, 17, 0.96));
+  border: 2px solid #173144;
+  box-shadow: 0 0 28px rgba(77, 141, 176, 0.08);
+}
+
+.controls {
+  padding: 18px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(133, 188, 216, 0.18);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #71c8e8;
+  box-shadow: 0 0 12px rgba(113, 200, 232, 0.7);
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6e8da2;
+}
+
+.valueRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #04070a;
+  color: #e2eff7;
+  border: 1px solid #21465f;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #63bad6;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid rgba(133, 188, 216, 0.14);
+  border-bottom: 1px solid rgba(133, 188, 216, 0.14);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.primary {
+  background: #6cc4de;
+  color: #071017;
+  box-shadow: 0 4px 0 #3886a1;
+}
+
+.secondary {
+  background: #101820;
+  color: #89b4ca;
+  border: 1px solid #21465f;
+}
+
+.monitor {
+  min-height: 720px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(5, 9, 14, 0.96), rgba(1, 3, 6, 0.96));
+  background-size: 100% 2px, 2px 100%, 100% 100%;
+}
+
+.status {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #5d8ca1;
+}
+
+.previewWrap {
+  position: relative;
+  max-width: 100%;
+}
+
+#preview {
+  max-width: 100%;
+  border: 2px solid #16384b;
+  box-shadow: 0 0 40px rgba(103, 183, 217, 0.12);
+  image-rendering: pixelated;
+}
+
+.badge {
+  position: absolute;
+  right: -8px;
+  bottom: -10px;
+  background: #6cc4de;
+  color: #061017;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.meta {
+  width: 100%;
+  margin-top: 20px;
+  box-sizing: border-box;
+  background: rgba(7, 11, 17, 0.92);
+  border: 1px solid rgba(133, 188, 216, 0.18);
+  padding: 14px;
+  color: #7d95a4;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.footerGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.footerCard {
+  padding: 14px;
+  background: rgba(11, 18, 26, 0.72);
+  border: 1px solid rgba(133, 188, 216, 0.16);
+}
+
+.footerCard h3 {
+  margin: 0 0 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #74a8bf;
+}
+
+.footerCard p {
+  margin: 0;
+  color: #758491;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor {
+    min-height: 560px;
+  }
+
+  .footerGrid {
+    grid-template-columns: 1fr;
+  }
+}

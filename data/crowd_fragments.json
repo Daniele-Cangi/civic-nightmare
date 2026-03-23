@@ -1,0 +1,111 @@
+{
+  "bystanders": [
+    {
+      "id": "parent",
+      "label": "Parent in Queue",
+      "fragments": {
+        "1": {
+          "time": ["School closes before the corrected timeline does."],
+          "access": ["They did not refuse us. They just sent us somewhere our bus does not reach."],
+          "trust": ["Every sentence sounds caring until you notice it protects the desk first."],
+          "rent": ["We cut the week into smaller pieces so the room could stay the same size."],
+          "stress": ["My kid started whispering in offices before anyone asked."]
+        },
+        "2": {
+          "time": ["Yesterday took the morning. Today it is taking pickup as well."],
+          "access": ["The route still exists on paper. In practice it keeps stepping away."],
+          "trust": ["They remember our file faster than they remember our names."],
+          "rent": ["The new school run is longer because the cheaper place is further out."],
+          "stress": ["Now the child watches the scanner before the clerk does."]
+        }
+      }
+    },
+    {
+      "id": "courier",
+      "label": "Contract Courier",
+      "fragments": {
+        "1": {
+          "time": ["Every faster lane still ends in a slower human apology."],
+          "access": ["The app kept the route. The building stopped honoring it."],
+          "trust": ["They thank me for patience like it is part of the fee."],
+          "rent": ["I took another shift and somehow got further from paying the month."],
+          "stress": ["My body reaches the warning before the desk does."]
+        },
+        "2": {
+          "time": ["Today the queue is not longer. It is just folded into the whole day."],
+          "access": ["Premium is not access. It is the memory of access sold back to you."],
+          "trust": ["Everyone says nothing was removed while I keep losing route after route."],
+          "rent": ["The cheaper district adds an unpaid hour to every delivery."],
+          "stress": ["I can hear my pulse trying to file ahead of me."]
+        }
+      }
+    },
+    {
+      "id": "tenant",
+      "label": "Tenant Holding File",
+      "fragments": {
+        "1": {
+          "time": ["I used leave for this. The lease clock kept running anyway."],
+          "access": ["I still have an account. I just lost the door it was meant to protect."],
+          "trust": ["Nothing in the letter is false. That is what makes it hard to fight."],
+          "rent": ["The new offer is the old apartment translated into less air."],
+          "stress": ["I sleep like the next envelope is already under the door."]
+        },
+        "2": {
+          "time": ["The landlord says delay is not his problem. The office says timing is not theirs."],
+          "access": ["They widened the review and narrowed the life attached to it."],
+          "trust": ["The room is still mine in every sentence except the one that matters."],
+          "rent": ["Today the same room costs more and feels smaller before I even enter it."],
+          "stress": ["I keep arranging papers by danger instead of by date."]
+        }
+      }
+    },
+    {
+      "id": "shift_worker",
+      "label": "Shift Worker",
+      "fragments": {
+        "1": {
+          "time": ["My shift starts before the review line admits it is a line."],
+          "access": ["Every office says try the other office first."],
+          "trust": ["They keep calling this support. Support should not feel this cold."],
+          "rent": ["I can keep the place or the week stable, not both."],
+          "stress": ["I rehearse answers before anyone speaks now."]
+        },
+        "2": {
+          "time": ["The supervisor says be punctual. The city says remain available."],
+          "access": ["Today access means standing in front of the right locked thing."],
+          "trust": ["Procedure still works if all you need is proof that it happened."],
+          "rent": ["I am calculating dinner by commute distance."],
+          "stress": ["The second day is worse because it arrives already knowing me."]
+        }
+      }
+    }
+  ],
+  "desk_fragments": {
+    "records": {
+      "1": {
+        "time": ["Late harm still files as ordinary sequence."],
+        "access": ["Narrowed routes may be recorded without implying restoration."],
+        "trust": ["Witness feeling is optional. Documentary order is sufficient."],
+        "rent": ["Domestic contraction belongs in appendix C, after all authorizations."],
+        "stress": ["Physical symptoms may be listed after administrative facts."]
+      },
+      "2": {
+        "time": ["Residual delay has been integrated into the revised citizen profile."],
+        "access": ["Secondary exclusions are now considered consistent with prior review."],
+        "trust": ["Predictable disappointment does not alter filing completeness."],
+        "rent": ["Household downsizing reads as successful adaptation in this column."],
+        "stress": ["Escalated vigilance remains non-blocking for archive closure."]
+      }
+    },
+    "turnstile": {
+      "2": {
+        "time": ["Home timing has been revised to absorb earlier losses."],
+        "access": ["Domestic entry remains conditional on completed reductions."],
+        "trust": ["The route home is open. Assurance is not included."],
+        "rent": ["Square footage adjustments remain in force past entry."],
+        "stress": ["Elevated vigilance does not delay household clearance."]
+      }
+    }
+  }
+}

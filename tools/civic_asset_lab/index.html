@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Civic Asset Lab // Production</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <div class="layout">
+        <aside class="panel controls">
+          <div class="header">
+            <div class="dot"></div>
+            <div class="title">Civic Asset Lab // Production</div>
+          </div>
+          <div class="stack">
+            <div class="field">
+              <label class="label" for="presetCategory">Preset Category</label>
+              <select id="presetCategory"></select>
+            </div>
+            <div class="field">
+              <label class="label" for="preset">Asset / FX Preset</label>
+              <select id="preset"></select>
+            </div>
+            <div class="field">
+              <label class="label" for="profile">Style Profile</label>
+              <select id="profile"></select>
+            </div>
+            <div class="field">
+              <label class="label" for="pressure">Pressure Accent</label>
+              <select id="pressure">
+                <option value="time">time</option>
+                <option value="access">access</option>
+                <option value="trust" selected>trust</option>
+                <option value="rent">rent</option>
+                <option value="stress">stress</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="seed">Seed Phrase</label>
+              <input id="seed" type="text" value="ordinary-procedure-failure" />
+            </div>
+            <div class="field">
+              <div class="valueRow">
+                <span>Preview Resolution</span>
+                <span id="resolutionValue"></span>
+              </div>
+              <input id="resolution" type="range" min="256" max="1536" step="128" value="768" />
+            </div>
+            <div class="field">
+              <div class="valueRow">
+                <span>Color Levels</span>
+                <span id="colorLevelsValue"></span>
+              </div>
+              <input id="colorLevels" type="range" min="3" max="9" step="1" value="6" />
+            </div>
+            <div class="toggle">
+              <span>Dithering</span>
+              <input id="dithering" type="checkbox" checked />
+            </div>
+            <div class="toggle">
+              <span>Animate Preview</span>
+              <input id="animatePreview" type="checkbox" checked />
+            </div>
+            <div class="actions">
+              <button id="renderButton" class="primary">Render Production Pass</button>
+              <button id="downloadSvg" class="secondary">Download SVG</button>
+              <button id="downloadPng" class="secondary">Download PNG</button>
+              <button id="downloadSpritesheet" class="secondary">Download Sheet SVG</button>
+              <button id="downloadJson" class="secondary">Download Sheet JSON</button>
+            </div>
+          </div>
+        </aside>
+        <main class="panel monitor">
+          <div class="status">Status: <span id="statusValue">STANDBY</span></div>
+          <div class="previewWrap">
+            <canvas id="preview" width="768" height="432"></canvas>
+            <div class="badge">LOCAL_RENDER</div>
+          </div>
+          <pre class="meta" id="metaBlock"></pre>
+        </main>
+      </div>
+
+      <div class="footerGrid">
+        <section class="footerCard">
+          <h3>Pipeline</h3>
+          <p>Deterministic SVG generation, style profiles, animated preview, local raster pass, and spritesheet plus metadata export. No API calls and no nominal celebrity prompts.</p>
+        </section>
+        <section class="footerCard">
+          <h3>Use Case</h3>
+          <p>Built for plaza backplates, actor sprites, checkpoint plates, event FX, dossier surfaces, and production-ready frame sheets.</p>
+        </section>
+        <section class="footerCard">
+          <h3>Project Fit</h3>
+          <p>The lab is aligned to systemic function and pressure, not parody. It is meant to produce a coherent visual language for the game, not just post-process placeholders.</p>
+        </section>
+      </div>
+    </div>
+    <script src="./generator_core.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

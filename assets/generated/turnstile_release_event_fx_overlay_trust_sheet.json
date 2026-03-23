@@ -1,0 +1,58 @@
+{
+  "id": "turnstile_release_event_fx_overlay_trust_sheet",
+  "label": "Turnstile Release Event FX Overlay // trust // F01 // sheet",
+  "category": "fx",
+  "profile": "production",
+  "pressure": "trust",
+  "palette": "amber",
+  "seed": "turnstile-release-event-fx-trust",
+  "frameWidth": 1280,
+  "frameHeight": 720,
+  "frameCount": 5,
+  "columns": 5,
+  "rows": 1,
+  "width": 6400,
+  "height": 720,
+  "frames": [
+    {
+      "index": 0,
+      "frame": 1,
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "index": 1,
+      "frame": 2,
+      "x": 1280,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "index": 2,
+      "frame": 3,
+      "x": 2560,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "index": 3,
+      "frame": 4,
+      "x": 3840,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "index": 4,
+      "frame": 5,
+      "x": 5120,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    }
+  ]
+}

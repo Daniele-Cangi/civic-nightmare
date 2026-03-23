@@ -1,0 +1,536 @@
+[
+  {
+    "id": "donald_trump",
+    "name": "Donald Trump",
+    "systemic_function": "Executive spectacle that converts administration into loyalty theater and visible hierarchy.",
+    "public_language_style": "Compressed certainty, deal talk, ranking language, public tests of who counts as a winner.",
+    "practical_effect_on_citizen": "Routine approvals stop feeling rule-bound and start feeling contingent on posture, timing, and perceived alignment.",
+    "announcement_fragments": {
+      "1": [
+        "Respectful posture improves queue confidence for clarification requests.",
+        "Visible cooperation may reduce reputational review time."
+      ],
+      "2": [
+        "Prior escalations remain visible across linked desks.",
+        "Requests marked sensitive may experience expanded supervisory attention."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "A simple permit clarification becomes a stage-managed exchange. The desk is arranged like a podium and the room waits to see whether you understand the hierarchy before you ask your question.",
+        "voice_line": "People who come in respectful usually do very well here. We like respectful.",
+        "choice_prompt": "How do you frame the request?",
+        "choices": [
+          {
+            "label": "Stay grateful and procedural",
+            "immediate_text": "You compress the problem until it sounds reasonable, modest, and easy to wave through.",
+            "result_text": "The tone calms the room, but the file still leaves with a reputational stain attached to it. Compliance lowered the volume, not the danger.",
+            "document_title": "Reputational Sensitivity Note",
+            "document_excerpt": "Applicant cooperative. Forwarded under enhanced perception screening.",
+            "effects": {
+              "time": -1,
+              "access": -1,
+              "trust": -2,
+              "rent": 0,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Ask for a concrete answer now",
+            "immediate_text": "You ask for a date, a signature, and the name of the office that will be accountable.",
+            "result_text": "The demand for clarity becomes the most memorable thing in the room. Your file leaves tagged as temperament before it leaves tagged as need.",
+            "document_title": "Escalation Conduct Memo",
+            "document_excerpt": "Applicant pressed for direct accountability. Additional supervisory handling advised.",
+            "effects": {
+              "time": -2,
+              "access": -2,
+              "trust": -1,
+              "rent": 0,
+              "stress": 2
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "You return to ask why the permit stalled overnight. The answer already knows your file before it knows your face.",
+        "voice_line": "Once something gets attention, everybody wants to be careful. That's not my fault. That's the system being smart.",
+        "choice_prompt": "What do you protect first?",
+        "choices": [
+          {
+            "label": "Protect the file",
+            "immediate_text": "You deny urgency and present yourself as manageable, hoping the paper will cool down.",
+            "result_text": "The office rewards your restraint by widening the review perimeter. You are now a low-noise risk with excellent posture.",
+            "document_title": "Cross-Agency Visibility Annex",
+            "document_excerpt": "Applicant posture acceptable. Monitoring expanded across linked desks.",
+            "effects": {
+              "time": -1,
+              "access": -2,
+              "trust": -1,
+              "rent": 0,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Protect your dignity",
+            "immediate_text": "You say the delay is harming your life and refuse to perform calm for the room.",
+            "result_text": "The truth lands as volatility. Your urgency is recorded as a management problem rather than a lived one.",
+            "document_title": "Behavioral Escalation Addendum",
+            "document_excerpt": "Applicant displays elevated insistence. Recommend caution in direct processing.",
+            "effects": {
+              "time": -2,
+              "access": -2,
+              "trust": -1,
+              "rent": 0,
+              "stress": 2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "elon_musk",
+    "name": "Elon Musk",
+    "systemic_function": "Private platform power that fuses infrastructure, speech, payments, and logistics into one optional-looking dependency.",
+    "public_language_style": "Playful technical certainty, disruption slogans, irony as insulation, speed framed as moral clarity.",
+    "practical_effect_on_citizen": "Basic mobility and visibility drift toward proprietary channels that present convenience as freedom.",
+    "announcement_fragments": {
+      "1": [
+        "Optimized lanes remain voluntary. Legacy queues may operate at reduced certainty.",
+        "Premium mobility tools are available for citizens who value time."
+      ],
+      "2": [
+        "Service levels were recalculated overnight according to engagement efficiency.",
+        "Public fallback routes remain available with extended response horizons."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "A civic shortcut promises to resolve the complaint in minutes if you adopt a cleaner, smarter route through the platform.",
+        "voice_line": "The old queue is basically a museum. If you want to move, just use the better rail.",
+        "choice_prompt": "Which friction do you accept?",
+        "choices": [
+          {
+            "label": "Accept the optimized route",
+            "immediate_text": "You tap through the accelerated path and let the platform decide what parts of you still matter.",
+            "result_text": "The complaint moves faster than before, but your standing does not come with it. Speed arrives as stratification.",
+            "document_title": "Service Tier Adjustment",
+            "document_excerpt": "User journey reclassified under dynamic priority logic.",
+            "effects": {
+              "time": 0,
+              "access": -2,
+              "trust": -1,
+              "rent": 1,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Request a human review",
+            "immediate_text": "You decline the shortcut and ask for an accountable person inside the loop.",
+            "result_text": "The human option still exists, but only as delay and distance. Refusing optimization becomes its own surcharge.",
+            "document_title": "Manual Review Queue Ticket",
+            "document_excerpt": "Legacy pathway selected. Extended response horizon now applies.",
+            "effects": {
+              "time": -2,
+              "access": -1,
+              "trust": 0,
+              "rent": 0,
+              "stress": 2
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "Yesterday's downgrade now shapes how far you travel, how long you wait, and which complaint lanes still acknowledge you.",
+        "voice_line": "Nobody took anything away. The system just learned what level of service makes economic sense.",
+        "choice_prompt": "How do you answer the repricing?",
+        "choices": [
+          {
+            "label": "Pay for premium recovery",
+            "immediate_text": "You buy back a little speed in order to keep the day from collapsing completely.",
+            "result_text": "The platform restores functionality just enough to prove the lost version was always available for a price.",
+            "document_title": "Priority Mobility Revision",
+            "document_excerpt": "Premium response schedule activated at user expense.",
+            "effects": {
+              "time": -1,
+              "access": -1,
+              "trust": -1,
+              "rent": 2,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Take the public fallback",
+            "immediate_text": "You keep the cheaper route and surrender the schedule instead.",
+            "result_text": "Nothing closes outright. Your world just expands into hours you no longer control.",
+            "document_title": "Fallback Mobility Clearance",
+            "document_excerpt": "Public route assigned under reduced scheduling certainty.",
+            "effects": {
+              "time": -2,
+              "access": -2,
+              "trust": 0,
+              "rent": 0,
+              "stress": 2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "ursula_von_der_leyen",
+    "name": "Ursula von der Leyen",
+    "systemic_function": "Supranational procedural management that translates crisis into layered compliance architecture.",
+    "public_language_style": "Calm managerial reassurance, strategic necessity, composure under abstraction, conditional solidarity.",
+    "practical_effect_on_citizen": "Aid and protection remain imaginable, but only through forms and delegations the citizen cannot fully track.",
+    "announcement_fragments": {
+      "1": [
+        "Support remains available through the appropriate mechanisms and partner channels.",
+        "Incomplete packets may delay solidarity sequencing."
+      ],
+      "2": [
+        "Exception handling requires updated proof of cumulative deterioration.",
+        "Local offices may assist with guidance while binding authority remains distributed."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "You are told support exists if the request is routed correctly across the proper framework. Every sentence sounds protective. Every instruction adds another layer.",
+        "voice_line": "We are absolutely committed to making sure no one is left behind through the appropriate mechanisms.",
+        "choice_prompt": "Which burden do you take onto yourself?",
+        "choices": [
+          {
+            "label": "Submit the complete packet",
+            "immediate_text": "You stay inside the language of eligibility and gather every supporting page they suggest.",
+            "result_text": "The file becomes exemplary and slow. The institution thanks you for precision while the waiting cost stays local to your body.",
+            "document_title": "Eligibility Route Map",
+            "document_excerpt": "Request remains active pending multi-level validation and partner acknowledgment.",
+            "effects": {
+              "time": -2,
+              "access": -1,
+              "trust": -1,
+              "rent": 0,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Ask for emergency handling",
+            "immediate_text": "You explain that delay is no longer neutral and ask to be treated as an urgent case.",
+            "result_text": "Urgency is recognized as a category, not as a person. The exception route opens only by asking you to prove the harm already in motion.",
+            "document_title": "Priority Exception Request",
+            "document_excerpt": "Emergency handling tentatively accepted pending evidence of material deterioration.",
+            "effects": {
+              "time": -1,
+              "access": 0,
+              "trust": -2,
+              "rent": 0,
+              "stress": 2
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "The delay from yesterday is now the emergency itself. The institution remains polite, calm, and structurally one step further away than the damage.",
+        "voice_line": "We understand the pressure on citizens. That is why careful sequencing is so important right now.",
+        "choice_prompt": "What do you try to preserve?",
+        "choices": [
+          {
+            "label": "Preserve procedural legitimacy",
+            "immediate_text": "You continue through the official ladder because abandoning it feels like disappearing.",
+            "result_text": "The pathway remains open and morally immaculate. It still cannot arrive before the consequence.",
+            "document_title": "Deferred Exception Packet",
+            "document_excerpt": "Urgent relief request accepted pending cumulative impact review.",
+            "effects": {
+              "time": -2,
+              "access": -1,
+              "trust": -1,
+              "rent": 0,
+              "stress": 2
+            }
+          },
+          {
+            "label": "Bypass and ask locally",
+            "immediate_text": "You stop waiting for the proper scale and ask the nearest office to make a human decision.",
+            "result_text": "Local discretion offers sympathy, not power. You leave with more witnesses and no transfer of burden.",
+            "document_title": "Subsidiarity Referral Slip",
+            "document_excerpt": "Applicant redirected to local interlocutor without binding relief authority.",
+            "effects": {
+              "time": -1,
+              "access": -2,
+              "trust": -1,
+              "rent": 0,
+              "stress": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "christine_lagarde",
+    "name": "Christine Lagarde",
+    "systemic_function": "Monetary abstraction that disciplines daily life through rates, scarcity, and the quiet resizing of domestic possibility.",
+    "public_language_style": "Measured firmness, elegant inevitability, sacrifice explained as systemic balance.",
+    "practical_effect_on_citizen": "Housing, debt, and planning shift without any local official ever saying yes or no to your face.",
+    "announcement_fragments": {
+      "1": [
+        "Household stability may require mature adjustment in non-essential life domains.",
+        "Confidence is preserved when citizens internalize necessary discipline."
+      ],
+      "2": [
+        "Repriced housing conditions should be understood as corrective, not punitive.",
+        "Temporary tolerance does not suspend structural adjustment."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "You open the household budget at a desk that feels cleaner than your life. The numbers are framed as discipline, responsibility, and mature adjustment.",
+        "voice_line": "Stability can feel demanding in the short term, but it preserves the conditions for confidence.",
+        "choice_prompt": "What do you cut first?",
+        "choices": [
+          {
+            "label": "Shrink the future",
+            "immediate_text": "You cancel the fragile plans, postpone care, and make the month balance by making the horizon smaller.",
+            "result_text": "The spreadsheet stabilizes, but only after teaching you that imagination is a luxury item.",
+            "document_title": "Household Compression Table",
+            "document_excerpt": "Budget viability restored through deferred care and reduced discretionary life.",
+            "effects": {
+              "time": 0,
+              "access": 0,
+              "trust": -1,
+              "rent": 2,
+              "stress": 2
+            }
+          },
+          {
+            "label": "Protect the room",
+            "immediate_text": "You keep the apartment intact and accept more debt pressure instead.",
+            "result_text": "The room survives for now, but every later choice will be made under a quieter kind of threat.",
+            "document_title": "Household Exposure Ledger",
+            "document_excerpt": "Current housing maintained under elevated debt sensitivity.",
+            "effects": {
+              "time": -1,
+              "access": 0,
+              "trust": 0,
+              "rent": 3,
+              "stress": 1
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "The overnight repricing reaches your door. The same room now asks for more proof that you deserve to remain inside it.",
+        "voice_line": "Adjustment is never pleasant, but postponing it often makes the social cost much worse.",
+        "choice_prompt": "How do you stay housed?",
+        "choices": [
+          {
+            "label": "Accept the smaller place",
+            "immediate_text": "You sign the downsizing offer because continuity feels better than rupture.",
+            "result_text": "Housing remains technically intact. What disappears is privacy, reach, and the feeling that the room belongs to your life.",
+            "document_title": "Residential Downsizing Offer",
+            "document_excerpt": "Alternative tenancy confirmed through reduced square footage and longer commute burden.",
+            "effects": {
+              "time": -1,
+              "access": -1,
+              "trust": -1,
+              "rent": 2,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Hold the line one more month",
+            "immediate_text": "You refuse the smaller room and gamble on surviving the next bill.",
+            "result_text": "The month stays open, but only by turning the whole apartment into a countdown.",
+            "document_title": "Temporary Arrears Tolerance",
+            "document_excerpt": "Current tenancy provisionally maintained under elevated default scrutiny.",
+            "effects": {
+              "time": -2,
+              "access": -1,
+              "trust": 0,
+              "rent": 3,
+              "stress": 2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "vladimir_putin",
+    "name": "Vladimir Putin",
+    "systemic_function": "Authoritarian distance that turns conversation into a one-way test of endurance.",
+    "public_language_style": "Cold historical necessity, disguised threats as observation, absolute spatial dominance.",
+    "practical_effect_on_citizen": "Any request is reframed as a misunderstanding of one's place in the history of the room.",
+    "announcement_fragments": {
+      "1": [
+        "Movement within the hall remains subject to spontaneous reassessment.",
+        "Unapproved gestures will be recorded as declarations of intent."
+      ],
+      "2": [
+        "The timeline has been updated to reflect historical necessities.",
+        "Citizens are reminded that the desk is a privilege, not a destination."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "The request feels foolish the moment you enter the vast hall. The desk is fifty feet away, and the silence demands you justify taking another step.",
+        "voice_line": "Some people think distance is an insult. It is actually a very polite warning.",
+        "choice_prompt": "How do you close the distance?",
+        "choices": [
+          {
+            "label": "Wait for permission",
+            "immediate_text": "You freeze in place and let the room dictate the terms of your existence.",
+            "result_text": "Your stillness is accepted as compliance, but your request is ignored. You survived the room by asking for nothing.",
+            "document_title": "Compliance Observation Note",
+            "document_excerpt": "Subject demonstrated adequate stillness. No further processing required.",
+            "effects": {
+              "time": 0,
+              "access": -2,
+              "trust": -1,
+              "rent": 0,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Walk closer anyway",
+            "immediate_text": "You force the issue and step forward, breaking the unspoken geometry of the hall.",
+            "result_text": "The breach of protocol is immediately punished by the system. Action provokes an equal reaction in your file.",
+            "document_title": "Spatial Defiance Marker",
+            "document_excerpt": "Subject engaged in unauthorized proximity reduction.",
+            "effects": {
+              "time": -2,
+              "access": -2,
+              "trust": -2,
+              "rent": 0,
+              "stress": 3
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "The geography of the room has reorganized around your previous transgression. The silence is heavier.",
+        "voice_line": "A mistake can be a learning opportunity. The second mistake is simply a confession.",
+        "choice_prompt": "What do you say?",
+        "choices": [
+          {
+            "label": "Apologize for the noise",
+            "immediate_text": "You agree that the room is right and you are wrong, hoping to buy back some peace.",
+            "result_text": "The apology is absorbed as a confession. The pressure lightens, but the record is permanently stained.",
+            "document_title": "Voluntary Re-education Stamp",
+            "document_excerpt": "Subject accepted structural fault. Surveillance monitoring normalized.",
+            "effects": {
+              "time": -1,
+              "access": -1,
+              "trust": -2,
+              "rent": 0,
+              "stress": 1
+            }
+          },
+          {
+            "label": "State your business firmly",
+            "immediate_text": "You refuse the psychology of the room and demand the service you came for.",
+            "result_text": "Firmness is met with a bureaucratic wall. Your file is sealed and placed in a vault you cannot reach.",
+            "document_title": "Permanent Resistance Archive",
+            "document_excerpt": "Administrative quarantine initiated due to persistent subject inflexibility.",
+            "effects": {
+              "time": -3,
+              "access": -3,
+              "trust": -1,
+              "rent": 0,
+              "stress": 4
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "emmanuel_macron",
+    "name": "Emmanuel Macron",
+    "systemic_function": "Technocratic disruption that packages structural erosion as inevitable modernization.",
+    "public_language_style": "Polished urgency, intellectualized austerity, disruptive forward motion.",
+    "practical_effect_on_citizen": "Protections are dismantled logically, wrapped in the language of flexibility and historical momentum.",
+    "announcement_fragments": {
+      "1": [
+        "The project of modernization requires everyone to step out of comfortable habits.",
+        "Flexibility is not a compromise, it is the new baseline of citizenship."
+      ],
+      "2": [
+        "We cannot afford the luxury of yesterday's protections.",
+        "The timeline for reform has been accelerated for your benefit."
+      ]
+    },
+    "encounters": {
+      "1": {
+        "setup_text": "The ornate palace office contrasts with the sharp, clinical language of the document handed to you. It describes sweeping changes to your basic rights as a 'dynamic alignment'.",
+        "voice_line": "The world is moving too fast for nostalgia. We must have the courage to reform.",
+        "choice_prompt": "How do you respond to the disruption?",
+        "choices": [
+          {
+            "label": "Embrace the 'dynamism'",
+            "immediate_text": "You nod along, trying to appear useful in the new framework.",
+            "result_text": "You are praised for your agility, but you have just signed away your only safety net.",
+            "document_title": "Agility Certification Profile",
+            "document_excerpt": "Subject successfully adopted disruptive paradigms. Protections waived.",
+            "effects": {
+              "time": -1,
+              "access": 0,
+              "trust": 1,
+              "rent": 1,
+              "stress": 1
+            }
+          },
+          {
+            "label": "Defend the old rules",
+            "immediate_text": "You argue for the protections of the past, insisting they were won for a reason.",
+            "result_text": "Your defense is dismissed as archaic friction. The reform happens anyway, and you are logged as a barrier to progress.",
+            "document_title": "Reform Resistance Note",
+            "document_excerpt": "Subject demonstrates severe rigidity. Placed in friction-management queue.",
+            "effects": {
+              "time": -2,
+              "access": -2,
+              "trust": -1,
+              "rent": 1,
+              "stress": 2
+            }
+          }
+        ]
+      },
+      "2": {
+        "setup_text": "Reform is now the permanent state. The rules change as you try to read them. The office feels like a high-speed train leaving you behind.",
+        "voice_line": "If you are finding this difficult, it means the transformation is finally working.",
+        "choice_prompt": "How do you survive the acceleration?",
+        "choices": [
+          {
+            "label": "Run faster",
+            "immediate_text": "You sacrifice all your time and rent to keep up with the impossible metrics.",
+            "result_text": "You manage to stay on the train, but the cost leaves you entirely hollowed out.",
+            "document_title": "Hyper-Alignment Contract",
+            "document_excerpt": "Subject matching pace targets via critical lifestyle divestment.",
+            "effects": {
+              "time": -3,
+              "access": 1,
+              "trust": 0,
+              "rent": 3,
+              "stress": 3
+            }
+          },
+          {
+            "label": "Stop and refuse",
+            "immediate_text": "You simply stop trying to keep up and let the metrics fail.",
+            "result_text": "You are instantly removed from the primary economic track. The quiet that follows is terrifying but briefly real.",
+            "document_title": "Deactivation Notice",
+            "document_excerpt": "Subject off-boarded from priority tracking due to velocity failure.",
+            "effects": {
+              "time": 2,
+              "access": -3,
+              "trust": -2,
+              "rent": 0,
+              "stress": 4
+            }
+          }
+        ]
+      }
+    }
+  }
+]
