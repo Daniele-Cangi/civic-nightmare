@@ -3,6 +3,10 @@ extends CharacterBody2D
 const SPEED = 250.0
 const BOB_SPEED = 12.0
 const BOB_AMPLITUDE = 2.0
+const DEFAULT_CAMERA_ZOOM = 1.5
+const INDOOR_CAMERA_ZOOM = 2.05
+const DEFAULT_CAMERA_SMOOTHING = 8.0
+const INDOOR_CAMERA_SMOOTHING = 4.5
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var interaction_ray: RayCast2D = $InteractionRay
@@ -13,9 +17,20 @@ var is_moving := false
 var walk_time := 0.0
 var base_sprite_offset := Vector2(0, -16)
 var dust_particles: CPUParticles2D
+var speed_multiplier := 1.0
+var dust_enabled := true
 
 func _ready() -> void:
 	_create_dust_particles()
+
+func set_traversal_context(indoor: bool) -> void:
+	speed_multiplier = 0.72 if indoor else 1.0
+	dust_enabled = not indoor
+	camera.position_smoothing_speed = INDOOR_CAMERA_SMOOTHING if indoor else DEFAULT_CAMERA_SMOOTHING
+
+	var target_zoom := Vector2.ONE * (INDOOR_CAMERA_ZOOM if indoor else DEFAULT_CAMERA_ZOOM)
+	var tw = create_tween()
+	tw.tween_property(camera, "zoom", target_zoom, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _create_dust_particles() -> void:
 	dust_particles = CPUParticles2D.new()
@@ -76,7 +91,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			interaction_ray.target_position = Vector2(0, sign(direction.y) * 40)
 
-		dust_particles.emitting = true
+		dust_particles.emitting = dust_enabled
 	else:
 		# Idle breathing
 		walk_time += delta * 2.0
@@ -91,7 +106,7 @@ func _physics_process(delta: float) -> void:
 		tw.tween_property(sprite, "scale", Vector2(1.08, 0.92), 0.06)
 		tw.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_OUT)
 
-	velocity = direction * SPEED
+	velocity = direction * SPEED * speed_multiplier
 	move_and_slide()
 
 func _unhandled_input(event: InputEvent) -> void:
