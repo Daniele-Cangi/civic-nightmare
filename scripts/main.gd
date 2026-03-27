@@ -819,13 +819,31 @@ func _place_landmark(spec: Dictionary) -> void:
 	
 	# Landmarks sit ON THE ROOF. 
 	# We adjust the offset based on the specific house height to avoid floating.
+	# We also add horizontal offsets to compensate for asymmetrical AI-generated textures.
 	var offset_y := -155.0
-	match cid:
-		"elon_musk": offset_y = -95.0
-		"donald_trump", "emmanuel_macron": offset_y = -135.0
-		_: offset_y = -155.0
+	var offset_x := 0.0
 	
-	sprite.offset = Vector2(0, offset_y)
+	match cid:
+		"elon_musk": 
+			offset_y = -95.0
+			offset_x = 0.0
+		"donald_trump":
+			offset_y = -135.0
+			offset_x = -12.0 # Trump Tower is often shifted in AI gen
+		"emmanuel_macron": 
+			offset_y = -135.0
+			offset_x = 0.0
+		"vladimir_putin":
+			offset_y = -160.0
+			offset_x = -24.0 # Compensation for tank barrel weight
+		"christine_lagarde":
+			offset_y = -155.0
+			offset_x = 8.0 # Vault door alignment
+		"ursula_von_der_leyen":
+			offset_y = -155.0
+			offset_x = 0.0
+	
+	sprite.offset = Vector2(offset_x, offset_y)
 	sprite.z_index = 5 
 	
 	entities_layer.add_child(sprite)
