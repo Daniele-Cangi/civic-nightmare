@@ -818,17 +818,16 @@ func _place_landmark(spec: Dictionary) -> void:
 	sprite.position = pos
 	
 	# Landmarks sit ON THE ROOF. 
-	# The building center is usually several tiles high.
-	# We want the bottom of the landmark to align with the "top" of the house walls.
-	# Houses are roughly 4-6 tiles high. 32px each = ~160px.
-	# The landmark itself has its own height.
-	sprite.offset = Vector2(0, -180) # Sit high up
-	sprite.z_index = 5 # Ensure it's above most world elements but can stay in Y-Sort if needed
+	# We adjust the offset based on the specific house height to avoid floating.
+	var offset_y := -155.0
+	match cid:
+		"elon_musk": offset_y = -95.0
+		"donald_trump", "emmanuel_macron": offset_y = -135.0
+		_: offset_y = -155.0
 	
-	# Special case for Starship (it should look like it's coming out of the roof)
-	if cid == "elon_musk":
-		sprite.offset = Vector2(0, -120)
-
+	sprite.offset = Vector2(0, offset_y)
+	sprite.z_index = 5 
+	
 	entities_layer.add_child(sprite)
 	
 	# We don't need extra collision anymore as the landmark is ABOVE the house walls
