@@ -29,7 +29,9 @@ jobs:
           export_debug: false
 
       - name: "Move coi-serviceworker"
-        run: cp coi-serviceworker.js build/web/
+        run: |
+          mkdir -p build/web
+          cp coi-serviceworker.js build/web/
 
       - name: "Deploy to GitHub Pages"
         uses: JamesIves/github-pages-deploy-action@v4
