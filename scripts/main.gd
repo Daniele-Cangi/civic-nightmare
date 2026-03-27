@@ -813,23 +813,26 @@ func _place_landmark(spec: Dictionary) -> void:
 	var sprite = Sprite2D.new()
 	sprite.texture = load(path)
 	
-	# Move landmark to the left or right of building
-	var offset_x = 14 if spec["center"].x > 0 else -14
-	var pos = _tile_to_body_position(spec["center"] + Vector2i(offset_x, 0))
+	# Center on the building
+	var pos = _tile_to_body_position(spec["center"])
 	sprite.position = pos
-	# Landmarks are big, center them at feet level for Y-Sort
-	sprite.offset = Vector2(0, -110) 
 	
+	# Landmarks sit ON THE ROOF. 
+	# The building center is usually several tiles high.
+	# We want the bottom of the landmark to align with the "top" of the house walls.
+	# Houses are roughly 4-6 tiles high. 32px each = ~160px.
+	# The landmark itself has its own height.
+	sprite.offset = Vector2(0, -180) # Sit high up
+	sprite.z_index = 5 # Ensure it's above most world elements but can stay in Y-Sort if needed
+	
+	# Special case for Starship (it should look like it's coming out of the roof)
+	if cid == "elon_musk":
+		sprite.offset = Vector2(0, -120)
+
 	entities_layer.add_child(sprite)
 	
-	# Add collision for the base
-	var base_x = spec["center"].x + (12 if offset_x > 0 else -16)
-	_create_solid_wall_rect(base_x, spec["center"].y - 2, 4, 4)
-
-func _create_solid_wall_rect(tx: int, ty: int, tw: int, th: int) -> void:
-	for x in range(tx, tx + tw):
-		for y in range(ty, ty + th):
-			_create_solid_wall(x, y)
+	# We don't need extra collision anymore as the landmark is ABOVE the house walls
+	# which already have collision.
 
 func _place_bush(pos: Vector2i) -> void:
 	if not _can_place_decoration(pos, Vector2i(1, 1)):
