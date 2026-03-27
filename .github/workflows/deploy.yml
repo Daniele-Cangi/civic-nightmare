@@ -19,14 +19,17 @@ jobs:
         with:
           lfs: true
 
-      - name: "Export Game"
-        uses: firebelley/godot-export@v6.0.0
+      - name: "Setup Godot"
+        uses: chickensoft-games/setup-godot@v2
         with:
-          godot_executable_download_url: "https://github.com/godotengine/godot-builds/releases/download/4.6.1-stable/Godot_v4.6.1-stable_linux.x86_64.zip"
-          godot_export_templates_download_url: "https://github.com/godotengine/godot-builds/releases/download/4.6.1-stable/Godot_v4.6.1-stable_export_templates.tpz"
-          relative_project_path: "./"
-          archive_output: false
-          export_debug: false
+          # Using the version the user has
+          version: 4.6.1
+          use_dotnet: false
+
+      - name: "Export Web"
+        run: |
+          mkdir -pv build/web
+          godot --headless --export-release "Web" build/web/index.html
 
       - name: "Move coi-serviceworker"
         run: |
