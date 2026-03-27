@@ -19,9 +19,13 @@ var base_sprite_offset := Vector2(0, -16)
 var dust_particles: CPUParticles2D
 var speed_multiplier := 1.0
 var dust_enabled := true
+var footstep_player: AudioStreamPlayer2D
+var footstep_timer := 0.0
+const FOOTSTEP_INTERVAL := 0.28
 
 func _ready() -> void:
 	_create_dust_particles()
+	_create_footstep_audio()
 
 func set_traversal_context(indoor: bool) -> void:
 	speed_multiplier = 0.72 if indoor else 1.0
@@ -51,6 +55,35 @@ func _create_dust_particles() -> void:
 	grad.offsets = PackedFloat32Array([0.0, 1.0])
 	dust_particles.color_ramp = grad
 	add_child(dust_particles)
+
+func _create_footstep_audio() -> void:
+	footstep_player = AudioStreamPlayer2D.new()
+	footstep_player.volume_db = -24.0
+	footstep_player.max_distance = 300.0
+	add_child(footstep_player)
+	# Generate a short procedural footstep sound
+	var sample_rate := 22050
+	var duration := 0.06
+	var num_samples := int(sample_rate * duration)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	var data := PackedByteArray()
+	data.resize(num_samples)
+	for i in range(num_samples):
+		var t := float(i) / sample_rate
+		var env := 1.0 - (t / duration)
+		# Noise burst with quick decay
+		var noise := (randf() * 2.0 - 1.0) * env * env
+		data[i] = int(clampf(noise * 40.0 + 128.0, 0.0, 255.0))
+	stream.data = data
+	footstep_player.stream = stream
+
+func _play_footstep() -> void:
+	if footstep_player and not footstep_player.playing:
+		footstep_player.pitch_scale = randf_range(0.85, 1.15)
+		footstep_player.play()
 
 func _draw() -> void:
 	# Shadow ellipse at character feet
@@ -92,7 +125,14 @@ func _physics_process(delta: float) -> void:
 			interaction_ray.target_position = Vector2(0, sign(direction.y) * 40)
 
 		dust_particles.emitting = dust_enabled
+
+		# Footstep audio on each bob cycle peak
+		footstep_timer += delta
+		if footstep_timer >= FOOTSTEP_INTERVAL:
+			footstep_timer = 0.0
+			_play_footstep()
 	else:
+		footstep_timer = 0.0
 		# Idle breathing
 		walk_time += delta * 2.0
 		var breathe = sin(walk_time) * 0.02

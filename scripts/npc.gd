@@ -12,12 +12,32 @@ var indicator_time: float = 0.0
 var idle_time: float = 0.0
 var base_scale := Vector2.ONE
 
+# Idle patrol
+enum NPCState { PATROL, PAUSE, LOOK, FACING_PLAYER }
+var state := NPCState.PAUSE
+var state_timer := 0.0
+var patrol_origin := Vector2.ZERO
+var patrol_dir := 1.0
+var patrol_range := 36.0
+var patrol_speed := 22.0
+
+# Proximity dialogue trigger
+const INTERACT_DISTANCE := 55.0
+const INDICATOR_DISTANCE := 90.0
+var interact_cooldown := 0.0
+
 func _ready() -> void:
 	if sprite:
 		base_scale = sprite.scale
 	_create_interaction_indicator()
 	call_deferred("_find_player")
+	call_deferred("_init_patrol")
 	queue_redraw()
+
+func _init_patrol() -> void:
+	patrol_origin = position
+	state = NPCState.PAUSE
+	state_timer = randf_range(1.0, 3.0)
 
 func _find_player() -> void:
 	var players = get_tree().get_nodes_in_group("player")
@@ -39,39 +59,92 @@ func _create_interaction_indicator() -> void:
 	add_child(indicator_label)
 
 func _draw() -> void:
-	# Shadow ellipse at NPC feet
 	draw_set_transform(Vector2(0, 2), 0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 12, Color(0, 0, 0, 0.15))
 
 func _process(delta: float) -> void:
+	# Breathing animation
 	if sprite:
 		idle_time += delta * 2.0
 		var breathe = sin(idle_time) * 0.025
 		sprite.scale = base_scale + Vector2(-breathe * 0.4, breathe)
 
+	# Keep cooldown alive while dialogue is open so it only counts down AFTER close
+	var world = get_tree().current_scene
+	if world and world.get("is_dialogue_open"):
+		interact_cooldown = 1.5
+		return
+
+	if interact_cooldown > 0.0:
+		interact_cooldown -= delta
+
 	if not player_ref:
 		return
 
 	var dist = global_position.distance_to(player_ref.global_position)
-	var nearby = dist < 90.0
+	var nearby: bool = dist < INDICATOR_DISTANCE
 	indicator_label.visible = nearby
 
 	if nearby:
+		# Face player and show indicator
 		indicator_time += delta * 3.5
 		indicator_label.position.y = -70 + sin(indicator_time) * 3.0
 		indicator_label.modulate.a = 0.6 + sin(indicator_time * 2.0) * 0.4
+		if sprite:
+			var player_on_left := player_ref.global_position.x < global_position.x
+			sprite.flip_h = player_on_left if faces_right_by_default else not player_on_left
+		state = NPCState.FACING_PLAYER
 
-	if sprite:
-		var player_on_left := player_ref.global_position.x < global_position.x
-		sprite.flip_h = player_on_left if faces_right_by_default else not player_on_left
+		# Auto-trigger dialogue on proximity
+		if dist < INTERACT_DISTANCE and interact_cooldown <= 0.0:
+			if world and world.has_method("open_dialogue") and not world.get("is_dialogue_open"):
+				interact()
+		return
+
+	# Idle patrol behavior when player is far
+	_update_patrol(delta)
+
+func _update_patrol(delta: float) -> void:
+	state_timer -= delta
+	match state:
+		NPCState.FACING_PLAYER:
+			state = NPCState.PAUSE
+			state_timer = randf_range(0.5, 1.5)
+		NPCState.PAUSE:
+			if state_timer <= 0:
+				var roll := randf()
+				if roll < 0.6:
+					state = NPCState.PATROL
+					patrol_dir = 1.0 if randf() > 0.5 else -1.0
+					state_timer = randf_range(1.5, 3.5)
+				else:
+					state = NPCState.LOOK
+					state_timer = randf_range(0.8, 2.0)
+					if sprite:
+						sprite.flip_h = randf() > 0.5
+		NPCState.PATROL:
+			position.x += patrol_dir * patrol_speed * delta
+			if sprite:
+				sprite.flip_h = (patrol_dir < 0) if not faces_right_by_default else (patrol_dir > 0)
+			if abs(position.x - patrol_origin.x) > patrol_range:
+				patrol_dir *= -1.0
+			if state_timer <= 0:
+				state = NPCState.PAUSE
+				state_timer = randf_range(1.0, 3.0)
+		NPCState.LOOK:
+			if state_timer <= 0:
+				state = NPCState.PAUSE
+				state_timer = randf_range(0.5, 2.0)
 
 func interact() -> void:
 	indicator_label.visible = false
+	state = NPCState.FACING_PLAYER
+	interact_cooldown = 2.0
 
-	# Jump reaction
-	var tween = create_tween()
-	tween.tween_property(sprite, "position:y", -10.0, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(sprite, "position:y", 0.0, 0.15).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	if sprite:
+		var tween = create_tween()
+		tween.tween_property(sprite, "position:y", -10.0, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(sprite, "position:y", 0.0, 0.15).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 	var world = get_tree().current_scene
 	if world and world.has_method("open_dialogue"):

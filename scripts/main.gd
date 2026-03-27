@@ -27,7 +27,7 @@ var room_title_subtitle: Label
 # --- Dialogue UI (created in code) ---
 var dialogue_anchor: Control
 var dialogue_panel: PanelContainer
-var dialogue_style: StyleBoxFlat
+var dialogue_style: StyleBox
 var portrait_rect: TextureRect
 var name_label: Label
 var text_label: RichTextLabel
@@ -38,6 +38,26 @@ var typewriter_index: int = 0
 var continue_blink: float = 0.0
 var dialogue_rest_top: float = -195.0
 var current_character_id: String = ""
+var dialogue_lines: Array = []
+var dialogue_line_index: int = 0
+var dialogue_choices: Array = []
+var dialogue_choice_prompt: String = ""
+var dialogue_farewell: String = ""
+var is_choosing: bool = false
+var choice_index: int = 0
+var choice_container: VBoxContainer
+var choice_labels: Array = []
+var typewriter_bip: AudioStreamPlayer
+
+# --- Quest state ---
+var quest_order: Array = [
+	"donald_trump", "elon_musk", "ursula_von_der_leyen",
+	"vladimir_putin", "christine_lagarde", "emmanuel_macron"
+]
+var quest_completed: Dictionary = {}
+var quest_index: int = -1
+var quest_finished: bool = false
+var ai_terminal_data: Dictionary = {}
 
 # --- HUD ---
 var hud_panel: PanelContainer
@@ -58,6 +78,7 @@ const SRC_FIELD := 2
 const SRC_WATER := 3
 const SRC_FLOOR := 4
 const SRC_INTERIOR_FLOOR := 5
+const SRC_HOUSE := 6
 
 const LAYER_GROUND := 0
 const LAYER_DECOR := 1
@@ -76,6 +97,7 @@ var _pack_sources: Dictionary = {
 	SRC_WATER: "res://assets/tiles/water_32.png",
 	SRC_FLOOR: "res://assets/tiles/floor_32.png",
 	SRC_INTERIOR_FLOOR: "res://assets/tiles/interior_floor_32.png",
+	SRC_HOUSE: "res://assets/tiles/house_32.png",
 }
 var _pack_ready: bool = false
 var _path_cells: Dictionary = {}
@@ -126,38 +148,49 @@ const IF_OFFICE := Vector2i(4, 4)
 const IF_PALACE := Vector2i(14, 4)
 const IF_VAULT := Vector2i(15, 13)
 
+# --- Water autotile (first set in water_32.png, sandy shore) ---
+const WT_CENTER := Vector2i(3, 1)
+const WT_EDGE_T := Vector2i(3, 0)
+const WT_EDGE_B := Vector2i(3, 2)
+const WT_EDGE_L := Vector2i(2, 1)
+const WT_EDGE_R := Vector2i(4, 1)
+const WT_CORNER_TL := Vector2i(2, 0)
+const WT_CORNER_TR := Vector2i(4, 0)
+const WT_CORNER_BL := Vector2i(2, 2)
+const WT_CORNER_BR := Vector2i(4, 2)
+
+# --- Floor/path autotile (first set in floor_32.png, sandy path) ---
+const FL_EDGE_T := Vector2i(3, 0)
+const FL_EDGE_B := Vector2i(3, 2)
+const FL_EDGE_L := Vector2i(2, 1)
+const FL_EDGE_R := Vector2i(4, 1)
+const FL_CENTER := Vector2i(3, 1)
+const FL_CORNER_TL := Vector2i(2, 0)
+const FL_CORNER_TR := Vector2i(4, 0)
+const FL_CORNER_BL := Vector2i(2, 2)
+const FL_CORNER_BR := Vector2i(4, 2)
+
+# House templates removed — all buildings now use unique procedural shapes
+
 var tree_variants: Array = [
-	{
-		"size": Vector2i(2, 2),
-		"tiles": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)],
-		"solid_offset": Vector2i(0, 1)
-	},
-	{
-		"size": Vector2i(2, 2),
-		"tiles": [Vector2i(2, 18), Vector2i(3, 18), Vector2i(2, 19), Vector2i(3, 19)],
-		"solid_offset": Vector2i(0, 1)
-	},
-	{
-		"size": Vector2i(2, 2),
-		"tiles": [Vector2i(0, 18), Vector2i(1, 18), Vector2i(0, 19), Vector2i(1, 19)],
-		"solid_offset": Vector2i(0, 1)
-	},
-	{
-		"size": Vector2i(2, 2),
-		"tiles": [Vector2i(9, 18), Vector2i(10, 18), Vector2i(9, 19), Vector2i(10, 19)],
-		"solid_offset": Vector2i(0, 1)
-	}
+	# Row 0-1: Confirmed round canopy trees (green, snow, pink)
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(4, 0), Vector2i(5, 0), Vector2i(4, 1), Vector2i(5, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(6, 0), Vector2i(7, 0), Vector2i(6, 1), Vector2i(7, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(8, 0), Vector2i(9, 0), Vector2i(8, 1), Vector2i(9, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(10, 0), Vector2i(11, 0), Vector2i(10, 1), Vector2i(11, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(12, 0), Vector2i(13, 0), Vector2i(12, 1), Vector2i(13, 1)], "solid_offset": Vector2i(0, 1)},
 ]
 var flower_tiles: Array = [
-	Vector2i(0, 10), Vector2i(1, 10), Vector2i(2, 10), Vector2i(5, 10), Vector2i(6, 10)
+	Vector2i(2, 11), Vector2i(3, 11), Vector2i(12, 11), Vector2i(13, 11), Vector2i(13, 12)
 ]
 var tuft_tiles: Array = [
-	Vector2i(7, 10), Vector2i(8, 10), Vector2i(9, 10), Vector2i(10, 10), Vector2i(11, 10),
-	Vector2i(0, 11), Vector2i(1, 11), Vector2i(4, 11), Vector2i(5, 11)
+	Vector2i(12, 9), Vector2i(6, 10), Vector2i(12, 10), Vector2i(8, 13), Vector2i(9, 13),
+	Vector2i(13, 12)
 ]
 var rock_tiles: Array = [
-	Vector2i(2, 12), Vector2i(3, 12), Vector2i(4, 12), Vector2i(5, 12),
-	Vector2i(2, 13), Vector2i(3, 13), Vector2i(4, 13)
+	Vector2i(4, 12), Vector2i(6, 12), Vector2i(7, 12), Vector2i(9, 12),
+	Vector2i(11, 12), Vector2i(12, 12)
 ]
 
 var building_specs: Array = [
@@ -165,7 +198,7 @@ var building_specs: Array = [
 		"key": "oval_office",
 		"npc": "donald_trump",
 		"center": Vector2i(20, -20),
-		"npc_spawn": Vector2i(20, -18),
+		"npc_spawn": Vector2i(20, -13),
 		"entrance": Vector2i(20, -15),
 		"light_color": Color(1.0, 0.85, 0.6)
 	},
@@ -173,15 +206,15 @@ var building_specs: Array = [
 		"key": "spaceship",
 		"npc": "elon_musk",
 		"center": Vector2i(-20, -20),
-		"npc_spawn": Vector2i(-20, -18),
-		"entrance": Vector2i(-20, -15),
+		"npc_spawn": Vector2i(-20, -12),
+		"entrance": Vector2i(-20, -14),
 		"light_color": Color(0.6, 0.8, 1.0)
 	},
 	{
 		"key": "eu_palace",
 		"npc": "ursula_von_der_leyen",
 		"center": Vector2i(20, 0),
-		"npc_spawn": Vector2i(20, 2),
+		"npc_spawn": Vector2i(20, 8),
 		"entrance": Vector2i(20, 6),
 		"light_color": Color(0.7, 0.75, 1.0)
 	},
@@ -189,15 +222,15 @@ var building_specs: Array = [
 		"key": "kremlin",
 		"npc": "vladimir_putin",
 		"center": Vector2i(-20, 0),
-		"npc_spawn": Vector2i(-20, 2),
-		"entrance": Vector2i(-20, 5),
+		"npc_spawn": Vector2i(-20, 8),
+		"entrance": Vector2i(-20, 6),
 		"light_color": Color(0.9, 0.7, 0.5)
 	},
 	{
 		"key": "vault",
 		"npc": "christine_lagarde",
 		"center": Vector2i(20, 20),
-		"npc_spawn": Vector2i(20, 22),
+		"npc_spawn": Vector2i(20, 28),
 		"entrance": Vector2i(20, 26),
 		"light_color": Color(1.0, 0.9, 0.6)
 	},
@@ -205,14 +238,15 @@ var building_specs: Array = [
 		"key": "elysee",
 		"npc": "emmanuel_macron",
 		"center": Vector2i(-20, 20),
-		"npc_spawn": Vector2i(-20, 22),
-		"entrance": Vector2i(-20, 26),
+		"npc_spawn": Vector2i(-20, 27),
+		"entrance": Vector2i(-20, 25),
 		"light_color": Color(0.75, 0.8, 1.0)
 	}
 ]
 
 # --- Character visual config ---
 var character_colors: Dictionary = {
+	"ai_terminal": Color(0.2, 0.7, 0.9),
 	"donald_trump": Color(0.82, 0.22, 0.18),
 	"elon_musk": Color(0.28, 0.48, 0.72),
 	"ursula_von_der_leyen": Color(0.18, 0.28, 0.58),
@@ -244,6 +278,14 @@ var npc_facing_defaults: Dictionary = {
 	"vladimir_putin": true,
 	"emmanuel_macron": false
 }
+var landmark_sprite_paths: Dictionary = {
+	"donald_trump": "res://assets/mockups/landmark_trump.png",
+	"elon_musk": "res://assets/mockups/landmark_musk.png",
+	"ursula_von_der_leyen": "res://assets/mockups/landmark_vdl.png",
+	"christine_lagarde": "res://assets/mockups/landmark_lagarde.png",
+	"vladimir_putin": "res://assets/mockups/landmark_putin.png",
+	"emmanuel_macron": "res://assets/mockups/landmark_macron.png"
+}
 
 # --- Meter visual config ---
 var meter_config: Dictionary = {
@@ -274,7 +316,20 @@ func _ready() -> void:
 	_create_dialogue_ui()
 	_create_transition_fx()
 	_setup_interiors()
+	_remove_world_npcs()
 	_assign_npc_textures()
+	_create_ai_terminal()
+	_create_typewriter_bip()
+	_setup_ambient_audio()
+	_create_atmosphere_particles()
+
+func _remove_world_npcs() -> void:
+	for child in entities_layer.get_children():
+		if child == player:
+			continue
+		if child.is_in_group("npc"):
+			entities_layer.remove_child(child)
+			child.queue_free()
 
 func _setup_tileset_sources() -> void:
 	var tileset := ground_map.tile_set
@@ -320,16 +375,22 @@ func _setup_interiors() -> void:
 	interiors_layer.name = "Interiors"
 	add_child(interiors_layer)
 
-	var oval_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	oval_room.name = "OvalOfficeInterior"
-	oval_room.position = Vector2(0, 3200)
-	interiors_layer.add_child(oval_room)
-	room_registry["oval_office"] = oval_room
-	if oval_room.has_method("set_room_active"):
-		oval_room.set_room_active(false)
+	for index in range(building_specs.size()):
+		var spec: Dictionary = building_specs[index]
+		var room = OVAL_OFFICE_ROOM_SCENE.instantiate()
+		room.name = "%sInterior" % _pascal_case(str(spec["key"]))
+		room.position = Vector2(0, 3200 + index * 960)
+		room.set("room_key", spec["key"])
+		room.set("character_id", spec["npc"])
+		room.set("character_name", _character_display_name(str(spec["npc"])))
+		interiors_layer.add_child(room)
+		room_registry[spec["key"]] = room
+		if room.has_method("set_room_active"):
+			room.set_room_active(false)
 
-	world_spawn_points["oval_office_exterior"] = _tile_to_actor_position(Vector2i(20, -13))
-	_create_world_doorway("OvalOfficeDoor", Vector2i(20, -15), "oval_office", "EntryMarker")
+		var entrance: Vector2i = spec["entrance"]
+		world_spawn_points["%s_exterior" % spec["key"]] = _tile_to_actor_position(entrance + Vector2i(0, 2))
+		_create_world_doorway("%sDoor" % _pascal_case(str(spec["key"])), entrance, spec["key"], "EntryMarker")
 
 func _create_world_doorway(name: String, tile_pos: Vector2i, destination: String, spawn_marker: String) -> void:
 	var door := Area2D.new()
@@ -360,6 +421,9 @@ func use_door(destination: String, spawn_marker: String) -> void:
 	is_room_transition = true
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
+	var door_sfx = get_node_or_null("DoorSFX")
+	if door_sfx:
+		door_sfx.play()
 	await _fade_transition(1.0, 0.22)
 	if destination == "world":
 		_exit_room(spawn_marker)
@@ -367,7 +431,15 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		_enter_room(destination, spawn_marker)
 	_set_room_presentation(active_room_id != "")
 	if destination != "world":
-		_show_room_title("THE OVAL OFFICE", "Executive residence")
+		var room = room_registry.get(destination)
+		var title := _pascal_case(destination).to_upper()
+		var subtitle := ""
+		if room:
+			if room.has_method("get_room_title"):
+				title = str(room.get_room_title())
+			if room.has_method("get_room_subtitle"):
+				subtitle = str(room.get_room_subtitle())
+		_show_room_title(title, subtitle)
 	await _fade_transition(0.0, 0.28)
 	if not is_dialogue_open:
 		player.set_physics_process(true)
@@ -474,14 +546,54 @@ func _tile_to_actor_position(tile_pos: Vector2i) -> Vector2:
 func _tile_to_body_position(tile_pos: Vector2i) -> Vector2:
 	return Vector2(tile_pos.x * 32 + 16, tile_pos.y * 32 + 16)
 
+func _pascal_case(value: String) -> String:
+	var cleaned := value.strip_edges()
+	if cleaned.is_empty():
+		return "Room"
+	var parts := cleaned.split("_", false)
+	var result := ""
+	for part in parts:
+		if part.is_empty():
+			continue
+		result += part.substr(0, 1).to_upper() + part.substr(1).to_lower()
+	return result if not result.is_empty() else "Room"
+
+func _character_display_name(character_id: String) -> String:
+	if character_data_cache.has(character_id):
+		var entry = character_data_cache[character_id]
+		if entry is Dictionary and entry.has("name"):
+			return str(entry["name"])
+	var words := character_id.split("_", false)
+	var display_words: Array[String] = []
+	for i in range(words.size()):
+		var word: String = words[i]
+		display_words.append(word.substr(0, 1).to_upper() + word.substr(1).to_lower())
+	var result := ""
+	for i in range(display_words.size()):
+		if i > 0:
+			result += " "
+		result += display_words[i]
+	return result
+
 func _process(delta: float) -> void:
+	_process_ai_terminal(delta)
 	if is_dialogue_open:
 		# Blink continue indicator
 		if continue_label.visible:
 			continue_blink += delta * 3.0
 			continue_label.modulate.a = 0.4 + sin(continue_blink) * 0.4
 
-		if Input.is_action_just_pressed("ui_accept"):
+		if is_choosing:
+			# Navigate choices with up/down
+			if Input.is_action_just_pressed("ui_up"):
+				choice_index = max(0, choice_index - 1)
+				_update_choice_highlight()
+			elif Input.is_action_just_pressed("ui_down"):
+				choice_index = min(choice_labels.size() - 1, choice_index + 1)
+				_update_choice_highlight()
+			elif Input.is_action_just_pressed("ui_accept"):
+				_select_choice()
+		elif Input.is_action_just_pressed("ui_accept"):
 			if typewriter_index < typewriter_text.length():
 				# Skip to full text
 				typewriter_timer.stop()
@@ -489,7 +601,7 @@ func _process(delta: float) -> void:
 				typewriter_index = typewriter_text.length()
 				continue_label.visible = true
 			else:
-				_close_dialogue()
+				_advance_dialogue()
 
 
 # ============================================================
@@ -543,10 +655,17 @@ func _grass_tile_for(pos: Vector2i) -> Vector2i:
 		return TILE_GRASS
 	return FD_GRASS2 if _tile_roll(pos.x, pos.y) < 180 else FD_GRASS
 
-func _path_tile_for(pos: Vector2i) -> Vector2i:
-	if not _pack_ready:
-		return TILE_PATH
-	return FL_STONE
+func _path_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
+	if n and s and w and e: return FL_CENTER
+	if not n and s and w and e: return FL_EDGE_T
+	if n and not s and w and e: return FL_EDGE_B
+	if n and s and not w and e: return FL_EDGE_L
+	if n and s and w and not e: return FL_EDGE_R
+	if not n and s and not w and e: return FL_CORNER_TL
+	if not n and s and w and not e: return FL_CORNER_TR
+	if n and not s and not w and e: return FL_CORNER_BL
+	if n and not s and w and not e: return FL_CORNER_BR
+	return FL_CENTER
 
 func _can_use_world_cell(pos: Vector2i) -> bool:
 	return (
@@ -591,16 +710,22 @@ func _generate_world_layout() -> void:
 
 	for cell in _path_cells.keys():
 		var path_pos: Vector2i = cell
-		ground_map.set_cell(LAYER_GROUND, path_pos, path_source, _path_tile_for(path_pos))
+		if _pack_ready:
+			var pn := _path_cells.has(path_pos + Vector2i(0, -1))
+			var ps := _path_cells.has(path_pos + Vector2i(0, 1))
+			var pw := _path_cells.has(path_pos + Vector2i(-1, 0))
+			var pe := _path_cells.has(path_pos + Vector2i(1, 0))
+			ground_map.set_cell(LAYER_GROUND, path_pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
+		else:
+			ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
 
 	for spec in building_specs:
 		_build_structure(spec)
 		_decorate_compound(spec)
-		var spawn: Vector2i = spec["npc_spawn"] if spec.has("npc_spawn") else spec["center"]
-		_snap_npc_to_house(spec["npc"], spawn.x, spawn.y)
+		_place_landmark(spec)
 
-	for x in range(WORLD_MIN_X + 2, WORLD_MAX_X - 2):
-		for y in range(WORLD_MIN_Y + 2, WORLD_MAX_Y - 2):
+	for x in range(WORLD_MIN_X + 4, WORLD_MAX_X - 4):
+		for y in range(WORLD_MIN_Y + 4, WORLD_MAX_Y - 4):
 			if _is_in_building_zone(x, y) or _is_on_path(x, y):
 				continue
 
@@ -608,16 +733,17 @@ func _generate_world_layout() -> void:
 			var pos := Vector2i(x, y)
 			if roll < 2:
 				_paint_lake(pos, water_source, WT_WATER if _pack_ready else TILE_WATER)
-			elif roll < 10:
+			elif roll < 18:
 				_place_tree(pos)
-			elif roll < 26:
+			elif roll < 38:
 				_place_bush(pos)
-			elif roll < 34:
+			elif roll < 52:
 				_place_flower(pos)
-			elif roll < 40:
+			elif roll < 62:
 				_place_rock(pos)
 
 func _paint_lake(center: Vector2i, src: int = SRC_PROC, coords: Vector2i = TILE_WATER) -> void:
+	var lake_cells: Array[Vector2i] = []
 	for x in range(center.x - 2, center.x + 3):
 		for y in range(center.y - 1, center.y + 3):
 			if abs(x - center.x) + abs(y - center.y) > 3:
@@ -627,16 +753,41 @@ func _paint_lake(center: Vector2i, src: int = SRC_PROC, coords: Vector2i = TILE_
 				return
 			if ground_map.get_cell_source_id(LAYER_DECOR, pos) != -1:
 				return
+			lake_cells.append(pos)
 
-	for x in range(center.x - 2, center.x + 3):
-		for y in range(center.y - 1, center.y + 3):
-			if abs(x - center.x) + abs(y - center.y) <= 3:
-				ground_map.set_cell(LAYER_GROUND, Vector2i(x, y), src, coords)
-				_create_solid_wall(x, y)
+	var lake_set: Dictionary = {}
+	for pos in lake_cells:
+		lake_set[pos] = true
+
+	for pos in lake_cells:
+		if _pack_ready:
+			var wn := lake_set.has(pos + Vector2i(0, -1))
+			var ws := lake_set.has(pos + Vector2i(0, 1))
+			var ww := lake_set.has(pos + Vector2i(-1, 0))
+			var we := lake_set.has(pos + Vector2i(1, 0))
+			var tile := _water_tile_for_neighbors(wn, ws, ww, we)
+			ground_map.set_cell(LAYER_GROUND, pos, SRC_WATER, tile)
+		else:
+			ground_map.set_cell(LAYER_GROUND, pos, src, coords)
+		_create_solid_wall(pos.x, pos.y)
+
+func _water_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
+	if n and s and w and e: return WT_CENTER
+	if not n and s and w and e: return WT_EDGE_T
+	if n and not s and w and e: return WT_EDGE_B
+	if n and s and not w and e: return WT_EDGE_L
+	if n and s and w and not e: return WT_EDGE_R
+	if not n and s and not w and e: return WT_CORNER_TL
+	if not n and s and w and not e: return WT_CORNER_TR
+	if n and not s and not w and e: return WT_CORNER_BL
+	if n and not s and w and not e: return WT_CORNER_BR
+	return WT_CENTER
 
 func _place_tree(pos: Vector2i) -> void:
 	if _pack_ready:
-		var variant: Dictionary = tree_variants[_tile_roll(pos.x + 13, pos.y - 7) % tree_variants.size()]
+		# Use a different hash from the main roll to avoid repetition
+		var variant_idx := posmod(pos.x * 48271 + pos.y * 91831 + 37139, tree_variants.size())
+		var variant: Dictionary = tree_variants[variant_idx]
 		var size: Vector2i = variant["size"]
 		if not _can_place_decoration(pos, size):
 			return
@@ -649,6 +800,36 @@ func _place_tree(pos: Vector2i) -> void:
 		ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_TREE_TOP)
 		ground_map.set_cell(LAYER_DECOR, pos + Vector2i(0, 1), SRC_PROC, TILE_TREE_TRUNK)
 		_create_solid_wall(pos.x, pos.y + 1)
+
+func _place_landmark(spec: Dictionary) -> void:
+	var cid = spec["npc"]
+	if not landmark_sprite_paths.has(cid):
+		return
+		
+	var path = landmark_sprite_paths[cid]
+	if not ResourceLoader.exists(path):
+		return
+		
+	var sprite = Sprite2D.new()
+	sprite.texture = load(path)
+	
+	# Move landmark to the left or right of building
+	var offset_x = 14 if spec["center"].x > 0 else -14
+	var pos = _tile_to_body_position(spec["center"] + Vector2i(offset_x, 0))
+	sprite.position = pos
+	# Landmarks are big, center them at feet level for Y-Sort
+	sprite.offset = Vector2(0, -110) 
+	
+	entities_layer.add_child(sprite)
+	
+	# Add collision for the base
+	var base_x = spec["center"].x + (12 if offset_x > 0 else -16)
+	_create_solid_wall_rect(base_x, spec["center"].y - 2, 4, 4)
+
+func _create_solid_wall_rect(tx: int, ty: int, tw: int, th: int) -> void:
+	for x in range(tx, tx + tw):
+		for y in range(ty, ty + th):
+			_create_solid_wall(x, y)
 
 func _place_bush(pos: Vector2i) -> void:
 	if not _can_place_decoration(pos, Vector2i(1, 1)):
@@ -672,12 +853,6 @@ func _place_rock(pos: Vector2i) -> void:
 	var atlas: Vector2i = rock_tiles[_tile_roll(pos.x - 15, pos.y - 19) % rock_tiles.size()]
 	ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, atlas)
 	_create_solid_wall(pos.x, pos.y)
-
-func _snap_npc_to_house(cid: String, tx: int, ty: int) -> void:
-	for npc in get_tree().get_nodes_in_group("npc"):
-		if npc.character_id == cid:
-			npc.position = Vector2(tx * 32 + 16, ty * 32)
-			break
 
 func _create_solid_wall(x: int, y: int) -> void:
 	var cell := Vector2i(x, y)
@@ -792,111 +967,157 @@ func _decorate_compound(spec: Dictionary) -> void:
 
 	var center: Vector2i = spec["center"]
 	var entrance: Vector2i = spec["entrance"]
+
+	# Flower beds flanking the entrance
+	_decorate_flower_bed(entrance + Vector2i(-4, 1), 2)
+	_decorate_flower_bed(entrance + Vector2i(3, 1), 2)
+
+	# Corner bushes (wider offset for procedural buildings)
+	var bush_offset: int = 7
+	_set_decor_tile(center + Vector2i(-bush_offset, -3), NT_BUSH)
+	_set_decor_tile(center + Vector2i(bush_offset, -3), NT_BUSH)
+	_set_decor_tile(center + Vector2i(-bush_offset, 2), NT_BUSH)
+	_set_decor_tile(center + Vector2i(bush_offset, 2), NT_BUSH)
+
+	# Grass tufts beside the building
+	for i in range(-bush_offset + 1, bush_offset):
+		if abs(i) > 2 and _tile_roll(center.x + i, center.y - 4) % 3 == 0:
+			_set_decor_tile(center + Vector2i(i, -4), tuft_tiles[abs(i) % tuft_tiles.size()])
+
+	# Additional decorations by style
 	match spec["key"]:
 		"oval_office", "eu_palace", "elysee":
-			_decorate_flower_bed(entrance + Vector2i(-6, 1), 3)
-			_decorate_flower_bed(entrance + Vector2i(4, 1), 3)
-			_set_decor_tile(center + Vector2i(-6, -4), NT_BUSH)
-			_set_decor_tile(center + Vector2i(6, -4), NT_BUSH)
+			# Elegant: extra flower line along sides
+			for dy in range(-2, 3):
+				if _tile_roll(center.x - bush_offset - 1, center.y + dy) % 4 == 0:
+					_set_decor_tile(center + Vector2i(-bush_offset - 1, dy), flower_tiles[abs(dy) % flower_tiles.size()])
+				if _tile_roll(center.x + bush_offset + 1, center.y + dy) % 4 == 0:
+					_set_decor_tile(center + Vector2i(bush_offset + 1, dy), flower_tiles[abs(dy) % flower_tiles.size()])
 		"spaceship", "kremlin", "vault":
-			_decorate_rock_bed(entrance + Vector2i(-6, 1), 3)
-			_decorate_rock_bed(entrance + Vector2i(4, 1), 3)
-			_set_decor_tile(center + Vector2i(-6, -4), tuft_tiles[0])
-			_set_decor_tile(center + Vector2i(6, -4), tuft_tiles[1])
+			# Rugged: rock borders
+			_decorate_rock_bed(entrance + Vector2i(-5, 2), 2)
+			_decorate_rock_bed(entrance + Vector2i(4, 2), 2)
 
-func _build_rect_building(center: Vector2i, half_size: Vector2i, floor_style: String, wall_tile: Vector2i, door_half_width: int = 2, cut_corners: bool = false) -> void:
-	for x in range(center.x - half_size.x, center.x + half_size.x + 1):
-		for y in range(center.y - half_size.y, center.y + half_size.y + 1):
+
+# --- Unique shaped buildings — each politician has a distinctive silhouette ---
+
+func _fill_building_tile(pos: Vector2i, on_edge: bool, wall_tile: Vector2i, roof_tile: Vector2i) -> void:
+	if on_edge:
+		_set_structure_tile(pos, wall_tile, true)
+	else:
+		_set_structure_tile(pos, roof_tile, true)
+
+# TRUMP — Ellipse (Oval Office)
+func _build_oval_office(center: Vector2i) -> void:
+	var a := 5
+	var b := 4
+	for x in range(center.x - a, center.x + a + 1):
+		for y in range(center.y - b, center.y + b + 1):
+			var xr := pow(float(x - center.x) / float(a), 2)
+			var yr := pow(float(y - center.y) / float(b), 2)
+			if xr + yr <= 1.0:
+				var on_edge: bool = xr + yr > 0.62
+				_fill_building_tile(Vector2i(x, y), on_edge, TILE_BRICK, TILE_WOOD)
+	_set_structure_tile(Vector2i(center.x, center.y + b), TILE_DOOR, true)
+	for wx in [-2, 0, 2]:
+		_set_structure_tile(Vector2i(center.x + wx, center.y - b + 1), TILE_WINDOW, true)
+
+# MUSK — Diamond / rocket shape (Spaceship)
+func _build_spaceship(center: Vector2i) -> void:
+	var r := 5
+	for x in range(center.x - r, center.x + r + 1):
+		for y in range(center.y - r, center.y + r + 1):
+			var manhattan: int = abs(x - center.x) + abs(y - center.y)
+			if manhattan <= r:
+				var on_edge: bool = manhattan >= r - 1
+				_fill_building_tile(Vector2i(x, y), on_edge, TILE_METAL_WALL, TILE_METAL_FLOOR)
+	_set_structure_tile(Vector2i(center.x, center.y + r), TILE_DOOR, true)
+	for wx in [-1, 0, 1]:
+		_set_structure_tile(Vector2i(center.x + wx, center.y - r + 2), TILE_WINDOW, true)
+
+# VON DER LEYEN — Grand rectangle with cut corners + columns (EU Palace)
+func _build_eu_palace(center: Vector2i) -> void:
+	var hx := 5
+	var hy := 5
+	for x in range(center.x - hx, center.x + hx + 1):
+		for y in range(center.y - hy, center.y + hy + 1):
 			var dx: int = abs(x - center.x)
 			var dy: int = abs(y - center.y)
-			if cut_corners and dx == half_size.x and dy == half_size.y:
+			# Cut all 4 corners
+			if dx >= hx - 1 and dy >= hy - 1:
 				continue
+			var on_border: bool = dx == hx or dy == hy
+			_fill_building_tile(Vector2i(x, y), on_border, TILE_MARBLE_WALL, TILE_MARBLE_FLOOR)
+	_set_structure_tile(Vector2i(center.x, center.y + hy), TILE_DOOR, true)
+	# Front columns
+	_set_structure_tile(Vector2i(center.x - 3, center.y + hy), TILE_COLUMN, true)
+	_set_structure_tile(Vector2i(center.x + 3, center.y + hy), TILE_COLUMN, true)
+	# Windows across the top
+	for wx in [-3, -1, 1, 3]:
+		_set_structure_tile(Vector2i(center.x + wx, center.y - hy), TILE_WINDOW, true)
 
-			var pos := Vector2i(x, y)
-			_set_floor_tile(pos, floor_style)
-
-			var is_border: bool = dx == half_size.x or dy == half_size.y
-			var is_door: bool = y == center.y + half_size.y and dx <= door_half_width
-			if is_border and not is_door:
-				_set_structure_tile(pos, wall_tile, true)
-
-func _build_oval_office(center: Vector2i) -> void:
-	for x in range(center.x - 5, center.x + 6):
-		for y in range(center.y - 4, center.y + 5):
-			var xr = pow(float(x - center.x) / 5.0, 2)
-			var yr = pow(float(y - center.y) / 4.0, 2)
-			if xr + yr <= 1.0:
-				var pos := Vector2i(x, y)
-				_set_floor_tile(pos, "wood")
-				if xr + yr > 0.7 and not (y == center.y + 4 and abs(x - center.x) <= 2):
-					_set_structure_tile(pos, TILE_BRICK, true)
-	_set_structure_tile(Vector2i(center.x - 2, center.y - 3), TILE_WINDOW)
-	_set_structure_tile(Vector2i(center.x, center.y - 3), TILE_WINDOW)
-	_set_structure_tile(Vector2i(center.x + 2, center.y - 3), TILE_WINDOW)
-	_set_structure_tile(Vector2i(center.x - 4, center.y - 2), TILE_COLUMN, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y - 2), TILE_COLUMN, true)
-	_set_structure_tile(Vector2i(center.x - 4, center.y + 2), TILE_GLOBE)
-	_set_structure_tile(Vector2i(center.x + 4, center.y + 2), TILE_GOLD, true)
-	_set_structure_tile(Vector2i(center.x - 1, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x + 1, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x - 2, center.y + 4), TILE_BRICK, true)
-	_set_structure_tile(Vector2i(center.x - 1, center.y + 4), TILE_BRICK, true)
-	_set_structure_tile(Vector2i(center.x, center.y + 4), TILE_DOOR, true)
-	_set_structure_tile(Vector2i(center.x + 1, center.y + 4), TILE_BRICK, true)
-	_set_structure_tile(Vector2i(center.x + 2, center.y + 4), TILE_BRICK, true)
-
-func _build_spaceship(center: Vector2i) -> void:
-	_build_rect_building(center, Vector2i(5, 4), "metal", TILE_METAL_WALL)
-	_set_structure_tile(Vector2i(center.x - 3, center.y - 2), TILE_SERVER, true)
-	_set_structure_tile(Vector2i(center.x + 3, center.y - 2), TILE_SERVER, true)
-	_set_structure_tile(Vector2i(center.x - 4, center.y + 1), TILE_SERVER, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y + 1), TILE_SERVER, true)
-	_set_structure_tile(Vector2i(center.x + 2, center.y - 2), TILE_GLOBE)
-	_set_structure_tile(Vector2i(center.x, center.y - 2), TILE_DESK_METAL, true)
-
-func _build_eu_palace(center: Vector2i) -> void:
-	_build_rect_building(center, Vector2i(5, 5), "palace", TILE_MARBLE_WALL, 2, true)
-	_set_structure_tile(Vector2i(center.x - 1, center.y - 4), TILE_BOOKSHELF, true)
-	_set_structure_tile(Vector2i(center.x, center.y - 4), TILE_BOOKSHELF, true)
-	_set_structure_tile(Vector2i(center.x + 1, center.y - 4), TILE_BOOKSHELF, true)
-	_set_structure_tile(Vector2i(center.x - 4, center.y - 3), TILE_FILE_CABINET, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y - 3), TILE_FILE_CABINET, true)
-	_set_structure_tile(Vector2i(center.x + 2, center.y - 2), TILE_CLOCK)
-	_set_structure_tile(Vector2i(center.x - 4, center.y + 2), TILE_PLANT)
-	_set_structure_tile(Vector2i(center.x, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y + 2), TILE_PLANT)
-
-func _build_elysee(center: Vector2i) -> void:
-	_build_rect_building(center, Vector2i(5, 5), "palace", TILE_MARBLE_WALL, 2, true)
-	_set_structure_tile(Vector2i(center.x - 4, center.y - 3), TILE_COLUMN, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y - 3), TILE_COLUMN, true)
-	_set_structure_tile(Vector2i(center.x, center.y - 4), TILE_BOOKSHELF, true)
-	_set_structure_tile(Vector2i(center.x - 2, center.y - 2), TILE_CLOCK)
-	_set_structure_tile(Vector2i(center.x - 4, center.y + 2), TILE_PLANT)
-	_set_structure_tile(Vector2i(center.x, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y + 2), TILE_PLANT)
-
+# PUTIN — Cross / plus shape (Kremlin)
 func _build_kremlin(center: Vector2i) -> void:
-	_build_rect_building(center, Vector2i(5, 4), "wood", TILE_KREMLIN_WALL)
-	_set_structure_tile(Vector2i(center.x, center.y - 3), TILE_FLAG)
-	_set_structure_tile(Vector2i(center.x - 4, center.y - 2), TILE_FILE_CABINET_WIDE, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y - 2), TILE_FILE_CABINET, true)
-	_set_structure_tile(Vector2i(center.x - 1, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x, center.y - 2), TILE_DESK_WOOD, true)
-	_set_structure_tile(Vector2i(center.x + 1, center.y - 2), TILE_DESK_WOOD, true)
+	var arm_len := 5
+	var arm_w := 2
+	for x in range(center.x - arm_len, center.x + arm_len + 1):
+		for y in range(center.y - arm_len, center.y + arm_len + 1):
+			var dx: int = abs(x - center.x)
+			var dy: int = abs(y - center.y)
+			var in_v: bool = dx <= arm_w
+			var in_h: bool = dy <= arm_w
+			if in_v or in_h:
+				var on_edge := false
+				if in_v and not in_h:
+					on_edge = dy == arm_len or dx == arm_w
+				elif in_h and not in_v:
+					on_edge = dx == arm_len or dy == arm_w
+				else:
+					on_edge = (dx == arm_w and dy > arm_w) or (dy == arm_w and dx > arm_w)
+				_fill_building_tile(Vector2i(x, y), on_edge, TILE_KREMLIN_WALL, TILE_WOOD)
+	_set_structure_tile(Vector2i(center.x, center.y + arm_len), TILE_DOOR, true)
+	# Flag at top
+	_set_structure_tile(Vector2i(center.x, center.y - arm_len), TILE_FLAG, true)
 
+# LAGARDE — Octagonal vault shape
 func _build_vault(center: Vector2i) -> void:
-	_build_rect_building(center, Vector2i(5, 5), "vault", TILE_VAULT_WALL)
-	_set_structure_tile(Vector2i(center.x, center.y - 3), TILE_FILE_CABINET_WIDE, true)
-	_set_structure_tile(Vector2i(center.x - 3, center.y - 3), TILE_GOLD, true)
-	_set_structure_tile(Vector2i(center.x - 2, center.y - 3), TILE_GOLD, true)
-	_set_structure_tile(Vector2i(center.x + 2, center.y - 3), TILE_GOLD, true)
-	_set_structure_tile(Vector2i(center.x + 3, center.y - 3), TILE_GOLD, true)
-	_set_structure_tile(Vector2i(center.x - 4, center.y + 1), TILE_FILE_CABINET, true)
-	_set_structure_tile(Vector2i(center.x + 4, center.y + 1), TILE_FILE_CABINET, true)
-	_set_structure_tile(Vector2i(center.x - 3, center.y - 1), TILE_DESK_METAL, true)
-	_set_structure_tile(Vector2i(center.x + 3, center.y - 1), TILE_DESK_METAL, true)
+	var r := 5
+	var cut := 3
+	for x in range(center.x - r, center.x + r + 1):
+		for y in range(center.y - r, center.y + r + 1):
+			var dx: int = abs(x - center.x)
+			var dy: int = abs(y - center.y)
+			# Octagon: rectangle minus corners where dx+dy > r+cut
+			if dx + dy > r + cut:
+				continue
+			var on_edge: bool = dx == r or dy == r or dx + dy >= r + cut - 1
+			_fill_building_tile(Vector2i(x, y), on_edge, TILE_VAULT_WALL, TILE_METAL_FLOOR)
+	_set_structure_tile(Vector2i(center.x, center.y + r), TILE_DOOR, true)
+	# Gold accents
+	_set_structure_tile(Vector2i(center.x - 2, center.y - r + 1), TILE_GOLD, true)
+	_set_structure_tile(Vector2i(center.x + 2, center.y - r + 1), TILE_GOLD, true)
+
+# MACRON — T-shape palace with wings (Élysée)
+func _build_elysee(center: Vector2i) -> void:
+	# Top wing (wide)
+	for x in range(center.x - 5, center.x + 6):
+		for y in range(center.y - 4, center.y - 1):
+			var dx: int = abs(x - center.x)
+			var on_edge: bool = dx == 5 or y == center.y - 4 or y == center.y - 1
+			_fill_building_tile(Vector2i(x, y), on_edge, TILE_MARBLE_WALL, TILE_MARBLE_FLOOR)
+	# Main body (narrower)
+	for x in range(center.x - 3, center.x + 4):
+		for y in range(center.y - 1, center.y + 5):
+			var dx: int = abs(x - center.x)
+			var on_edge: bool = dx == 3 or y == center.y + 4
+			_fill_building_tile(Vector2i(x, y), on_edge, TILE_MARBLE_WALL, TILE_MARBLE_FLOOR)
+	_set_structure_tile(Vector2i(center.x, center.y + 4), TILE_DOOR, true)
+	# Columns on wing ends
+	_set_structure_tile(Vector2i(center.x - 5, center.y - 1), TILE_COLUMN, true)
+	_set_structure_tile(Vector2i(center.x + 5, center.y - 1), TILE_COLUMN, true)
+	# Windows on top wing
+	for wx in [-3, -1, 1, 3]:
+		_set_structure_tile(Vector2i(center.x + wx, center.y - 4), TILE_WINDOW, true)
 
 
 # ============================================================
@@ -932,8 +1153,229 @@ func _add_point_light(tile_pos: Vector2i, color: Color) -> void:
 	grad.offsets = PackedFloat32Array([0.0, 1.0])
 	tex.gradient = grad
 	light.texture = tex
-
 	$Entities.add_child(light)
+
+func _setup_ambient_audio() -> void:
+	# Door entry sound effect only (soft thud, no ambient noise)
+	var door_sfx = AudioStreamPlayer.new()
+	door_sfx.name = "DoorSFX"
+	door_sfx.volume_db = -16.0
+	var door_rate := 22050
+	var door_dur := 0.1
+	var door_samples := int(door_rate * door_dur)
+	var door_stream := AudioStreamWAV.new()
+	door_stream.format = AudioStreamWAV.FORMAT_8_BITS
+	door_stream.mix_rate = door_rate
+	door_stream.stereo = false
+	var door_data := PackedByteArray()
+	door_data.resize(door_samples)
+	for i in range(door_samples):
+		var t := float(i) / door_rate
+		var env := (1.0 - t / door_dur)
+		var thud := sin(t * 180.0 * TAU) * env * env
+		door_data[i] = int(clampf(thud * 45.0 + 128.0, 0.0, 255.0))
+	door_stream.data = door_data
+	door_sfx.stream = door_stream
+	add_child(door_sfx)
+
+func _create_atmosphere_particles() -> void:
+	var player_node = get_node_or_null("Player")
+	if not player_node:
+		return
+
+	# Floating leaves / pollen
+	var leaves = CPUParticles2D.new()
+	leaves.name = "LeafParticles"
+	leaves.emitting = true
+	leaves.amount = 12
+	leaves.lifetime = 6.0
+	leaves.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	leaves.emission_rect_extents = Vector2(400, 300)
+	leaves.direction = Vector2(1.0, 0.5)
+	leaves.spread = 30.0
+	leaves.initial_velocity_min = 6.0
+	leaves.initial_velocity_max = 14.0
+	leaves.gravity = Vector2(2.0, 8.0)
+	leaves.angular_velocity_min = -40.0
+	leaves.angular_velocity_max = 40.0
+	leaves.scale_amount_min = 1.5
+	leaves.scale_amount_max = 3.0
+	var leaf_grad = Gradient.new()
+	leaf_grad.colors = PackedColorArray([
+		Color(0.45, 0.55, 0.25, 0.0),
+		Color(0.5, 0.6, 0.3, 0.35),
+		Color(0.55, 0.5, 0.25, 0.3),
+		Color(0.6, 0.45, 0.2, 0.0)
+	])
+	leaf_grad.offsets = PackedFloat32Array([0.0, 0.15, 0.7, 1.0])
+	leaves.color_ramp = leaf_grad
+	leaves.z_index = 5
+	player_node.add_child(leaves)
+
+	# Fireflies (subtle glowing dots)
+	var fireflies = CPUParticles2D.new()
+	fireflies.name = "Fireflies"
+	fireflies.emitting = true
+	fireflies.amount = 8
+	fireflies.lifetime = 4.0
+	fireflies.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	fireflies.emission_rect_extents = Vector2(350, 250)
+	fireflies.direction = Vector2(0, -1)
+	fireflies.spread = 180.0
+	fireflies.initial_velocity_min = 2.0
+	fireflies.initial_velocity_max = 8.0
+	fireflies.gravity = Vector2(0, -3)
+	fireflies.scale_amount_min = 1.0
+	fireflies.scale_amount_max = 2.0
+	var ff_grad = Gradient.new()
+	ff_grad.colors = PackedColorArray([
+		Color(1.0, 0.95, 0.5, 0.0),
+		Color(1.0, 0.9, 0.4, 0.5),
+		Color(1.0, 0.85, 0.3, 0.4),
+		Color(1.0, 0.9, 0.5, 0.0)
+	])
+	ff_grad.offsets = PackedFloat32Array([0.0, 0.3, 0.7, 1.0])
+	fireflies.color_ramp = ff_grad
+	fireflies.z_index = 6
+	player_node.add_child(fireflies)
+
+
+# ============================================================
+#  WORLD NPC MANAGEMENT & AI TERMINAL
+# ============================================================
+
+
+func _create_ai_terminal() -> void:
+	var terminal := StaticBody2D.new()
+	terminal.name = "AITerminal"
+	terminal.position = Vector2(16, 16)
+	terminal.add_to_group("ai_terminal")
+	terminal.set_script(load("res://scripts/ai_terminal.gd"))
+
+	# Glowing terminal visual — pulsing cyan pillar
+	var base_poly := Polygon2D.new()
+	base_poly.color = Color(0.08, 0.12, 0.18, 0.95)
+	base_poly.polygon = PackedVector2Array([
+		Vector2(-18, -6), Vector2(18, -6), Vector2(22, 10), Vector2(-22, 10)
+	])
+	terminal.add_child(base_poly)
+
+	var screen_poly := Polygon2D.new()
+	screen_poly.color = Color(0.15, 0.7, 0.9, 0.92)
+	screen_poly.polygon = PackedVector2Array([
+		Vector2(-14, -38), Vector2(14, -38), Vector2(16, -8), Vector2(-16, -8)
+	])
+	terminal.add_child(screen_poly)
+
+	var screen_inner := Polygon2D.new()
+	screen_inner.color = Color(0.05, 0.15, 0.22, 0.95)
+	screen_inner.polygon = PackedVector2Array([
+		Vector2(-10, -34), Vector2(10, -34), Vector2(12, -12), Vector2(-12, -12)
+	])
+	terminal.add_child(screen_inner)
+
+	# Indicator label
+	var label := Label.new()
+	label.text = "AI"
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = Vector2(-10, -30)
+	label.z_index = 10
+	terminal.add_child(label)
+
+	# "!" indicator when nearby (same as NPCs)
+	var indicator := Label.new()
+	indicator.name = "Indicator"
+	indicator.text = "!"
+	indicator.add_theme_font_size_override("font_size", 22)
+	indicator.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	indicator.position = Vector2(-8, -60)
+	indicator.visible = false
+	indicator.z_index = 10
+	terminal.add_child(indicator)
+
+	# Collision for interaction ray
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(40, 20)
+	col.shape = shape
+	col.position = Vector2(0, 2)
+	terminal.add_child(col)
+
+	# Glow light
+	var glow := PointLight2D.new()
+	glow.position = Vector2(0, -20)
+	glow.color = Color(0.2, 0.75, 0.95)
+	glow.energy = 0.5
+	glow.texture_scale = 2.0
+	var glow_tex := GradientTexture2D.new()
+	glow_tex.fill = GradientTexture2D.FILL_RADIAL
+	glow_tex.fill_from = Vector2(0.5, 0.5)
+	glow_tex.fill_to = Vector2(1.0, 0.5)
+	glow_tex.width = 128
+	glow_tex.height = 128
+	var glow_grad := Gradient.new()
+	glow_grad.colors = PackedColorArray([Color.WHITE, Color(1, 1, 1, 0)])
+	glow_grad.offsets = PackedFloat32Array([0.0, 1.0])
+	glow_tex.gradient = glow_grad
+	glow.texture = glow_tex
+	terminal.add_child(glow)
+
+	terminal.z_index = 2
+	entities_layer.add_child(terminal)
+
+	# Add path tiles around the terminal
+	_mark_path_rect(Vector2i(-2, -2), Vector2i(2, 2))
+	var path_source: int = SRC_FLOOR if _pack_ready else SRC_PROC
+	for x in range(-2, 3):
+		for y in range(-2, 3):
+			var pos := Vector2i(x, y)
+			if _pack_ready:
+				var pn := _path_cells.has(pos + Vector2i(0, -1))
+				var ps := _path_cells.has(pos + Vector2i(0, 1))
+				var pw := _path_cells.has(pos + Vector2i(-1, 0))
+				var pe := _path_cells.has(pos + Vector2i(1, 0))
+				ground_map.set_cell(LAYER_GROUND, pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
+			else:
+				ground_map.set_cell(LAYER_GROUND, pos, path_source, TILE_PATH)
+
+func _process_ai_terminal(_delta: float) -> void:
+	var terminal := get_node_or_null("Entities/AITerminal")
+	if not terminal or not player:
+		return
+	var indicator := terminal.get_node_or_null("Indicator") as Label
+	if not indicator:
+		return
+	var dist: float = terminal.global_position.distance_to(player.global_position)
+	indicator.visible = dist < 80.0
+	if indicator.visible:
+		var t := Time.get_ticks_msec() / 300.0
+		indicator.position.y = -60 + sin(t) * 3.0
+		indicator.modulate.a = 0.6 + sin(t * 2.0) * 0.4
+
+func _create_typewriter_bip() -> void:
+	typewriter_bip = AudioStreamPlayer.new()
+	typewriter_bip.name = "TypewriterBip"
+	typewriter_bip.volume_db = -28.0
+	var rate := 22050
+	var dur := 0.025
+	var samples := int(rate * dur)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = rate
+	stream.stereo = false
+	var data := PackedByteArray()
+	data.resize(samples)
+	for i in range(samples):
+		var t := float(i) / rate
+		var env := 1.0 - t / dur
+		var wave := sin(t * 1200.0 * TAU) * env * env
+		data[i] = int(clampf(wave * 30.0 + 128.0, 0.0, 255.0))
+	stream.data = data
+	typewriter_bip.stream = stream
+	add_child(typewriter_bip)
 
 
 # ============================================================
@@ -949,6 +1391,8 @@ func _load_character_data() -> void:
 			var data = json.get_data()
 			if data is Array:
 				for entry in data:
+					if entry.get("is_terminal", false):
+						ai_terminal_data = entry
 					character_data_cache[entry["id"]] = entry
 
 func _assign_npc_textures() -> void:
@@ -1166,24 +1610,37 @@ func _create_dialogue_ui() -> void:
 	dialogue_panel = PanelContainer.new()
 	dialogue_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	dialogue_style = StyleBoxFlat.new()
-	dialogue_style.bg_color = Color(0.05, 0.05, 0.09, 0.94)
-	dialogue_style.border_width_top = 2
-	dialogue_style.border_width_bottom = 2
-	dialogue_style.border_width_left = 2
-	dialogue_style.border_width_right = 2
-	dialogue_style.border_color = Color(0.3, 0.3, 0.4)
-	dialogue_style.corner_radius_top_left = 8
-	dialogue_style.corner_radius_top_right = 8
-	dialogue_style.corner_radius_bottom_left = 8
-	dialogue_style.corner_radius_bottom_right = 8
-	dialogue_style.shadow_color = Color(0, 0, 0, 0.35)
-	dialogue_style.shadow_size = 6
-	dialogue_style.shadow_offset = Vector2(2, 4)
-	dialogue_style.content_margin_left = 14
-	dialogue_style.content_margin_right = 14
-	dialogue_style.content_margin_top = 10
-	dialogue_style.content_margin_bottom = 10
+	var panel_tex_path := "res://assets/packs/civic_nightmare/ui/ninja/theme_wood/nine_path_panel.png"
+	if ResourceLoader.exists(panel_tex_path):
+		dialogue_style = StyleBoxTexture.new()
+		dialogue_style.texture = load(panel_tex_path)
+		dialogue_style.texture_margin_left = 4
+		dialogue_style.texture_margin_right = 4
+		dialogue_style.texture_margin_top = 4
+		dialogue_style.texture_margin_bottom = 4
+		dialogue_style.content_margin_left = 16
+		dialogue_style.content_margin_right = 16
+		dialogue_style.content_margin_top = 12
+		dialogue_style.content_margin_bottom = 12
+	else:
+		dialogue_style = StyleBoxFlat.new()
+		dialogue_style.bg_color = Color(0.05, 0.05, 0.09, 0.94)
+		dialogue_style.border_width_top = 2
+		dialogue_style.border_width_bottom = 2
+		dialogue_style.border_width_left = 2
+		dialogue_style.border_width_right = 2
+		dialogue_style.border_color = Color(0.3, 0.3, 0.4)
+		dialogue_style.corner_radius_top_left = 8
+		dialogue_style.corner_radius_top_right = 8
+		dialogue_style.corner_radius_bottom_left = 8
+		dialogue_style.corner_radius_bottom_right = 8
+		dialogue_style.shadow_color = Color(0, 0, 0, 0.35)
+		dialogue_style.shadow_size = 6
+		dialogue_style.shadow_offset = Vector2(2, 4)
+		dialogue_style.content_margin_left = 14
+		dialogue_style.content_margin_right = 14
+		dialogue_style.content_margin_top = 10
+		dialogue_style.content_margin_bottom = 10
 	dialogue_panel.add_theme_stylebox_override("panel", dialogue_style)
 
 	# Horizontal layout: portrait | text
@@ -1192,18 +1649,32 @@ func _create_dialogue_ui() -> void:
 
 	# Portrait
 	var portrait_panel = PanelContainer.new()
-	var ps = StyleBoxFlat.new()
-	ps.bg_color = Color(0.04, 0.04, 0.07)
-	ps.border_width_top = 1
-	ps.border_width_bottom = 1
-	ps.border_width_left = 1
-	ps.border_width_right = 1
-	ps.border_color = Color(0.2, 0.2, 0.3)
-	ps.corner_radius_top_left = 4
-	ps.corner_radius_top_right = 4
-	ps.corner_radius_bottom_left = 4
-	ps.corner_radius_bottom_right = 4
-	portrait_panel.add_theme_stylebox_override("panel", ps)
+	var faceset_tex_path := "res://assets/packs/civic_nightmare/ui/ninja/dialog/FacesetBox.png"
+	if ResourceLoader.exists(faceset_tex_path):
+		var ps = StyleBoxTexture.new()
+		ps.texture = load(faceset_tex_path)
+		ps.texture_margin_left = 3
+		ps.texture_margin_right = 3
+		ps.texture_margin_top = 3
+		ps.texture_margin_bottom = 3
+		ps.content_margin_left = 4
+		ps.content_margin_right = 4
+		ps.content_margin_top = 4
+		ps.content_margin_bottom = 4
+		portrait_panel.add_theme_stylebox_override("panel", ps)
+	else:
+		var ps = StyleBoxFlat.new()
+		ps.bg_color = Color(0.04, 0.04, 0.07)
+		ps.border_width_top = 1
+		ps.border_width_bottom = 1
+		ps.border_width_left = 1
+		ps.border_width_right = 1
+		ps.border_color = Color(0.2, 0.2, 0.3)
+		ps.corner_radius_top_left = 4
+		ps.corner_radius_top_right = 4
+		ps.corner_radius_bottom_left = 4
+		ps.corner_radius_bottom_right = 4
+		portrait_panel.add_theme_stylebox_override("panel", ps)
 	portrait_panel.custom_minimum_size = Vector2(110, 110)
 
 	portrait_rect = TextureRect.new()
@@ -1240,6 +1711,13 @@ func _create_dialogue_ui() -> void:
 	text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(text_label)
 
+	# Choice panel (JRPG style selection)
+	choice_container = VBoxContainer.new()
+	choice_container.name = "ChoiceContainer"
+	choice_container.add_theme_constant_override("separation", 4)
+	choice_container.visible = false
+	vbox.add_child(choice_container)
+
 	hbox.add_child(vbox)
 	dialogue_panel.add_child(hbox)
 	dialogue_anchor.add_child(dialogue_panel)
@@ -1265,17 +1743,29 @@ func _create_dialogue_ui() -> void:
 func open_dialogue(character_id: String) -> void:
 	if is_dialogue_open:
 		return
-	if not character_data_cache.has(character_id):
-		return
 
-	var c_data = character_data_cache[character_id]
 	current_character_id = character_id
 	player.set_physics_process(false)
 	is_dialogue_open = true
+	is_choosing = false
+	dialogue_lines.clear()
+	dialogue_choices.clear()
+	dialogue_line_index = 0
+	dialogue_farewell = ""
+	choice_container.visible = false
 
-	# Set character-specific border color
-	var border_color = character_colors.get(character_id, Color(0.3, 0.3, 0.4))
-	dialogue_style.border_color = border_color
+	# Determine dialogue content based on character type
+	if character_id == "ai_terminal":
+		_setup_ai_dialogue()
+	else:
+		_setup_politician_dialogue(character_id)
+
+	# Set border color
+	var border_color: Color = character_colors.get(character_id, Color(0.2, 0.7, 0.9))
+	if dialogue_style is StyleBoxFlat:
+		dialogue_style.border_color = border_color
+	elif dialogue_style is StyleBoxTexture:
+		dialogue_style.modulate_color = border_color.lightened(0.5)
 
 	# Set portrait
 	if portrait_paths.has(character_id) and ResourceLoader.exists(portrait_paths[character_id]):
@@ -1284,21 +1774,160 @@ func open_dialogue(character_id: String) -> void:
 		portrait_rect.texture = null
 
 	# Set name
-	name_label.text = str(c_data.get("name", "Unknown"))
+	var c_data: Dictionary = character_data_cache.get(character_id, {})
+	name_label.text = str(c_data.get("name", "C.L.A.U.D.I.A." if character_id == "ai_terminal" else "Unknown"))
 
-	# Get dialogue text
-	var encounters = c_data.get("encounters", {})
-	var voice_line := "..."
-	if encounters.has("1"):
-		voice_line = str(encounters["1"].get("voice_line", "..."))
-
-	# Start typewriter
+	# Start first line
 	continue_label.visible = false
 	continue_blink = 0.0
-	_start_typewriter(voice_line)
+	if dialogue_lines.size() > 0:
+		_start_typewriter(str(dialogue_lines[0]))
+	else:
+		_start_typewriter("...")
 
-	# Animate panel in
 	_animate_dialogue_in()
+
+func _setup_ai_dialogue() -> void:
+	if ai_terminal_data.is_empty():
+		dialogue_lines = ["System offline. Try again later."]
+		return
+
+	var phases: Dictionary = ai_terminal_data.get("phases", {})
+	var phase_key := ""
+
+	if quest_finished:
+		# Already completed — brief message
+		dialogue_lines = ["You already have all signatures. Now go enjoy your passport. Or don't. I'm an AI, not your life coach."]
+		return
+
+	if quest_index < 0:
+		phase_key = "intro"
+		quest_index = 0
+	elif quest_index < quest_order.size():
+		var last_done: String = quest_order[quest_index - 1] if quest_index > 0 else ""
+		if last_done != "" and quest_completed.has(last_done):
+			phase_key = "after_%s" % last_done
+		else:
+			# Player hasn't visited the current target yet
+			var target_name: String = quest_order[quest_index]
+			var display := _character_display_name(target_name)
+			dialogue_lines = ["You haven't talked to %s yet. Go on, I'll wait. It's not like I have feelings." % display]
+			return
+
+	if quest_index >= quest_order.size() and not quest_finished:
+		phase_key = "after_%s" % quest_order[quest_order.size() - 1]
+		quest_finished = true
+
+	if phases.has(phase_key):
+		var phase: Dictionary = phases[phase_key]
+		dialogue_lines = phase.get("lines", ["..."])
+	else:
+		dialogue_lines = ["..."]
+
+func _setup_politician_dialogue(character_id: String) -> void:
+	var c_data: Dictionary = character_data_cache.get(character_id, {})
+	var qd: Dictionary = c_data.get("quest_dialogue", {})
+
+	if quest_completed.has(character_id):
+		dialogue_lines = ["You already have my signature. What more do you want?"]
+		return
+
+	# Check if this is the correct target
+	if quest_index >= 0 and quest_index < quest_order.size():
+		if quest_order[quest_index] != character_id:
+			var correct_name: String = _character_display_name(quest_order[quest_index])
+			dialogue_lines = ["I wasn't expecting visitors. Try %s first." % correct_name]
+			return
+
+	if qd.is_empty():
+		dialogue_lines = ["..."]
+		return
+
+	dialogue_lines = qd.get("lines", ["..."])
+	dialogue_choices = qd.get("choices", [])
+	dialogue_choice_prompt = str(qd.get("choice_prompt", ""))
+
+func _advance_dialogue() -> void:
+	dialogue_line_index += 1
+
+	if dialogue_line_index < dialogue_lines.size():
+		# Show next line
+		continue_label.visible = false
+		_start_typewriter(str(dialogue_lines[dialogue_line_index]))
+	elif dialogue_choices.size() > 0 and not is_choosing:
+		# Show choices
+		_show_choices()
+	else:
+		# Done — mark quest and close
+		_finish_dialogue()
+
+func _show_choices() -> void:
+	is_choosing = true
+	choice_index = 0
+	continue_label.visible = false
+	text_label.text = dialogue_choice_prompt
+
+	# Clear old labels
+	for child in choice_container.get_children():
+		child.queue_free()
+	choice_labels.clear()
+
+	for i in range(dialogue_choices.size()):
+		var choice: Dictionary = dialogue_choices[i]
+		var lbl := Label.new()
+		lbl.text = "  %s" % str(choice.get("label", "..."))
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
+		choice_container.add_child(lbl)
+		choice_labels.append(lbl)
+
+	choice_container.visible = true
+	_update_choice_highlight()
+
+func _update_choice_highlight() -> void:
+	for i in range(choice_labels.size()):
+		var lbl: Label = choice_labels[i]
+		if i == choice_index:
+			lbl.text = "> %s" % str(dialogue_choices[i].get("label", "..."))
+			lbl.add_theme_color_override("font_color", Color(0.95, 0.88, 0.4))
+		else:
+			lbl.text = "  %s" % str(dialogue_choices[i].get("label", "..."))
+			lbl.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
+
+func _select_choice() -> void:
+	if choice_index < 0 or choice_index >= dialogue_choices.size():
+		return
+
+	var choice: Dictionary = dialogue_choices[choice_index]
+	is_choosing = false
+	choice_container.visible = false
+	dialogue_choices.clear()
+
+	# Apply effects
+	var effects: Dictionary = choice.get("effects", {})
+	for key in effects:
+		var meter_key: String = key.to_upper()
+		if meter_values.has(meter_key):
+			update_meter(meter_key, meter_values[meter_key] + int(effects[key]))
+
+	# Show response lines
+	var response: Array = choice.get("response", [])
+	if response.size() > 0:
+		dialogue_lines = response
+		dialogue_line_index = 0
+		continue_label.visible = false
+		_start_typewriter(str(response[0]))
+	else:
+		_finish_dialogue()
+
+func _finish_dialogue() -> void:
+	# Mark quest completion for politicians
+	if current_character_id != "ai_terminal" and not quest_completed.has(current_character_id):
+		if quest_index >= 0 and quest_index < quest_order.size() and quest_order[quest_index] == current_character_id:
+			quest_completed[current_character_id] = true
+			quest_index += 1
+
+	_close_dialogue()
 
 func _start_typewriter(text: String) -> void:
 	typewriter_text = text
@@ -1308,8 +1937,13 @@ func _start_typewriter(text: String) -> void:
 
 func _on_typewriter_tick() -> void:
 	if typewriter_index < typewriter_text.length():
-		text_label.text += typewriter_text[typewriter_index]
+		var ch: String = typewriter_text[typewriter_index]
+		text_label.text += ch
 		typewriter_index += 1
+		# Play bip on visible characters (not spaces)
+		if ch != " " and ch != "." and typewriter_bip and typewriter_index % 2 == 0:
+			typewriter_bip.pitch_scale = randf_range(0.9, 1.2)
+			typewriter_bip.play()
 	else:
 		typewriter_timer.stop()
 		continue_label.visible = true
@@ -1326,6 +1960,8 @@ func _animate_dialogue_in() -> void:
 func _close_dialogue() -> void:
 	typewriter_timer.stop()
 	continue_label.visible = false
+	choice_container.visible = false
+	is_choosing = false
 
 	var start_top = dialogue_anchor.offset_top
 	var tw = create_tween().set_parallel(true)

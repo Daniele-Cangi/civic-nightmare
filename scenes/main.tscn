@@ -1,8 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://c83jmainw"]
+[gd_scene load_steps=6 format=3 uid="uid://c83jmainw"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_play"]
-[ext_resource type="PackedScene" path="res://scenes/npc.tscn" id="3_npc"]
 [ext_resource type="Texture2D" path="res://assets/tiles/world_tiles.png" id="4_tiles"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]
@@ -88,36 +87,6 @@ y_sort_enabled = true
 
 [node name="Player" parent="Entities" instance=ExtResource("2_play")]
 position = Vector2(0, 0)
-
-[node name="NPC_Trump" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(300, -200)
-character_id = "donald_trump"
-character_name = "Donald Trump"
-
-[node name="NPC_Musk" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(-300, -200)
-character_id = "elon_musk"
-character_name = "Elon Musk"
-
-[node name="NPC_VDL" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(500, 100)
-character_id = "ursula_von_der_leyen"
-character_name = "Ursula von der Leyen"
-
-[node name="NPC_Lagarde" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(500, 300)
-character_id = "christine_lagarde"
-character_name = "Christine Lagarde"
-
-[node name="NPC_Putin" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(-500, 100)
-character_id = "vladimir_putin"
-character_name = "Vladimir Putin"
-
-[node name="NPC_Macron" parent="Entities" instance=ExtResource("3_npc")]
-position = Vector2(-500, 300)
-character_id = "emmanuel_macron"
-character_name = "Emmanuel Macron"
 
 [node name="UI" type="CanvasLayer" parent="."]
 
