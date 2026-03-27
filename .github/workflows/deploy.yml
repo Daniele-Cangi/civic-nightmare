@@ -19,17 +19,20 @@ jobs:
         with:
           lfs: true
 
-      - name: "Setup Godot"
-        uses: chickensoft-games/setup-godot@v2
-        with:
-          # Using the version the user has
-          version: 4.6.1
-          use_dotnet: false
+      - name: "Download Godot 4.3 Standard"
+        run: |
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip Godot_v4.3-stable_linux.x86_64.zip
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          unzip Godot_v4.3-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/4.3.stable/
+          rm -rf templates Godot_v4.3-stable_export_templates.tpz
 
       - name: "Export Web"
         run: |
           mkdir -pv build/web
-          godot --headless --export-release "Web" build/web/index.html
+          ./Godot_v4.3-stable_linux.x86_64 --headless --export-release "Web" build/web/index.html
 
       - name: "Move coi-serviceworker"
         run: |
