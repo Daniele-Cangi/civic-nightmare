@@ -36,7 +36,7 @@ var typewriter_timer: Timer
 var typewriter_text: String = ""
 var typewriter_index: int = 0
 var continue_blink: float = 0.0
-var dialogue_rest_top: float = -195.0
+var dialogue_rest_top: float = -210.0
 var current_character_id: String = ""
 var dialogue_lines: Array = []
 var dialogue_line_index: int = 0
@@ -84,12 +84,13 @@ const LAYER_GROUND := 0
 const LAYER_DECOR := 1
 const LAYER_STRUCT := 2
 
-const WORLD_MIN_X := -60
-const WORLD_MAX_X := 60
-const WORLD_MIN_Y := -50
-const WORLD_MAX_Y := 50
+const WORLD_MIN_X := -34
+const WORLD_MAX_X := 34
+const WORLD_MIN_Y := -32
+const WORLD_MAX_Y := 32
 const BUILDING_CLEARANCE := 10
 const PATH_HALF_WIDTH := 1
+const BORDER_WIDTH := 2
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -139,8 +140,17 @@ const TILE_GLOBE = Vector2i(7, 6)
 
 # --- Pack tile coordinates (when _pack_ready) ---
 const NT_BUSH := Vector2i(8, 5)
+# Field terrain biome tiles
+const FD_DIRT := Vector2i(1, 0)
+const FD_DIRT2 := Vector2i(3, 0)
+const FD_LGREEN := Vector2i(1, 2)
+const FD_LGREEN2 := Vector2i(3, 2)
 const FD_GRASS := Vector2i(1, 4)
 const FD_GRASS2 := Vector2i(3, 4)
+const FD_PINK := Vector2i(1, 6)
+const FD_PINK2 := Vector2i(3, 6)
+const FD_SNOW := Vector2i(1, 8)
+const FD_SNOW2 := Vector2i(3, 8)
 const WT_WATER := Vector2i(3, 2)
 const FL_STONE := Vector2i(2, 9)
 const FL_WOOD := Vector2i(2, 4)
@@ -170,17 +180,29 @@ const FL_CORNER_TR := Vector2i(4, 0)
 const FL_CORNER_BL := Vector2i(2, 2)
 const FL_CORNER_BR := Vector2i(4, 2)
 
-# House templates removed — all buildings now use unique procedural shapes
+# --- Biome system: each building has a climate zone ---
+# Biome IDs
+enum Biome { DEFAULT, AMERICAN, MARTIAN, EUROPEAN, SIBERIAN, FINANCIAL, FRENCH }
 
-var tree_variants: Array = [
-	# Row 0-1: Confirmed round canopy trees (green, snow, pink)
+# Tree variants per biome (from nature_32.png)
+var trees_green: Array = [
 	{"size": Vector2i(2, 2), "tiles": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)], "solid_offset": Vector2i(0, 1)},
-	{"size": Vector2i(2, 2), "tiles": [Vector2i(4, 0), Vector2i(5, 0), Vector2i(4, 1), Vector2i(5, 1)], "solid_offset": Vector2i(0, 1)},
-	{"size": Vector2i(2, 2), "tiles": [Vector2i(6, 0), Vector2i(7, 0), Vector2i(6, 1), Vector2i(7, 1)], "solid_offset": Vector2i(0, 1)},
 	{"size": Vector2i(2, 2), "tiles": [Vector2i(8, 0), Vector2i(9, 0), Vector2i(8, 1), Vector2i(9, 1)], "solid_offset": Vector2i(0, 1)},
 	{"size": Vector2i(2, 2), "tiles": [Vector2i(10, 0), Vector2i(11, 0), Vector2i(10, 1), Vector2i(11, 1)], "solid_offset": Vector2i(0, 1)},
 	{"size": Vector2i(2, 2), "tiles": [Vector2i(12, 0), Vector2i(13, 0), Vector2i(12, 1), Vector2i(13, 1)], "solid_offset": Vector2i(0, 1)},
 ]
+var trees_snow: Array = [
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(4, 0), Vector2i(5, 0), Vector2i(4, 1), Vector2i(5, 1)], "solid_offset": Vector2i(0, 1)},
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(4, 4), Vector2i(5, 4), Vector2i(4, 5), Vector2i(5, 5)], "solid_offset": Vector2i(0, 1)},
+]
+var trees_pink: Array = [
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(6, 0), Vector2i(7, 0), Vector2i(6, 1), Vector2i(7, 1)], "solid_offset": Vector2i(0, 1)},
+]
+var trees_dead: Array = [
+	{"size": Vector2i(2, 2), "tiles": [Vector2i(0, 4), Vector2i(1, 4), Vector2i(0, 5), Vector2i(1, 5)], "solid_offset": Vector2i(0, 1)},
+]
+
+# Decorations per biome
 var flower_tiles: Array = [
 	Vector2i(2, 11), Vector2i(3, 11), Vector2i(12, 11), Vector2i(13, 11), Vector2i(13, 12)
 ]
@@ -192,6 +214,15 @@ var rock_tiles: Array = [
 	Vector2i(4, 12), Vector2i(6, 12), Vector2i(7, 12), Vector2i(9, 12),
 	Vector2i(11, 12), Vector2i(12, 12)
 ]
+# Small plants, stumps, cacti from nature_32
+var stump_tiles: Array = [
+	Vector2i(0, 7), Vector2i(1, 7), Vector2i(2, 7)
+]
+var cactus_tiles: Array = [
+	Vector2i(8, 7), Vector2i(9, 7)
+]
+
+var biome_map: Dictionary = {}  # Vector2i -> Biome
 
 var building_specs: Array = [
 	{
@@ -650,10 +681,41 @@ func _mark_path_rect(top_left: Vector2i, bottom_right: Vector2i) -> void:
 func _tile_roll(x: int, y: int) -> int:
 	return posmod(x * 92821 + y * 68917 + 7919, 1000)
 
+func _build_biome_map() -> void:
+	biome_map.clear()
+	var biome_radius := BUILDING_CLEARANCE + 4
+	for spec in building_specs:
+		var center: Vector2i = spec["center"]
+		var biome: Biome = Biome.DEFAULT
+		match spec["key"]:
+			"oval_office": biome = Biome.AMERICAN
+			"spaceship": biome = Biome.MARTIAN
+			"eu_palace": biome = Biome.EUROPEAN
+			"kremlin": biome = Biome.SIBERIAN
+			"vault": biome = Biome.FINANCIAL
+			"elysee": biome = Biome.FRENCH
+		for x in range(center.x - biome_radius, center.x + biome_radius + 1):
+			for y in range(center.y - biome_radius, center.y + biome_radius + 1):
+				var dist_sq: int = (x - center.x) * (x - center.x) + (y - center.y) * (y - center.y)
+				if dist_sq <= biome_radius * biome_radius:
+					biome_map[Vector2i(x, y)] = biome
+
 func _grass_tile_for(pos: Vector2i) -> Vector2i:
 	if not _pack_ready:
 		return TILE_GRASS
-	return FD_GRASS2 if _tile_roll(pos.x, pos.y) < 180 else FD_GRASS
+	var biome: Biome = biome_map.get(pos, Biome.DEFAULT) as Biome
+	var varied: bool = _tile_roll(pos.x, pos.y) < 180
+	match biome:
+		Biome.SIBERIAN:
+			return FD_SNOW2 if varied else FD_SNOW
+		Biome.FRENCH:
+			return FD_PINK2 if varied else FD_PINK
+		Biome.MARTIAN:
+			return FD_DIRT2 if varied else FD_DIRT
+		Biome.EUROPEAN:
+			return FD_LGREEN2 if varied else FD_LGREEN
+		_:
+			return FD_GRASS2 if varied else FD_GRASS
 
 func _path_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
 	if n and s and w and e: return FL_CENTER
@@ -698,16 +760,19 @@ func _stamp_multitile(layer: int, top_left: Vector2i, source_id: int, size: Vect
 
 func _generate_world_layout() -> void:
 	_rebuild_path_cache()
+	_build_biome_map()
 
 	var grass_source := SRC_FIELD if _pack_ready else SRC_PROC
 	var water_source := SRC_WATER if _pack_ready else SRC_PROC
 	var path_source := SRC_FLOOR if _pack_ready else SRC_PROC
 
+	# Paint ground with biome-aware tiles
 	for x in range(WORLD_MIN_X, WORLD_MAX_X):
 		for y in range(WORLD_MIN_Y, WORLD_MAX_Y):
 			var pos := Vector2i(x, y)
 			ground_map.set_cell(LAYER_GROUND, pos, grass_source, _grass_tile_for(pos))
 
+	# Paint paths
 	for cell in _path_cells.keys():
 		var path_pos: Vector2i = cell
 		if _pack_ready:
@@ -719,28 +784,119 @@ func _generate_world_layout() -> void:
 		else:
 			ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
 
+	# Build structures and decorations
 	for spec in building_specs:
 		_build_structure(spec)
 		_decorate_compound(spec)
 		_place_landmark(spec)
 
-	for x in range(WORLD_MIN_X + 4, WORLD_MAX_X - 4):
-		for y in range(WORLD_MIN_Y + 4, WORLD_MAX_Y - 4):
+	# Place nature: biome-aware trees, bushes, flowers, rocks
+	var inner_min_x := WORLD_MIN_X + BORDER_WIDTH + 1
+	var inner_max_x := WORLD_MAX_X - BORDER_WIDTH - 1
+	var inner_min_y := WORLD_MIN_Y + BORDER_WIDTH + 1
+	var inner_max_y := WORLD_MAX_Y - BORDER_WIDTH - 1
+
+	for x in range(inner_min_x, inner_max_x):
+		for y in range(inner_min_y, inner_max_y):
 			if _is_in_building_zone(x, y) or _is_on_path(x, y):
 				continue
 
 			var roll := _tile_roll(x, y)
 			var pos := Vector2i(x, y)
-			if roll < 2:
-				_paint_lake(pos, water_source, WT_WATER if _pack_ready else TILE_WATER)
-			elif roll < 18:
-				_place_tree(pos)
-			elif roll < 38:
-				_place_bush(pos)
-			elif roll < 52:
-				_place_flower(pos)
-			elif roll < 62:
-				_place_rock(pos)
+			var biome: Biome = biome_map.get(pos, Biome.DEFAULT) as Biome
+
+			# Biome-specific decoration rates
+			match biome:
+				Biome.MARTIAN:
+					# Arid: no lakes, few trees, more rocks and cacti
+					if roll < 10:
+						_place_rock(pos)
+					elif roll < 16:
+						_place_cactus(pos)
+					elif roll < 22:
+						_place_tree(pos)
+				Biome.SIBERIAN:
+					# Snowy: fewer flowers, more trees
+					if roll < 2:
+						_paint_lake(pos, water_source, WT_WATER if _pack_ready else TILE_WATER)
+					elif roll < 24:
+						_place_tree(pos)
+					elif roll < 34:
+						_place_rock(pos)
+				Biome.FRENCH:
+					# Garden: more flowers, pink trees
+					if roll < 14:
+						_place_tree(pos)
+					elif roll < 36:
+						_place_flower(pos)
+					elif roll < 46:
+						_place_bush(pos)
+				Biome.EUROPEAN:
+					# Neat garden: balanced flowers and bushes
+					if roll < 12:
+						_place_tree(pos)
+					elif roll < 28:
+						_place_flower(pos)
+					elif roll < 40:
+						_place_bush(pos)
+				Biome.FINANCIAL:
+					# Sparse, organized: few decorations
+					if roll < 6:
+						_place_tree(pos)
+					elif roll < 12:
+						_place_rock(pos)
+					elif roll < 18:
+						_place_bush(pos)
+				_:
+					# Default / American: balanced nature
+					if roll < 2:
+						_paint_lake(pos, water_source, WT_WATER if _pack_ready else TILE_WATER)
+					elif roll < 18:
+						_place_tree(pos)
+					elif roll < 34:
+						_place_bush(pos)
+					elif roll < 46:
+						_place_flower(pos)
+					elif roll < 54:
+						_place_rock(pos)
+
+	# Dense tree border around the world edge
+	_build_world_border()
+
+func _place_cactus(pos: Vector2i) -> void:
+	if not _pack_ready or not _can_place_decoration(pos, Vector2i(1, 1)):
+		return
+	var atlas: Vector2i = cactus_tiles[_tile_roll(pos.x + 7, pos.y - 3) % cactus_tiles.size()]
+	ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, atlas)
+
+func _build_world_border() -> void:
+	# Fill border ring with dense trees (impassable)
+	for x in range(WORLD_MIN_X, WORLD_MAX_X):
+		for y in range(WORLD_MIN_Y, WORLD_MAX_Y):
+			var on_border: bool = (
+				x < WORLD_MIN_X + BORDER_WIDTH
+				or x >= WORLD_MAX_X - BORDER_WIDTH
+				or y < WORLD_MIN_Y + BORDER_WIDTH
+				or y >= WORLD_MAX_Y - BORDER_WIDTH
+			)
+			if not on_border:
+				continue
+			var pos := Vector2i(x, y)
+			if _is_on_path(pos.x, pos.y):
+				continue
+			# Place a solid tree tile on every border cell
+			if _pack_ready:
+				# Alternate between dense bush and tree trunk for a wall look
+				var roll := _tile_roll(x, y)
+				if roll % 3 == 0:
+					ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, NT_BUSH)
+				else:
+					# Use bottom-half of a green tree (trunk area) for density
+					var trunk_tiles: Array = [Vector2i(0, 1), Vector2i(1, 1), Vector2i(8, 1), Vector2i(9, 1)]
+					ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, trunk_tiles[roll % trunk_tiles.size()])
+			else:
+				ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_BUSH)
+			_create_solid_wall(x, y)
 
 func _paint_lake(center: Vector2i, src: int = SRC_PROC, coords: Vector2i = TILE_WATER) -> void:
 	var lake_cells: Array[Vector2i] = []
@@ -783,11 +939,21 @@ func _water_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
 	if n and not s and w and not e: return WT_CORNER_BR
 	return WT_CENTER
 
+func _trees_for_biome(biome: Biome) -> Array:
+	match biome:
+		Biome.SIBERIAN: return trees_snow
+		Biome.FRENCH: return trees_pink
+		Biome.MARTIAN: return trees_dead
+		_: return trees_green
+
 func _place_tree(pos: Vector2i) -> void:
+	var biome: Biome = biome_map.get(pos, Biome.DEFAULT) as Biome
 	if _pack_ready:
-		# Use a different hash from the main roll to avoid repetition
-		var variant_idx := posmod(pos.x * 48271 + pos.y * 91831 + 37139, tree_variants.size())
-		var variant: Dictionary = tree_variants[variant_idx]
+		var variants: Array = _trees_for_biome(biome)
+		if variants.is_empty():
+			return
+		var variant_idx := posmod(pos.x * 48271 + pos.y * 91831 + 37139, variants.size())
+		var variant: Dictionary = variants[variant_idx]
 		var size: Vector2i = variant["size"]
 		if not _can_place_decoration(pos, size):
 			return
@@ -802,54 +968,41 @@ func _place_tree(pos: Vector2i) -> void:
 		_create_solid_wall(pos.x, pos.y + 1)
 
 func _place_landmark(spec: Dictionary) -> void:
-	var cid = spec["npc"]
+	var cid: String = str(spec["npc"])
 	if not landmark_sprite_paths.has(cid):
 		return
-		
-	var path = landmark_sprite_paths[cid]
+
+	var path: String = landmark_sprite_paths[cid]
 	if not ResourceLoader.exists(path):
 		return
-		
+
+	var tex = load(path) as Texture2D
+	if not tex:
+		return
+
 	var sprite = Sprite2D.new()
-	sprite.texture = load(path)
-	
-	# Center on the building
-	var pos = _tile_to_body_position(spec["center"])
-	sprite.position = pos
-	
-	# Landmarks sit ON THE ROOF. 
-	# We adjust the offset based on the specific house height to avoid floating.
-	# We also add horizontal offsets to compensate for asymmetrical AI-generated textures.
-	var offset_y := -155.0
-	var offset_x := 0.0
-	
-	match cid:
-		"elon_musk": 
-			offset_y = -95.0
-			offset_x = 0.0
-		"donald_trump":
-			offset_y = -135.0
-			offset_x = -12.0 # Trump Tower is often shifted in AI gen
-		"emmanuel_macron": 
-			offset_y = -135.0
-			offset_x = 0.0
-		"vladimir_putin":
-			offset_y = -160.0
-			offset_x = -24.0 # Compensation for tank barrel weight
-		"christine_lagarde":
-			offset_y = -155.0
-			offset_x = 8.0 # Vault door alignment
-		"ursula_von_der_leyen":
-			offset_y = -155.0
-			offset_x = 0.0
-	
-	sprite.offset = Vector2(offset_x, offset_y)
-	sprite.z_index = 5 
-	
+	sprite.texture = tex
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	# Position: centered on the building's center tile, offset upward to sit on the roof
+	var center: Vector2i = spec["center"]
+	sprite.position = _tile_to_body_position(center)
+
+	# Auto-center: the sprite is centered by default (Sprite2D.centered = true)
+	# We just offset it upward so it sits above the roof, scaled to fit the building
+	var tex_h: float = tex.get_height()
+	# Place bottom of sprite at the building center (on the roof)
+	sprite.offset = Vector2(0, -tex_h * 0.5)
+
+	# Scale landmark to fit roughly 4 tiles wide (128px) max
+	var max_width := 128.0
+	var tex_w: float = tex.get_width()
+	if tex_w > max_width:
+		var s: float = max_width / tex_w
+		sprite.scale = Vector2(s, s)
+
+	sprite.z_index = 5
 	entities_layer.add_child(sprite)
-	
-	# We don't need extra collision anymore as the landmark is ABOVE the house walls
-	# which already have collision.
 
 func _place_bush(pos: Vector2i) -> void:
 	if not _can_place_decoration(pos, Vector2i(1, 1)):
@@ -1620,10 +1773,10 @@ func _create_dialogue_ui() -> void:
 	dialogue_anchor.name = "DialogueAnchor"
 	dialogue_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dialogue_anchor.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	dialogue_anchor.offset_left = -330.0
-	dialogue_anchor.offset_right = 330.0
-	dialogue_anchor.offset_top = dialogue_rest_top
-	dialogue_anchor.offset_bottom = -15.0
+	dialogue_anchor.offset_left = -340.0
+	dialogue_anchor.offset_right = 340.0
+	dialogue_anchor.offset_top = -210.0
+	dialogue_anchor.offset_bottom = -10.0
 	dialogue_anchor.visible = false
 
 	# Panel with stylized background
@@ -1724,11 +1877,14 @@ func _create_dialogue_ui() -> void:
 	vbox.add_child(sep)
 
 	text_label = RichTextLabel.new()
-	text_label.add_theme_font_size_override("normal_font_size", 16)
+	text_label.add_theme_font_size_override("normal_font_size", 15)
 	text_label.add_theme_color_override("default_color", Color(0.88, 0.88, 0.92))
 	text_label.bbcode_enabled = false
-	text_label.fit_content = true
+	text_label.fit_content = false
+	text_label.scroll_active = false
+	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	text_label.clip_contents = true
 	vbox.add_child(text_label)
 
 	# Choice panel (JRPG style selection)
