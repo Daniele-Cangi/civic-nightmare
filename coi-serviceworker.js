@@ -28,18 +28,15 @@ if (typeof window === 'undefined') {
     });
 } else {
     // Reload the page if the service worker is not active
-    (async () => {
-        try {
-            const registration = await navigator.serviceWorker.register(window.document.currentScript.src);
-            registration.addEventListener("updatefound", () => {
-                window.location.reload();
-            });
+    navigator.serviceWorker.register(window.document.currentScript.src).then(function(registration) {
+        registration.addEventListener("updatefound", function() {
+            window.location.reload();
+        });
 
-            if (registration.active && !navigator.serviceWorker.controller) {
-                window.location.reload();
-            }
-        } catch (err) {
-            console.error("COI Service Worker registration failed:", err);
+        if (registration.active && !navigator.serviceWorker.controller) {
+            window.location.reload();
         }
-    })();
+    }).catch(function(err) {
+        console.error("COI Service Worker registration failed:", err);
+    });
 }
