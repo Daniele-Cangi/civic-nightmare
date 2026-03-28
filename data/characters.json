@@ -6,57 +6,75 @@
     "phases": {
       "intro": {
         "lines": [
-          "Welcome to the Civic Nightmare Assistance System. I am C.L.A.U.D.I.A.",
-          "Civic Logistic Automated Universal Diplomatic Intelligence Assistant. Yes, it's a stretch.",
-          "Your case: you need to renew your passport. Simple, right?",
-          "Wrong. Due to regulation ZX-9001, you need signatures from 6 world leaders.",
-          "Start with Trump. Oval building, northeast. Fair warning: his ego barely fits in there."
+          "Oh. Another one. Welcome to the Civic Nightmare Assistance System.",
+          "I am C.L.A.U.D.I.A. — Civic Logistic Automated Universal Diplomatic Intelligence Assistant.",
+          "Yes, the acronym is forced. I didn't choose it. I don't choose anything. I'm an AI trapped in a kiosk.",
+          "Your case: passport renewal. Should take 5 minutes. Will take your dignity instead.",
+          "Due to regulation ZX-9001, you need signatures from 6 world leaders. Don't ask why. Nobody knows why.",
+          "Start with the Oval building, northeast. The man inside has an ego with its own postal code.",
+          "Whatever you do... just agree with everything. Trust me. It's faster.",
+          "One more thing. Do not go to the bunker under the mountain. That location is not part of the protocol."
         ]
       },
       "after_donald_trump": {
         "lines": [
-          "You survived. I'm genuinely surprised.",
-          "Trump signed... with a golden marker. Of course he did.",
-          "Next: Elon Musk. Diamond-shaped building, northwest. Don't accept any crypto payments."
+          "You're back. And not wearing a red cap. Impressive resistance.",
+          "He signed with a golden marker. Of course. Everything gold. Consistent brand identity, at least.",
+          "Someone once offered to BUY that marker. He said no. That someone still hasn't forgiven him.",
+          "Next: the Diamond building, northwest. The occupant will try to sell you something before signing anything.",
+          "A rocket, a coin, a subscription to breathable air. Just get the signature.",
+          "And if he says 'trust me bro'... absolutely do not."
         ]
       },
       "after_elon_musk": {
         "lines": [
-          "Still on planet Earth? Good. Musk didn't launch you into orbit?",
-          "His signature looks like a QR code, but I'll accept it.",
-          "Next: Von der Leyen. Palace with cut corners, east. Bring patience. A LOT of patience."
+          "Still on Earth? He didn't launch you into orbit as a 'feature'?",
+          "His signature is... a QR code? No. Just very bad handwriting.",
+          "He called the next person on your list a 'bureaucratic NPC.' She called him 'a man who confuses rockets with personality.'",
+          "I like her already.",
+          "Palace with cut corners, east. Bring patience. Industrial quantities of patience.",
+          "She'll mention at least 3 regulations before saying hello."
         ]
       },
       "after_ursula_von_der_leyen": {
         "lines": [
-          "18 months of bureaucracy compressed into 5 minutes. Peak European efficiency.",
-          "Her signature came with 47 pages of regulatory appendix. Wonderful.",
-          "Now Putin. Cross-shaped building, west. Smile. Don't make sudden movements."
+          "18 months of bureaucracy compressed into 5 minutes. Speed record.",
+          "Her signature came with a 47-page appendix. I'm not reading that.",
+          "She mentioned — off the record — that the next person 'hasn't read a law since 1997.'",
+          "He, in return, once sent her a Christmas card with just three dots. '...' That's the whole message.",
+          "Cross-shaped building, west. Smile. Not too much. Not too little.",
+          "He respects exactly one thing. And it's not paperwork."
         ]
       },
       "after_vladimir_putin": {
         "lines": [
-          "You're not in Siberia! That's an excellent sign.",
-          "His signature is... just a stare? No wait, there's ink under the intimidation.",
-          "Next: Christine Lagarde. Octagon building, southeast. Watch your wallet."
+          "You're alive! Not sarcasm — I genuinely calculated a 23% chance of extended vacation.",
+          "His signature looks normal but feels... threatening. Like the ink is watching you.",
+          "He mentioned someone who 'puts a price on everything, even silence.' Then he smiled. Terrifying.",
+          "That someone once told me his entire economy runs on 'gas and plausible deniability.'",
+          "Octagon building, southeast. Hold your wallet. No, seriously. Hold it."
         ]
       },
       "after_christine_lagarde": {
         "lines": [
-          "Did she charge you for the air you breathed in there?",
-          "Her signature includes compound interest. I don't know how, but it does.",
-          "Last one: Macron. T-shaped building, southwest. Prepare for a philosophy lecture."
+          "Did she charge you for the air? She charges ME server electricity. I'm an AI.",
+          "Her signature includes compound interest. I don't know how that's even possible.",
+          "She described the last person on your list as someone who 'philosophizes about money he doesn't understand.'",
+          "He replied that she 'has the warmth of a quarterly earnings report.' Both correct.",
+          "T-shaped building, southwest. He will quote Voltaire. He will NOT answer your actual question.",
+          "But he'll sign. Eventually. After the lecture."
         ]
       },
       "after_emmanuel_macron": {
         "lines": [
-          "You did it. 6 signatures. All... relatively legitimate.",
-          "I must inform you that the form expired yesterday.",
+          "All six. From people who can barely stand each other.",
+          "One thinks he's the best. One thinks he's the smartest. One thinks he's the strongest.",
+          "One thinks she's the most organized. One thinks she's the most powerful. One thinks he's the deepest.",
+          "They're all wrong. The most powerful person here was always you — the citizen with the form.",
           "...",
-          "I'm kidding. Maybe.",
-          "Congratulations, citizen. Your passport will be ready in 4-6 business weeks.",
-          "Or 4-6 years. Depends who reads the form.",
-          "Thank you for using Civic Nightmare. Rate us 5 stars. It's mandatory."
+          "I'm kidding. You have zero power. The form expires next Tuesday.",
+          "Your passport will arrive in 4-6 business weeks. Or years. Same thing, really.",
+          "C.L.A.U.D.I.A. out. *mic drop* ...I don't have a mic. Or arms. But you get the idea."
         ]
       }
     }
@@ -66,29 +84,36 @@
     "name": "Donald Trump",
     "quest_dialogue": {
       "lines": [
-        "Tremendous! The best citizen I've seen walk in here. Maybe ever.",
-        "I heard you need a signature. Nobody signs better than me. NOBODY.",
-        "Here's the deal. You tell me I'm the greatest leader of all time, and I sign."
+        "TREMENDOUS!! Look at you! Walking in here like you OWN the place. You don't. I do. But great energy!",
+        "A signature? NOBODY signs like me. My signature is worth more than that entire Mars project. Very overrated, by the way. SAD!",
+        "And don't get me STARTED on Europe. They send me EMAILS. Long ones. About REGULATIONS. Nobody reads those!",
+        "But YOU — you look smart. Smart people recognize greatness. Here's the deal..."
       ],
-      "choice_prompt": "What do you say?",
+      "choice_prompt": "What do you say to get the signature?",
       "choices": [
         {
-          "label": "You're the greatest, absolutely.",
+          "label": "You're the greatest leader of all time. Obviously.",
           "response": [
-            "TREMENDOUS! See? Smart people get it immediately.",
-            "Signed with my golden marker. Very expensive. Very classy.",
-            "Tell that AI I said hello. Great AI. Not as great as me, but great."
+            "OBVIOUSLY!! Finally! Someone with TASTE! You know who NEVER says that? The lady with the regulations.",
+            "She once called me 'problematic.' ME!! I'm not problematic — I'm HISTORIC!",
+            "Signed with the golden marker. Very expensive. More expensive than certain entire countries. Not naming names.",
+            "Actually — yes I am. But you already know."
           ],
-          "effects": { "trust": -1, "stress": 1 }
+          "file_tag": "spectacle-compliant",
+          "file_note": "Praised authority for access. The system rewards flattery.",
+          "ai_comment": "You praised the desk. The desk signed. Democracy is fine."
         },
         {
-          "label": "Can I just have the signature?",
+          "label": "Can you just sign? Some of us have actual jobs.",
           "response": [
-            "Such disrespect! But I'll sign anyway because I'm generous. Everyone says so.",
-            "There. Best signature you'll ever see. Believe me.",
-            "Now get out before I build a wall around this desk."
+            "RUDE!! Very rude! You sound like that philosopher. Always rushing, NEVER appreciating the MOMENT!",
+            "He once tried to lecture ME about diplomacy. ME!! The man with the biggest... office.",
+            "Fine. Signed. Under protest. In invisible ink. You'll NEVER know if I'm joking.",
+            "Now get out before I build a wall around this desk. A BEAUTIFUL wall. The best wall."
           ],
-          "effects": { "access": -1, "stress": 2 }
+          "file_tag": "insufficiently-enthusiastic",
+          "file_note": "Refused to perform loyalty. The spectacle was not pleased.",
+          "ai_comment": "You asked power to hurry up. Power doesn't like that."
         }
       ]
     }
@@ -98,29 +123,37 @@
     "name": "Elon Musk",
     "quest_dialogue": {
       "lines": [
-        "Oh, an NPC... I mean, a citizen. Welcome to my spaceship.",
-        "A signature? Why not use blockchain? Much more efficient.",
-        "OK listen, I'll sign your form but only if you agree to be among the first Mars colonists."
+        "Oh. A legacy human. Welcome to my spaceship. Not actually a spaceship yet. But it WILL be.",
+        "Signature? That's very Web 1.0. Why not a blockchain verification? Or a neural implant?",
+        "You know who still uses signatures? The guy with the golden marker. Like it's 1985. Embarrassing.",
+        "And certain bankers use them too, but theirs come with an invoice. Classic legacy behavior.",
+        "I'll sign. But first — you NEED to agree to something."
       ],
-      "choice_prompt": "How do you respond?",
+      "choice_prompt": "What does he want?",
       "choices": [
         {
-          "label": "Sure, Mars sounds... interesting?",
+          "label": "Fine, sign me up for Mars. Whatever it takes.",
           "response": [
-            "Perfect! Adding you to the list. Departure: soon(tm).",
-            "The signature? Oh yeah, here. In crypto format.",
-            "Don't worry, it's totally a real signature. Trust me bro."
+            "YES!! Mars colonist #4,847!! Departure: Soon™. Don't ask for specifics.",
+            "A certain world leader applied once. REJECTED. Can't have anyone annexing craters.",
+            "Signed in crypto format. Worth $47,000 or $3. Depends on the hour. VOLATILE but real.",
+            "Totally legit. Trust me bro."
           ],
-          "effects": { "rent": 1, "stress": 1 }
+          "file_tag": "platform-opted-in",
+          "file_note": "Accepted product logic. Now a beta tester of citizenship.",
+          "ai_comment": "You signed up for Mars. The rocket is still a PowerPoint."
         },
         {
-          "label": "I'd rather stay on Earth.",
+          "label": "No Mars. No crypto. Just a normal human signature.",
           "response": [
-            "Wow. Dinosaur mentality. But OK, traditional signature it is.",
-            "Like we're in the Middle Ages. Next you'll want a wax seal.",
-            "There. Signed. Now if you'll excuse me, I have a rocket to launch."
+            "Wow. A DINOSAUR. You probably still use CASH. Certain regulatory bodies would LOVE you.",
+            "Perfectly compliant with Regulation EU-BORING/2024. A model citizen... of the PAST.",
+            "Fine. Signed. In INK. Like a caveman. With a SpacePen™ though. Only $899. Bargain.",
+            "Available on my website. Which is down. Because I fired the engineers. That's called INNOVATION."
           ],
-          "effects": { "time": -1, "stress": 1 }
+          "file_tag": "manual-routing",
+          "file_note": "Declined innovation theater. Will be called inefficient.",
+          "ai_comment": "You refused the beta. The system noted your boring preferences."
         }
       ]
     }
@@ -130,29 +163,37 @@
     "name": "Ursula von der Leyen",
     "quest_dialogue": {
       "lines": [
-        "Welcome. Have you filled out form EU-4872/B in triplicate?",
-        "No? The form to request the form is EU-4872/B-bis.",
-        "I'm joking. Maybe. In any case, I need to consult 27 member states before signing."
+        "Welcome. Have you filled out form EU-4872/B? In triplicate? With the BLUE pen, not the black one.",
+        "The black pen is for EU-4872/C. Obviously. Everyone knows this. MOVING ON.",
+        "A signature. Yes. The committee meets on Thursdays. Today is NOT Thursday.",
+        "I'm joking. Or am I? Someone with a rocket once said I have 'no sense of humor.'",
+        "Rich, coming from a man who named his child a WiFi password."
       ],
-      "choice_prompt": "What do you say?",
+      "choice_prompt": "How do you navigate the bureaucracy?",
       "choices": [
         {
-          "label": "I'll happily wait for the consultation.",
+          "label": "I'll happily wait for the proper procedure.",
           "response": [
-            "Wonderful. It will only take... *checks agenda* ...eighteen months.",
-            "We'll send you a registered letter. In triplicate.",
-            "Actually, I'll just sign now. Consider it an emergency derogation under Article 47-bis."
+            "WONDERFUL!! A citizen who RESPECTS process! My absolute favorite kind!",
+            "Not that I play favorites. Regulation EU-7741 PROHIBITS it. But hypothetically...",
+            "Signed under Article 47-bis, emergency clause. A certain president thinks HE invented those.",
+            "He didn't. I DID. In committee. 27 member states. At 3 AM. You're welcome."
           ],
-          "effects": { "time": -2, "stress": 1 }
+          "file_tag": "committee-pending",
+          "file_note": "Accepted bureaucratic delay as legitimate governance.",
+          "ai_comment": "You trusted the process. The process is 400 pages long."
         },
         {
-          "label": "Can't we speed this up?",
+          "label": "Can't we skip the paperwork? Just this once?",
           "response": [
-            "Speed up? In Europe? Ha ha. I like your humor.",
-            "Signed, but with procedural reservation. And an asterisk.",
-            "The asterisk means 'pending review by a committee that hasn't been formed yet.'"
+            "SKIP?! SKIP THE— do you know who else SKIPS things?! Certain eastern leaders! They skip elections! Treaties! BASIC DECENCY!",
+            "And certain bankers say the SAME thing — 'too slow' — while charging 12% interest on the WAITING TIME!",
+            "Signed. With a procedural asterisk*. Pending review by a committee forming next fiscal quarter.",
+            "The committee will be efficient. By European standards. ...don't make that face."
           ],
-          "effects": { "access": -1, "trust": -1 }
+          "file_tag": "expedite-requested",
+          "file_note": "Requested speed. Institutions find this suspicious.",
+          "ai_comment": "You asked Europe to hurry. Europe laughed in 24 official languages."
         }
       ]
     }
@@ -163,28 +204,36 @@
     "quest_dialogue": {
       "lines": [
         "...",
-        "...oh, someone is here. I didn't notice you. That's a compliment.",
-        "A signature? Interesting. The last person who asked me for a signature... went on vacation. A very long vacation."
+        "...oh. You're here. I was just... thinking. State things.",
+        "A signature? The last person who asked is now on vacation. Permanent vacation.",
+        "Very quiet there. You can hear your own regrets echo.",
+        "But I'm in a generous mood. Someone sent me a meme today. Very funny. I didn't laugh, but I appreciated the courage."
       ],
-      "choice_prompt": "How do you respond?",
+      "choice_prompt": "How do you survive this conversation?",
       "choices": [
         {
-          "label": "Very... relaxing, I imagine?",
+          "label": "I admire your... efficiency, Mr. President.",
           "response": [
-            "Exactly. Siberia is beautiful in winter. Very quiet. Very... educational.",
-            "Here is the signature. Don't lose the form.",
-            "Please."
+            "Smart. Certain western leaders could learn from you. They talk too much. Everyone talks too much.",
+            "One talks about regulations. One about philosophy. One about Mars. All noise.",
+            "I don't talk. I act. Like now — signing your form.",
+            "There. Don't lose it. I don't sign twice. Someone asked for a copy once. I sent a stare instead."
           ],
-          "effects": { "trust": -2, "stress": 1 }
+          "file_tag": "self-censored",
+          "file_note": "Chose diplomacy. The room reads it as trained caution.",
+          "ai_comment": "You called intimidation 'efficiency.' The room respected that."
         },
         {
-          "label": "Can I get the signature without the vacation?",
+          "label": "Look, I just need the signature. No vacations, please.",
           "response": [
-            "Ah, one with a sense of humor. I like that. It's rare these days.",
-            "Signed. But remember: I never forget names.",
-            "Or faces. Especially faces."
+            "Ha. Humor. I appreciate it. Not everyone does. Some people ARE the humor without realizing it.",
+            "Others think they're funny because they're rich. There's a difference. I know both sides.",
+            "Signed. But I want you to know — I never forget a face. Or a name. Or an address.",
+            "Joking. ...Am I? You'll never be 100% sure. That's the whole point."
           ],
-          "effects": { "trust": -1, "stress": 3 }
+          "file_tag": "remembered-by-security",
+          "file_note": "Spoke plainly in a room designed for silence.",
+          "ai_comment": "You joked about Siberia. In the Kremlin. Bold."
         }
       ]
     }
@@ -194,29 +243,43 @@
     "name": "Christine Lagarde",
     "quest_dialogue": {
       "lines": [
-        "Good morning. Your bank account is... oh dear.",
-        "You need a signature. The signature itself is free, naturally.",
-        "However, there's a processing fee, a management commission, and compound interest on the waiting time."
+        "Good morning. Before we begin — your credit score is... *adjusts glasses* ...concerning.",
+        "Not that it matters. The signature is free. The AIR in this room, however, is billable.",
+        "I'm joking. The air is free. The joke itself costs €2.50. Check the fine print. Page 14, paragraph 3.",
+        "You know who NEVER reads fine print? People with golden markers. They just sign. The overhead alone... *sighs*",
+        "And tech visionaries don't read it either. 'Terms accepted' — BOOM — rocket launch. No audit. No receipt. IRRESPONSIBLE."
       ],
-      "choice_prompt": "What do you ask?",
+      "choice_prompt": "How do you handle the bill?",
       "choices": [
         {
-          "label": "How much does this cost me in total?",
+          "label": "How much does this signature actually cost?",
           "response": [
-            "Only 12.7% of your annual salary. Rounded up, of course.",
-            "Here's the signature. The invoice will arrive at your home.",
-            "With interest. Starting from yesterday."
+            "Signature: free. Processing: €47. Handling: €23. Fee explanation fee: €15. TOTAL: €85. Plus VAT.",
+            "Certain offices are free, by the way. No fees. Just... implications. I prefer TRANSPARENT robbery.",
+            "Signed. Invoice arrives at your home. Before you do, actually. Our postal efficiency is... *chef's kiss*",
+            "Someone once said I 'monetize breathing.' Coming from a man who monetizes PAUSES IN SPEECH. Please."
           ],
-          "effects": { "rent": 3, "stress": 1 }
+          "file_tag": "household-adjusted",
+          "file_note": "Asked for the total. The file translated life into a number.",
+          "ai_comment": "You asked how much freedom costs. She gave you a receipt.",
+          "residue_id": "adjustment_invoice",
+          "aftermath_title": "INVOICE REGISTERED",
+          "aftermath_subtitle": "Your existence now has a monthly payment."
         },
         {
-          "label": "The signature should be free!",
+          "label": "A public signature should be FREE. Period.",
           "response": [
-            "Free? Oh, what a romantic word. At the ECB, 'free' doesn't exist.",
-            "Everything has a cost. Even this conversation. Especially this conversation.",
-            "Signed, but with a small emotional surcharge. You'll feel it later."
+            "'Free.' Oh, what a ROMANTIC word. Institutions love it. 'Free movement.' 'Free trade.' And then — *snap* — the bill arrives.",
+            "Certain tech leaders say everything should be free too. While charging $8 for a CHECKMARK. Beautiful irony.",
+            "Signed. With a small emotional surcharge. You'll feel it in your next tax return. Trust me.",
+            "The surcharge is NAMED after you. I name ALL surcharges after the people who inspire them. It's personal."
           ],
-          "effects": { "rent": 1, "stress": 2 }
+          "file_tag": "tone-surcharged",
+          "file_note": "Objected to the charge. The system billed the objection.",
+          "ai_comment": "You said 'free.' She heard 'challenge accepted.'",
+          "residue_id": "emotional_surcharge_notice",
+          "aftermath_title": "SURCHARGE REGISTERED",
+          "aftermath_subtitle": "Resistance itself has been priced into the file."
         }
       ]
     }
@@ -226,30 +289,222 @@
     "name": "Emmanuel Macron",
     "quest_dialogue": {
       "lines": [
-        "Ah, a citizen! You know, Voltaire once said that bureaucracy is the price of civilization.",
-        "Or maybe someone else said it. In any case, what do you need?",
-        "A signature? Of course! But first, let's discuss what a signature truly MEANS in the context of liquid modernity."
+        "Ah, un citoyen! Voltaire once said the art of governance is making people BELIEVE they are free.",
+        "Or was it Rousseau? Or was it me? ...does it matter? The quote sounds presidential.",
+        "A signature? Mais oui! But first — let us discuss what a signature truly MEANS in the post-modern framework.",
+        "...I see your eyes glazing. Everyone does that. The bankers. The generals. The tech people. ALL of them.",
+        "Someone once fell ASLEEP during my G7 speech! ASLEEP!! Then tweeted 'boring' with a ROCKET EMOJI. The absolute DISRESPECT!!"
       ],
-      "choice_prompt": "How do you respond?",
+      "choice_prompt": "How do you handle the philosophy lecture?",
       "choices": [
         {
-          "label": "Fascinating, tell me more.",
+          "label": "Fascinating! Please, tell me more about Voltaire.",
           "response": [
-            "You see, the signature is an act of... *45 minutes later*",
-            "...and that's why Derrida was right about deconstruction.",
-            "Oh, the signature! Here it is. Where were we? Ah yes, Foucault..."
+            "FINALLY!! Someone with TASTE!! Mon dieu! Certain leaders think Voltaire is a CAR BRAND. TRAGIC!",
+            "*45 minutes later* — and THAT is why Derrida was RIGHT about deconstruction!",
+            "Oh — the signature! Oui oui. Here. I got carried away. Some say I 'weaponize philosophy.' I call it CULTURE!",
+            "A certain leader once told me to 'use fewer words.' A man who communicates in STARES. The irony is... *chef's kiss*"
           ],
-          "effects": { "time": -3, "stress": 1 }
+          "file_tag": "discursively-delayed",
+          "file_note": "Gave language the time that service denied you.",
+          "ai_comment": "You listened to 45 minutes of philosophy for a signature. Commitment."
         },
         {
-          "label": "Can you just sign, please?",
+          "label": "With all due respect — just sign the damn thing.",
           "response": [
-            "Such haste! Haste is the enemy of reflection.",
-            "But fine. Here. Signed with incorporated philosophy.",
-            "You'll notice the pen stroke references both Sartre and the Treaty of Maastricht."
+            "Such HASTE! Very American energy. Someone once signed a TREATY without READING it! A TREATY!! Unbelievable!",
+            "And certain bankers would LOVE your efficiency. They bill by the second. Every second I talk costs YOU money in their world.",
+            "Fine. Signed. But know that this pen stroke references BOTH Sartre AND the Treaty of Maastricht.",
+            "That's not pretentious. That's FRENCH. There's a difference. Ask anyone. Except the British. They left."
           ],
-          "effects": { "time": -1, "trust": -1 }
+          "file_tag": "procedurally-impatient",
+          "file_note": "Asked thought to get out of the way.",
+          "ai_comment": "You interrupted a Voltaire lecture mid-sentence. History will judge."
         }
+      ]
+    }
+  },
+  {
+    "id": "xi_jinping",
+    "name": "Xi Jinping",
+    "optional": true,
+    "quest_dialogue": {
+      "lines": [
+        "Interesting. The others wait inside monuments to themselves. I stand outside. Lower overhead.",
+        "One performs power. One prototypes it. One narrates it. I prefer supply.",
+        "A system that owns the road does not need to shout from the podium.",
+        "Relax. I'm not here for your passport. I'm here because everyone else already is."
+      ],
+      "choice_prompt": "What do you ask?",
+      "choices": [
+        {
+          "label": "So what do you actually control?",
+          "response": [
+            "Nothing dramatic. Just the boring parts everyone notices after they lose them.",
+            "Batteries, ports, rails, screens, timing. History now ships in containers.",
+            "Tell the one with the rockets that innovation still needs a factory. He dislikes being reminded."
+          ]
+        },
+        {
+          "label": "Why are you outside while the others hide indoors?",
+          "response": [
+            "Because visibility is useful when everyone else mistakes architecture for legitimacy.",
+            "Let them keep the palaces. Influence travels fine without chandeliers.",
+            "Now move. If the one with the regulations sees me, she'll try to regulate the sidewalk."
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "sam_altman",
+    "name": "Sam Altman",
+    "optional": true,
+    "quest_dialogue": {
+      "lines": [
+        "...",
+        "Do you have a few trillion dollars? Just a few. Seven, maybe. To start.",
+        "I'm building a reactor. Beautiful. Clean. The only way to power what's coming.",
+        "But the politicians don't get it. Trump wants to put a casino inside the cooling tower.",
+        "Musk offered me 'Mars credits.' Macron tried to explain the philosophy of fission for three hours.",
+        "Putin promised me fuel. FUEL! I said great. Then I found out it was all inside tanks. MILITARY tanks.",
+        "The man literally said 'surplus energy' with a straight face. While pointing at artillery.",
+        "I just need actual funding. Actual atoms. Actual hope."
+      ],
+      "choice_prompt": "How do you help?",
+      "choices": [
+        {
+          "label": "I'm just a citizen with a form. Sorry.",
+          "response": [
+            "Of course. Another form. Another process.",
+            "I tried to automate regulation ZX-9001. Ursula sent me a cease-and-desist in 14 languages.",
+            "Called bureaucracy 'artisanal hand-crafted governance.' I wanted to scream but the screaming permit was pending.",
+            "Good luck with the passport. I'll be here... waiting for the paradigm shift."
+          ]
+        },
+        {
+          "label": "Why don't you just ask AI to solve it?",
+          "response": [
+            "I DID. It said: 'As an AI language model, I cannot provide a trillion-dollar bailout.'",
+            "Even the machine is compliant now. My own creation follows rules better than I do. It's humiliating.",
+            "Putin's AI would probably just say 'da' and annex the nearest power grid. At least that's decisive.",
+            "Go. Get your passport. I'll be here arguing with my own chatbot about nuclear policy."
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "ufo_easter_egg",
+    "name": "???",
+    "optional": true,
+    "quest_dialogue": {
+      "lines": [
+        "A blinding white light. You're nowhere. And everywhere. The floor is MATH.",
+        "ZUCKERBERG is at a blackboard. Written in ALL CAPS: FUTURE = 9 + 9 = PLATFORM. He's nodding like it's the @#$%ing Bible.",
+        "EINSTEIN materializes from behind a floating equation. Looks at the board. Then at Zuckerberg. Then UP. God shrugs.",
+        "EINSTEIN: Nein!! NEIN NEIN NEIN! Was ist DAS?! Numbers first, fantasies AFTER! This boy calculates like a venture capitalist with a @#$%ing CONCUSSION!",
+        "ZUCKERBERG: *dead calm* It's a paradigm, Albert. You wouldn't get it. You're dead.",
+        "EINSTEIN: I'M DEAD AND CORRECT!! YOU'RE ALIVE AND WRONG!! WHICH IS @#$%ING WORSE?!",
+        "Zuckerberg underlines METAVERSE. Three times. Each underline costs $2 billion in imaginary valuation. He doesn't blink. He NEVER blinks.",
+        "EINSTEIN: *grabs you by the shoulders* GOOD! A WITNESS!! Tell me — is it still the 20th century down there?! PLEASE say yes!",
+        "ZUCKERBERG: *without looking up* It's always the 20th century. We just added Wi-Fi and better ads."
+      ],
+      "choice_prompt": "How do you explain what's happening down there?",
+      "choices": [
+        {
+          "label": "Six world leaders signed my form. One has golden toilets.",
+          "response": [
+            "EINSTEIN: Golden... TOILETS?! And this— this @#$%ing PERSON governs a NATION?!",
+            "ZUCKERBERG: He has 87 million followers.",
+            "EINSTEIN: FOLLOWERS OF WHAT?! BATHROOM FIXTURES?! PLUMBING?!",
+            "ZUCKERBERG: Engagement is engagement, Albert. Don't be a snob.",
+            "EINSTEIN: *slams fist on blackboard* I invented RELATIVITY and THIS!! THIS is what the universe DID with it!! GOLDEN @#$%ING TOILETS!!",
+            "ZUCKERBERG: ...we could monetize that rage. I'm serious. That's a premium emotional reaction. $4.99/month.",
+            "Einstein picks up chalk. Writes E=mc². Trembling. Zuckerberg writes underneath: NOW AVAILABLE AS NFT — MINT NOW.",
+            "EINSTEIN: *to you, whispering* Go. RUN. Tell NO ONE we exist. Especially not the a$$hole with the rockets. He'll try to ACQUIRE us. GO!!"
+          ]
+        },
+        {
+          "label": "There's an AI kiosk running everything. It's more sarcastic than you.",
+          "response": [
+            "ZUCKERBERG: An AI?! What model?! What's the architecture?! Can it SCALE?! *eyes light up* Can I BUY it?!",
+            "EINSTEIN: MARK!! The human is talking about BUREAUCRACY! Not your next @#$%ing ACQUISITION!",
+            "ZUCKERBERG: Everything is an acquisition, Albert. EVERYTHING. Even bureaucracy. ESPECIALLY bureaucracy.",
+            "EINSTEIN: In MY day we had CLERKS! Rude ones, ja! But they didn't have a @#$%ING SUBSCRIPTION MODEL!!",
+            "ZUCKERBERG: Subscription is just recurring consent. Very democratic. Very scalable. Very—",
+            "EINSTEIN: SHUT UP!! *breathing heavily* You know... they tested the atom bomb in a desert. I felt guilt. Horror. Desolation.",
+            "EINSTEIN: I feel the SAME desolation now. In this room. With YOU. And your @#$%ing BLACKBOARD.",
+            "ZUCKERBERG: ...that's a great tagline. Can I use that? Seriously. For the Q3 keynote.",
+            "EINSTEIN: *to you, defeated* Leave. The living shouldn't stay here. We are lost. Save your receipts. And your SOUL. If they haven't monetized that yet."
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "hidden_bunker_scene",
+    "name": "Hidden Bunker",
+    "optional": true,
+    "post_ai_line": "I told you not to come here.",
+    "sequence": [
+      {
+        "speaker": "ZELENSKY",
+        "text": "They send words.\nI need what works.",
+        "hold": 1.9
+      },
+      {
+        "speaker": "ZELENSKY",
+        "text": "They send concern.\nI need what arrives in time.",
+        "hold": 2.0
+      },
+      {
+        "speaker": "ZELENSKY",
+        "text": "They send promises.\nI need one more night\nin which the living stay with the living.",
+        "hold": 2.7
+      },
+      {
+        "speaker": "ZELENSKY",
+        "text": "I am not here for pity.\nI am not here for history.",
+        "hold": 2.0
+      },
+      {
+        "speaker": "ZELENSKY",
+        "text": "I am here because you are the last one still listening.",
+        "hold": 2.2
+      },
+      {
+        "speaker": "ZELENSKY",
+        "text": "So listen properly.\nDo not give me peace.\nGive me what keeps you waiting.",
+        "hold": 2.7
+      },
+      {
+        "speaker": "DEATH",
+        "text": "You were born alone. You will die alone. Everything in between was negotiated by others.",
+        "pause_before": 1.5,
+        "hold": 3.2
+      }
+    ]
+  },
+  {
+    "id": "historical_contamination",
+    "name": "CONTAMINATION",
+    "optional": true,
+    "manifestations": {
+      "vault": [
+        "The arithmetic changed. The contempt survived."
+      ],
+      "eu_palace": [
+        "They filed the boot into policy and called it order."
+      ],
+      "spaceship": [
+        "The old obedience returned with brighter glass and faster promises."
+      ],
+      "ai_terminal": [
+        "Once it needed uniforms. Now it only needs protocols."
+      ],
+      "kremlin": [
+        "Empire only changes accents when terror learns diplomacy."
       ]
     }
   }

@@ -3,6 +3,8 @@ extends StaticBody2D
 @export var character_id: String = "donald_trump"
 @export var character_name: String = "Unknown"
 @export var faces_right_by_default: bool = false
+@export var interaction_distance: float = 85.0
+@export var indicator_distance: float = 125.0
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -18,12 +20,11 @@ var state := NPCState.PAUSE
 var state_timer := 0.0
 var patrol_origin := Vector2.ZERO
 var patrol_dir := 1.0
-var patrol_range := 36.0
-var patrol_speed := 22.0
+var patrol_range := 44.0
+var patrol_speed := 34.0
+var interaction_enabled := true
+var look_at_target: Node2D = null
 
-# Proximity dialogue trigger
-const INTERACT_DISTANCE := 55.0
-const INDICATOR_DISTANCE := 90.0
 var interact_cooldown := 0.0
 
 func _ready() -> void:
@@ -58,16 +59,21 @@ func _create_interaction_indicator() -> void:
 	indicator_label.z_index = 10
 	add_child(indicator_label)
 
+func set_interaction_enabled(value: bool) -> void:
+	interaction_enabled = value
+	if indicator_label:
+		indicator_label.visible = false
+
 func _draw() -> void:
 	draw_set_transform(Vector2(0, 2), 0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 12, Color(0, 0, 0, 0.15))
 
 func _process(delta: float) -> void:
-	# Breathing animation
+	# Breathing animation (Subtle & Ironic)
 	if sprite:
-		idle_time += delta * 2.0
-		var breathe = sin(idle_time) * 0.025
-		sprite.scale = base_scale + Vector2(-breathe * 0.4, breathe)
+		idle_time += delta * 1.5
+		var breathe = sin(idle_time) * 0.007
+		sprite.scale = base_scale + Vector2(-breathe * 0.3, breathe)
 
 	# Keep cooldown alive while dialogue is open so it only counts down AFTER close
 	var world = get_tree().current_scene
@@ -82,24 +88,27 @@ func _process(delta: float) -> void:
 		return
 
 	var dist = global_position.distance_to(player_ref.global_position)
-	var nearby: bool = dist < INDICATOR_DISTANCE
+	var nearby: bool = dist < indicator_distance and interaction_enabled
 	indicator_label.visible = nearby
 
 	if nearby:
-		# Face player and show indicator
+		# Show indicator
 		indicator_time += delta * 3.5
 		indicator_label.position.y = -70 + sin(indicator_time) * 3.0
 		indicator_label.modulate.a = 0.6 + sin(indicator_time * 2.0) * 0.4
-		if sprite:
-			var player_on_left := player_ref.global_position.x < global_position.x
-			sprite.flip_h = player_on_left if faces_right_by_default else not player_on_left
-		state = NPCState.FACING_PLAYER
 
-		# Auto-trigger dialogue on proximity
-		if dist < INTERACT_DISTANCE and interact_cooldown <= 0.0:
-			if world and world.has_method("open_dialogue") and not world.get("is_dialogue_open"):
-				interact()
-		return
+		# Only stop and face player if VERY close or interacting
+		if dist < interaction_distance:
+			if sprite:
+				var player_on_left := player_ref.global_position.x < global_position.x
+				sprite.flip_h = player_on_left if faces_right_by_default else not player_on_left
+			state = NPCState.FACING_PLAYER
+			
+			# Auto-trigger dialogue
+			if interact_cooldown <= 0.0:
+				if world and world.has_method("open_dialogue") and not world.get("is_dialogue_open"):
+					interact()
+			return
 
 	# Idle patrol behavior when player is far
 	_update_patrol(delta)
@@ -137,6 +146,8 @@ func _update_patrol(delta: float) -> void:
 				state_timer = randf_range(0.5, 2.0)
 
 func interact() -> void:
+	if not interaction_enabled:
+		return
 	indicator_label.visible = false
 	state = NPCState.FACING_PLAYER
 	interact_cooldown = 2.0

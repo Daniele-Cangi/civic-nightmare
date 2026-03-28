@@ -100,6 +100,22 @@ Every interaction must do two things at once:
 1. Feel legible and realistic in the moment.
 2. Reveal a downstream consequence the citizen could not reasonably contain alone.
 
+## Encounter Density Rule
+Keep the recognizable public voice of each figure.
+Increase the weight around that voice.
+
+Each main encounter should be structured as:
+1. Entry ritual
+2. Public voice
+3. Two costly choices
+4. Residual document or routing mark
+5. Immediate aftermath in space, home, or checkpoint language
+
+The comedy can stay inside the speech.
+The dread should arrive through procedure, delay, rerouting, documentation, and return.
+
+Detailed per-character blueprints live in [encounter_density_blueprint.md](/C:/Users/dacan/OneDrive/Documenti/My%20Games/civic-nightmare/docs/encounter_density_blueprint.md).
+
 ## Writing Rule
 Dialogue should not be imitation-comedy.
 Each figure's speech should be adjacent to their public rhetorical habits without collapsing into parody.

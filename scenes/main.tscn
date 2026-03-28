@@ -1,8 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://c83jmainw"]
+[gd_scene format=3 uid="uid://c83jmainw"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_play"]
-[ext_resource type="Texture2D" path="res://assets/tiles/world_tiles.png" id="4_tiles"]
+[ext_resource type="Script" uid="uid://b8frgv6v2df7a" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://cxqplayer2222" path="res://scenes/player.tscn" id="2_play"]
+[ext_resource type="Texture2D" uid="uid://c7bfuh4ume6ro" path="res://assets/tiles/world_tiles.png" id="4_tiles"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]
 texture = ExtResource("4_tiles")
@@ -71,26 +71,26 @@ texture_region_size = Vector2i(32, 32)
 7:5/0 = 0
 7:6/0 = 0
 7:7/0 = 0
+
 [sub_resource type="TileSet" id="TileSet_1"]
 tile_size = Vector2i(32, 32)
 sources/0 = SubResource("TileSetAtlasSource_1")
 
-[node name="World" type="Node2D"]
+[node name="World" type="Node2D" unique_id=1524383417]
 script = ExtResource("1_main")
 
-[node name="GroundMap" type="TileMap" parent="."]
+[node name="GroundMap" type="TileMap" parent="." unique_id=1630527661]
 tile_set = SubResource("TileSet_1")
 format = 2
 
-[node name="Entities" type="Node2D" parent="."]
+[node name="Entities" type="Node2D" parent="." unique_id=1693442800]
 y_sort_enabled = true
 
-[node name="Player" parent="Entities" instance=ExtResource("2_play")]
-position = Vector2(0, 0)
+[node name="Player" parent="Entities" unique_id=2066396798 instance=ExtResource("2_play")]
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1511931939]
 
-[node name="DialogueBox" type="ColorRect" parent="UI"]
+[node name="DialogueBox" type="ColorRect" parent="UI" unique_id=1093210622]
 visible = false
 anchors_preset = 7
 anchor_left = 0.5
@@ -105,7 +105,7 @@ grow_horizontal = 2
 grow_vertical = 0
 color = Color(0.12, 0.12, 0.18, 0.95)
 
-[node name="NameLabel" type="RichTextLabel" parent="UI/DialogueBox"]
+[node name="NameLabel" type="RichTextLabel" parent="UI/DialogueBox" unique_id=303608247]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
@@ -115,7 +115,7 @@ theme_override_colors/default_color = Color(0.9, 0.8, 0.4, 1)
 theme_override_font_sizes/normal_font_size = 20
 text = "Character Name"
 
-[node name="TextLabel" type="RichTextLabel" parent="UI/DialogueBox"]
+[node name="TextLabel" type="RichTextLabel" parent="UI/DialogueBox" unique_id=1127145688]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 56.0

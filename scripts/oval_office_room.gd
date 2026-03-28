@@ -2,10 +2,12 @@ extends Node2D
 
 const NPC_SCENE = preload("res://scenes/npc.tscn")
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
+const RITUAL_STATION_SCRIPT = preload("res://scripts/ritual_station.gd")
 const WORLD_TILES = preload("res://assets/tiles/world_tiles.png")
 const PROP_BOOK = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Book.png")
 const PROP_HOURGLASS = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Hourglass.png")
 const PROP_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Bag.png")
+const PROP_MONEY_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/MoneyBag.png")
 const PROP_CRATE = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/CrateEmpty.png")
 const PROP_GOLD_CUP = preload("res://assets/packs/civic_nightmare/items_props/ninja/Treasure/GoldCup.png")
 
@@ -59,9 +61,13 @@ var theme: Dictionary = {}
 var decor_root: Node2D
 var foreground_root: Node2D
 var collision_root: Node2D
+var room_npc: StaticBody2D
+var ritual_stations: Dictionary = {}
+var encounter_state: Dictionary = {}
 
 func _ready() -> void:
 	theme = _theme_for_key(room_key)
+	_setup_encounter_density()
 	_setup_tileset_sources()
 	_build_room()
 	_spawn_character()
@@ -73,6 +79,10 @@ func _ready() -> void:
 func set_room_active(active: bool) -> void:
 	visible = active
 	process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	if active:
+		_refresh_encounter_density()
+		if room_key == "vault" and not bool(encounter_state.get("dialogue_ready", true)):
+			call_deferred("_show_vault_instruction")
 
 func get_spawn_position(marker_name: String) -> Vector2:
 	var marker := markers.get_node_or_null(marker_name) as Marker2D
@@ -88,6 +98,44 @@ func get_room_title() -> String:
 
 func get_room_subtitle() -> String:
 	return str(theme.get("subtitle", ""))
+
+func _setup_encounter_density() -> void:
+	ritual_stations.clear()
+	if room_key == "vault":
+		encounter_state = {
+			"residue_id": "",
+			"aftermath_spawned": false
+		}
+	else:
+		encounter_state = {}
+
+func _show_vault_instruction() -> void:
+	return
+
+func _refresh_encounter_density() -> void:
+	return
+
+func handle_ritual_station_interaction(station_id: String) -> void:
+	return
+
+func handle_dialogue_choice(target_character_id: String, choice: Dictionary) -> void:
+	if room_key != "vault" or target_character_id != "christine_lagarde" or bool(encounter_state.get("aftermath_spawned", false)):
+		return
+
+	var residue_id := str(choice.get("residue_id", "emotional_surcharge_notice")).strip_edges()
+	var aftermath_title := str(choice.get("aftermath_title", "SURCHARGE REGISTERED")).strip_edges()
+	var aftermath_subtitle := str(choice.get("aftermath_subtitle", "Resistance itself has been priced into the file.")).strip_edges()
+
+	encounter_state["residue_id"] = residue_id
+	encounter_state["aftermath_spawned"] = true
+	_spawn_vault_aftermath_notice(residue_id)
+
+	var world = get_tree().current_scene
+	if world:
+		if world.has_method("register_encounter_residue"):
+			world.register_encounter_residue(target_character_id, residue_id, aftermath_subtitle)
+		if world.has_method("_show_room_title"):
+			world._show_room_title(aftermath_title, aftermath_subtitle)
 
 func _theme_for_key(key: String) -> Dictionary:
 	match key:
@@ -199,6 +247,60 @@ func _theme_for_key(key: String) -> Dictionary:
 					{"pos": Vector2(112, -176), "color": Color(0.9, 0.78, 0.36), "scale": 2.8, "energy": 0.24},
 					{"pos": Vector2(0, -28), "color": Color(1.0, 0.82, 0.42), "scale": 2.3, "energy": 0.44},
 					{"pos": Vector2(0, 112), "color": Color(0.34, 0.3, 0.16), "scale": 1.9, "energy": 0.12}
+				]
+			}
+		"ufo_lab":
+			return {
+				"title": "UNIDENTIFIED CRAFT",
+				"subtitle": "Observation deck",
+				"floor_source": SRC_INTERIOR_FLOOR,
+				"floor_tile": IF_OFFICE,
+				"accent_source": SRC_INTERIOR_FLOOR,
+				"accent_tile": IF_PALACE,
+				"wall_tile": TILE_MARBLE_WALL,
+				"window_positions": [],
+				"curtains": false,
+				"panel_color": Color(0.78, 0.92, 0.94, 0.22),
+				"trim_color": Color(0.58, 0.9, 0.82, 0.24),
+				"accent_color": Color(0.42, 0.92, 0.78, 0.18),
+				"rug_outer": Color(0.82, 0.92, 0.9, 0.86),
+				"rug_inner": Color(0.7, 0.84, 0.82, 0.92),
+				"rug_glow": Color(0.62, 1.0, 0.88, 0.12),
+				"spawn_position": Vector2(0, 168),
+				"npc_position": Vector2(-104, 22),
+				"desk_position": Vector2(0, -72),
+				"lights": [
+					{"pos": Vector2(-132, -178), "color": Color(0.88, 1.0, 0.96), "scale": 3.0, "energy": 0.26},
+					{"pos": Vector2(132, -178), "color": Color(0.88, 1.0, 0.96), "scale": 3.0, "energy": 0.26},
+					{"pos": Vector2(0, -22), "color": Color(0.72, 1.0, 0.88), "scale": 2.5, "energy": 0.42},
+					{"pos": Vector2(0, 112), "color": Color(0.34, 0.46, 0.44), "scale": 2.0, "energy": 0.1}
+				]
+			}
+		"mountain_bunker":
+			return {
+				"title": "MOUNTAIN BUNKER",
+				"subtitle": "Excluded from protocol",
+				"floor_source": SRC_PROC,
+				"floor_tile": TILE_METAL_FLOOR,
+				"accent_source": SRC_PROC,
+				"accent_tile": TILE_METAL_FLOOR,
+				"wall_tile": TILE_VAULT_WALL,
+				"window_positions": [],
+				"curtains": false,
+				"panel_color": Color(0.08, 0.09, 0.11, 0.46),
+				"trim_color": Color(0.18, 0.2, 0.24, 0.28),
+				"accent_color": Color(0.12, 0.14, 0.16, 0.22),
+				"rug_outer": Color(0.08, 0.09, 0.1, 0.94),
+				"rug_inner": Color(0.05, 0.06, 0.07, 0.98),
+				"rug_glow": Color(0.18, 0.22, 0.26, 0.08),
+				"spawn_position": Vector2(0, 180),
+				"approach_position": Vector2(0, 118),
+				"npc_position": Vector2(-70, 26),
+				"desk_position": Vector2(0, -68),
+				"lights": [
+					{"pos": Vector2(0, -186), "color": Color(0.54, 0.58, 0.64), "scale": 2.1, "energy": 0.11},
+					{"pos": Vector2(-124, 18), "color": Color(0.2, 0.34, 0.42), "scale": 1.7, "energy": 0.06},
+					{"pos": Vector2(0, 98), "color": Color(0.12, 0.14, 0.18), "scale": 1.8, "energy": 0.05}
 				]
 			}
 		"elysee":
@@ -334,10 +436,16 @@ func _fill_floor() -> void:
 			for y in range(-6, 6):
 				room_map.set_cell(LAYER_ACCENT, Vector2i(-6, y), int(theme["accent_source"]), theme["accent_tile"])
 				room_map.set_cell(LAYER_ACCENT, Vector2i(6, y), int(theme["accent_source"]), theme["accent_tile"])
+		"ufo_lab":
+			return
+		"mountain_bunker":
+			return
+		"kremlin":
+			return
+		"oval_office":
+			return
 		"vault":
-			for y in range(-2, 4):
-				room_map.set_cell(LAYER_ACCENT, Vector2i(-6, y), int(theme["accent_source"]), theme["accent_tile"])
-				room_map.set_cell(LAYER_ACCENT, Vector2i(6, y), int(theme["accent_source"]), theme["accent_tile"])
+			return
 		_:
 			for x in range(-5, 6):
 				for y in range(ROOM_TOP + 1, ROOM_TOP + 4):
@@ -365,9 +473,9 @@ func _build_walls() -> void:
 		"spaceship":
 			room_map.set_cell(LAYER_STRUCT, Vector2i(-7, ROOM_TOP + 1), SRC_PROC, TILE_SERVER)
 			room_map.set_cell(LAYER_STRUCT, Vector2i(7, ROOM_TOP + 1), SRC_PROC, TILE_SERVER)
+		"ufo_lab":
+			room_map.set_cell(LAYER_STRUCT, Vector2i(0, ROOM_TOP + 1), SRC_PROC, TILE_GLOBE)
 		"vault":
-			room_map.set_cell(LAYER_STRUCT, Vector2i(-6, ROOM_TOP + 1), SRC_PROC, TILE_GOLD)
-			room_map.set_cell(LAYER_STRUCT, Vector2i(6, ROOM_TOP + 1), SRC_PROC, TILE_GOLD)
 			room_map.set_cell(LAYER_STRUCT, Vector2i(0, ROOM_TOP + 1), SRC_PROC, TILE_CLOCK)
 		_:
 			room_map.set_cell(LAYER_STRUCT, Vector2i(-7, ROOM_TOP + 1), SRC_PROC, TILE_COLUMN)
@@ -377,6 +485,37 @@ func _build_walls() -> void:
 			room_map.set_cell(LAYER_STRUCT, Vector2i(0, ROOM_TOP + 2), SRC_PROC, TILE_CLOCK)
 
 func _build_wall_panels() -> void:
+	if room_key == "ufo_lab":
+		var ufo_panel_color: Color = theme["panel_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-196, -170), Vector2(392, 96)), ufo_panel_color)
+		_add_rect_polygon(decor_root, Rect2(Vector2(-172, -146), Vector2(344, 48)), theme["trim_color"].lightened(0.2))
+		return
+
+	if room_key == "mountain_bunker":
+		var bunker_panel: Color = theme["panel_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-192, -168), Vector2(384, 110)), bunker_panel)
+		_add_rect_polygon(decor_root, Rect2(Vector2(-82, -162), Vector2(164, 56)), theme["trim_color"])
+		_add_rect_polygon(decor_root, Rect2(Vector2(-220, -162), Vector2(92, 180)), Color(0.02, 0.02, 0.03, 0.42))
+		_add_rect_polygon(decor_root, Rect2(Vector2(128, -162), Vector2(92, 180)), Color(0.02, 0.02, 0.03, 0.42))
+		_add_rect_polygon(decor_root, Rect2(Vector2(-56, -96), Vector2(16, 174)), Color(0.18, 0.2, 0.22, 0.14))
+		_add_rect_polygon(decor_root, Rect2(Vector2(24, -74), Vector2(10, 128)), Color(0.18, 0.2, 0.22, 0.12))
+		return
+
+	if room_key == "kremlin":
+		var kremlin_panel_color: Color = theme["panel_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-184, -164), Vector2(368, 92)), kremlin_panel_color.darkened(0.04))
+		return
+
+	if room_key == "oval_office":
+		var oval_panel_color: Color = theme["panel_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-188, -164), Vector2(376, 92)), oval_panel_color.darkened(0.05))
+		return
+
+	if room_key == "vault":
+		var panel_color: Color = theme["panel_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-184, -162), Vector2(368, 86)), panel_color.darkened(0.08))
+		return
+
 	var panel_color: Color = theme["panel_color"]
 	_add_rect_polygon(decor_root, Rect2(Vector2(-224, -166), Vector2(96, 74)), panel_color)
 	_add_rect_polygon(decor_root, Rect2(Vector2(128, -166), Vector2(96, 74)), panel_color)
@@ -384,6 +523,23 @@ func _build_wall_panels() -> void:
 	_add_rect_polygon(decor_root, Rect2(Vector2(128, 42), Vector2(96, 88)), panel_color.darkened(0.15))
 
 func _build_top_trim() -> void:
+	if room_key == "ufo_lab":
+		var ufo_accent: Color = theme["accent_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-88, -224), Vector2(176, 10)), ufo_accent.lightened(0.55))
+		_add_rect_polygon(decor_root, Rect2(Vector2(-22, -214), Vector2(44, 66)), ufo_accent.lightened(0.15))
+		return
+
+	if room_key == "mountain_bunker":
+		var bunker_accent: Color = theme["accent_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-58, -226), Vector2(116, 8)), bunker_accent.lightened(0.18))
+		_add_rect_polygon(decor_root, Rect2(Vector2(-22, -218), Vector2(44, 34)), Color(0.58, 0.62, 0.68, 0.12))
+		return
+
+	if room_key == "vault":
+		var accent: Color = theme["accent_color"]
+		_add_rect_polygon(decor_root, Rect2(Vector2(-58, -222), Vector2(116, 12)), accent.lightened(0.45))
+		return
+
 	if bool(theme.get("curtains", false)):
 		var curtain_color: Color = theme["curtain_color"]
 		for window_x in [-128.0, 0.0, 128.0]:
@@ -404,6 +560,15 @@ func _build_rug() -> void:
 			_add_rect_polygon(decor_root, Rect2(Vector2(-112, -8), Vector2(224, 116)), theme["rug_outer"])
 			_add_rect_polygon(decor_root, Rect2(Vector2(-90, 10), Vector2(180, 80)), theme["rug_inner"])
 			_add_rect_polygon(decor_root, Rect2(Vector2(-22, -2), Vector2(44, 104)), theme["rug_glow"])
+		"ufo_lab":
+			_add_ellipse_polygon(decor_root, Vector2(0, 44), Vector2(228, 118), theme["rug_outer"], 36)
+			_add_ellipse_polygon(decor_root, Vector2(0, 44), Vector2(192, 88), theme["rug_inner"], 32)
+			_add_ellipse_polygon(decor_root, Vector2(0, 44), Vector2(72, 34), theme["rug_glow"], 24)
+		"mountain_bunker":
+			_add_rect_polygon(decor_root, Rect2(Vector2(-92, -4), Vector2(184, 126)), theme["rug_outer"])
+			_add_rect_polygon(decor_root, Rect2(Vector2(-62, 12), Vector2(124, 82)), theme["rug_inner"])
+			_add_rect_polygon(decor_root, Rect2(Vector2(-8, -4), Vector2(16, 126)), theme["rug_glow"])
+			_add_rect_polygon(decor_root, Rect2(Vector2(-42, 90), Vector2(84, 10)), Color(0.0, 0.0, 0.0, 0.18))
 		"vault":
 			_add_rect_polygon(decor_root, Rect2(Vector2(-96, -2), Vector2(192, 104)), theme["rug_outer"])
 			_add_rect_polygon(decor_root, Rect2(Vector2(-76, 14), Vector2(152, 72)), theme["rug_inner"])
@@ -421,6 +586,10 @@ func _build_room_props() -> void:
 	match room_key:
 		"spaceship":
 			_build_spaceship_props()
+		"ufo_lab":
+			_build_ufo_lab_props()
+		"mountain_bunker":
+			_build_mountain_bunker_props()
 		"eu_palace":
 			_build_eu_props()
 		"kremlin":
@@ -434,25 +603,10 @@ func _build_room_props() -> void:
 
 func _build_oval_props() -> void:
 	var desk = _create_desk("Desk", theme["desk_position"], false)
-	_add_loose_sprite(desk, PROP_BOOK, Vector2(-20, -34))
-	_add_loose_sprite(desk, PROP_HOURGLASS, Vector2(8, -34))
-	_add_loose_sprite(desk, PROP_GOLD_CUP, Vector2(34, -34), Vector2(2.2, 2.2))
-	var left_console = _create_console("NorthLeftConsole", Vector2(-146, -102), 2, TILE_DESK_WOOD)
-	var right_console = _create_console("NorthRightConsole", Vector2(146, -102), 2, TILE_DESK_WOOD)
-	_add_loose_sprite(left_console, PROP_BOOK, Vector2(-8, -36))
-	_add_loose_sprite(right_console, PROP_GOLD_CUP, Vector2(2, -38), Vector2(2.2, 2.2))
-	_create_archive_unit("LeftBookcase", Vector2(-214, -22), TILE_BOOKSHELF)
-	_create_archive_unit("RightCabinet", Vector2(214, -22), TILE_FILE_CABINET)
-	_create_flag_stand("UnitedStatesFlag", Vector2(-208, -136), "us", true)
-	_create_flag_stand("PresidentialBanner", Vector2(208, -136), "banner", false)
-	_create_potted_plant("LeftPlant", Vector2(-206, 120))
-	_create_potted_plant("RightPlant", Vector2(206, 120))
-	var south_left = _create_console("SouthLeftConsole", Vector2(-154, 148), 2, TILE_DESK_WOOD)
-	var south_right = _create_console("SouthRightConsole", Vector2(154, 148), 2, TILE_DESK_WOOD)
-	_add_loose_sprite(south_left, PROP_BAG, Vector2(-10, -36))
-	_add_loose_sprite(south_left, PROP_BOOK, Vector2(10, -34))
-	_add_loose_sprite(south_right, PROP_HOURGLASS, Vector2(-10, -34))
-	_add_loose_sprite(south_right, PROP_BOOK, Vector2(10, -34))
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(-6, -34))
+	_create_floor_prop("MoneyLeft", PROP_MONEY_BAG, Vector2(-112, 72), Vector2(1.2, 1.2))
+	_create_floor_prop("MoneyRight", PROP_MONEY_BAG, Vector2(118, 54), Vector2(1.0, 1.0))
+	_create_floor_prop("MoneyFront", PROP_MONEY_BAG, Vector2(24, 118), Vector2(1.1, 1.1))
 
 func _build_spaceship_props() -> void:
 	var desk = _create_desk("CommandDesk", theme["desk_position"], true)
@@ -489,33 +643,69 @@ func _build_eu_props() -> void:
 
 func _build_kremlin_props() -> void:
 	var desk = _create_desk("SecurityDesk", theme["desk_position"], false)
-	_add_loose_sprite(desk, PROP_BAG, Vector2(-18, -34), Vector2(1.5, 1.5))
-	_add_loose_sprite(desk, PROP_HOURGLASS, Vector2(10, -34), Vector2(1.7, 1.7))
-	_create_archive_unit("LeftWideCabinet", Vector2(-214, -28), TILE_FILE_CABINET_WIDE)
-	_create_archive_unit("RightCabinet", Vector2(214, -22), TILE_FILE_CABINET)
+	_add_loose_sprite(desk, PROP_BAG, Vector2(-2, -34), Vector2(1.5, 1.5))
 	_create_flag_stand("RussianFlag", Vector2(-208, -136), "russia", true)
 	_create_flag_stand("CrestBanner", Vector2(208, -136), "kremlin", false)
-	var south_left = _create_console("SouthLeftTable", Vector2(-148, 150), 2, TILE_DESK_WOOD)
-	var south_right = _create_console("SouthRightTable", Vector2(148, 150), 2, TILE_DESK_WOOD)
-	_add_loose_sprite(south_left, PROP_BOOK, Vector2(-8, -34))
-	_add_loose_sprite(south_right, PROP_BAG, Vector2(8, -34), Vector2(1.5, 1.5))
-	_create_potted_plant("LeftPlant", Vector2(-206, 126))
-	_create_potted_plant("RightPlant", Vector2(206, 126))
 
 func _build_vault_props() -> void:
 	var desk = _create_desk("VaultControlDesk", theme["desk_position"], true)
-	_add_loose_sprite(desk, PROP_BOOK, Vector2(-18, -34), Vector2(1.6, 1.6))
-	_add_loose_sprite(desk, PROP_GOLD_CUP, Vector2(18, -36), Vector2(2.0, 2.0))
-	_create_gold_stack("NorthGoldLeft", Vector2(-176, -106), 3)
-	_create_gold_stack("NorthGoldRight", Vector2(176, -106), 3)
-	_create_archive_unit("LeftWideCabinet", Vector2(-214, -24), TILE_FILE_CABINET_WIDE)
-	_create_archive_unit("RightWideCabinet", Vector2(214, -24), TILE_FILE_CABINET_WIDE)
-	_create_archive_unit("LeftCabinet", Vector2(-214, 56), TILE_FILE_CABINET)
-	_create_archive_unit("RightCabinet", Vector2(214, 56), TILE_FILE_CABINET)
-	_create_console("SouthLeftConsole", Vector2(-150, 150), 2, TILE_METAL_FLOOR)
-	_create_console("SouthRightConsole", Vector2(150, 150), 2, TILE_METAL_FLOOR)
-	_create_flag_stand("ECBFlagWest", Vector2(-212, -128), "ecb", true)
-	_create_flag_stand("ECBFlagEast", Vector2(212, -128), "ecb", false)
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(0, -34), Vector2(1.6, 1.6))
+
+func _build_ufo_lab_props() -> void:
+	var board := Node2D.new()
+	board.name = "DebateBoard"
+	board.position = Vector2(0, -92)
+	_add_shadow_to_node(board, Rect2(Vector2(-92, 10), Vector2(184, 14)), Color(0, 0, 0, 0.08))
+
+	var frame = Polygon2D.new()
+	frame.color = Color(0.72, 0.82, 0.82, 0.96)
+	frame.polygon = PackedVector2Array([
+		Vector2(-96, -44),
+		Vector2(96, -44),
+		Vector2(104, 24),
+		Vector2(-104, 24)
+	])
+	board.add_child(frame)
+
+	var panel = Polygon2D.new()
+	panel.color = Color(0.08, 0.12, 0.14, 0.96)
+	panel.polygon = PackedVector2Array([
+		Vector2(-84, -34),
+		Vector2(84, -34),
+		Vector2(92, 14),
+		Vector2(-92, 14)
+	])
+	board.add_child(panel)
+
+	for rule_y in [-18.0, -2.0, 12.0]:
+		var rule = Polygon2D.new()
+		rule.color = Color(0.58, 0.96, 0.84, 0.28)
+		rule.polygon = PackedVector2Array([
+			Vector2(-62, rule_y),
+			Vector2(56, rule_y + 4),
+			Vector2(56, rule_y + 8),
+			Vector2(-62, rule_y + 4)
+		])
+		board.add_child(rule)
+
+	var formula = Polygon2D.new()
+	formula.color = Color(0.9, 1.0, 0.92, 0.82)
+	formula.polygon = PackedVector2Array([
+		Vector2(-16, -24),
+		Vector2(36, -20),
+		Vector2(32, -12),
+		Vector2(-20, -16)
+	])
+	board.add_child(formula)
+
+	decor_root.add_child(board)
+
+func _build_mountain_bunker_props() -> void:
+	_add_rect_polygon(decor_root, Rect2(Vector2(-156, -54), Vector2(52, 30)), Color(0.16, 0.28, 0.34, 0.44))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-150, -48), Vector2(40, 18)), Color(0.28, 0.56, 0.64, 0.12))
+	_add_rect_polygon(decor_root, Rect2(Vector2(112, 18), Vector2(44, 80)), Color(0.04, 0.04, 0.05, 0.2))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-142, 84), Vector2(64, 10)), Color(0.0, 0.0, 0.0, 0.16))
+	_add_rect_polygon(decor_root, Rect2(Vector2(58, 72), Vector2(84, 12)), Color(0.0, 0.0, 0.0, 0.14))
 
 func _build_elysee_props() -> void:
 	var desk = _create_desk("ElyseeDesk", theme["desk_position"], false)
@@ -533,6 +723,14 @@ func _build_elysee_props() -> void:
 	_add_loose_sprite(south_right, PROP_HOURGLASS, Vector2(8, -34), Vector2(1.7, 1.7))
 
 func _build_boundaries() -> void:
+	if room_key == "mountain_bunker":
+		_create_barrier(Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 70)))
+		_create_barrier(Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2(96, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)))
+		_create_barrier(Rect2(Vector2(ROOM_RIGHT * 32 - 62, ROOM_TOP * 32), Vector2(96, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)))
+		_create_barrier(Rect2(Vector2(ROOM_LEFT * 32, ROOM_BOTTOM * 32), Vector2(248, 32)))
+		_create_barrier(Rect2(Vector2(104, ROOM_BOTTOM * 32), Vector2(216, 32)))
+		return
+
 	_create_barrier(Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 64)))
 	_create_barrier(Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2(32, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)))
 	_create_barrier(Rect2(Vector2(ROOM_RIGHT * 32, ROOM_TOP * 32), Vector2(32, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)))
@@ -540,6 +738,13 @@ func _build_boundaries() -> void:
 	_create_barrier(Rect2(Vector2(112, ROOM_BOTTOM * 32), Vector2(208, 32)))
 
 func _build_foreground() -> void:
+	if room_key == "mountain_bunker":
+		_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 36)), Color(0, 0, 0, 0.26))
+		_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_BOTTOM * 32 - 14), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 52)), Color(0, 0, 0, 0.16))
+		_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2(96, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)), Color(0.01, 0.01, 0.02, 0.34))
+		_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_RIGHT * 32 - 62, ROOM_TOP * 32), Vector2(96, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)), Color(0.01, 0.01, 0.02, 0.34))
+		return
+
 	_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 28)), Color(0, 0, 0, 0.16))
 	_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_BOTTOM * 32 - 14), Vector2((ROOM_RIGHT - ROOM_LEFT + 1) * 32, 46)), Color(0, 0, 0, 0.1))
 	_add_rect_polygon(foreground_root, Rect2(Vector2(ROOM_LEFT * 32, ROOM_TOP * 32), Vector2(34, (ROOM_BOTTOM - ROOM_TOP + 1) * 32)), Color(0.02, 0.01, 0.01, 0.16))
@@ -570,6 +775,24 @@ func _create_console(name: String, origin: Vector2, width_tiles: int, tile_coord
 func _create_archive_unit(name: String, origin: Vector2, tile_coords: Vector2i) -> StaticBody2D:
 	_create_shadow(origin + Vector2(0, 6), Vector2(28, 18), Color(0, 0, 0, 0.1))
 	return _create_world_unit(name, origin, [{"coords": tile_coords, "offset": Vector2(-16, -32)}], Vector2(24, 18), Vector2(0, -8))
+
+func _create_floor_prop(name: String, texture: Texture2D, origin: Vector2, scale: Vector2) -> Node2D:
+	var body := Node2D.new()
+	body.name = name
+	body.position = origin
+	_add_shadow_to_node(body, Rect2(Vector2(-18, 8), Vector2(36, 10)), Color(0, 0, 0, 0.08))
+	_add_loose_sprite(body, texture, Vector2.ZERO, scale)
+	decor_root.add_child(body)
+	return body
+
+func _create_placeholder_standee(name: String, origin: Vector2, label_text: String, body_color: Color, accent_color: Color) -> Node2D:
+	var standee := Node2D.new()
+	standee.name = name
+	standee.position = origin
+	standee.z_index = 3
+	_attach_placeholder_visual(standee, label_text, body_color, accent_color)
+	entities.add_child(standee)
+	return standee
 
 func _create_server_bank(name: String, origin: Vector2, count: int) -> void:
 	for i in range(count):
@@ -788,6 +1011,92 @@ func _add_loose_sprite(parent: Node, texture: Texture2D, offset: Vector2, scale:
 	return sprite
 
 func _spawn_character() -> void:
+	if room_key == "ufo_lab":
+		var ufo_npc = NPC_SCENE.instantiate()
+		ufo_npc.name = "AlbertEinsteinPlaceholder"
+		ufo_npc.character_id = character_id
+		ufo_npc.character_name = character_name
+		ufo_npc.position = theme.get("npc_position", Vector2(-104, 22))
+		ufo_npc.z_index = 4
+		ufo_npc.interaction_distance = 82.0
+		ufo_npc.indicator_distance = 132.0
+		ufo_npc.set("patrol_range", 0.0)
+		ufo_npc.set("patrol_speed", 0.0)
+		var ufo_sprite := ufo_npc.get_node_or_null("Sprite2D") as Sprite2D
+		if ufo_sprite:
+			ufo_sprite.texture = null
+			ufo_sprite.offset = Vector2(0, -18)
+		entities.add_child(ufo_npc)
+		_attach_placeholder_visual(ufo_npc, "EINSTEIN", Color(0.44, 0.42, 0.36, 0.98), Color(0.96, 0.88, 0.52, 0.94))
+
+		var zuck_npc = NPC_SCENE.instantiate()
+		zuck_npc.name = "MarkZuckerbergPlaceholder"
+		zuck_npc.character_id = "mark_zuckerberg_ufo"
+		zuck_npc.character_name = "Mark Zuckerberg"
+		zuck_npc.position = Vector2(104, 34)
+		zuck_npc.z_index = 4
+		zuck_npc.set("patrol_range", 0.0)
+		zuck_npc.set("patrol_speed", 0.0)
+		zuck_npc.set("interaction_distance", 0.0)
+		zuck_npc.set("indicator_distance", 0.0)
+		var zuck_sprite := zuck_npc.get_node_or_null("Sprite2D") as Sprite2D
+		if zuck_sprite:
+			zuck_sprite.texture = null
+			zuck_sprite.offset = Vector2(0, -18)
+		if zuck_npc.has_method("set_interaction_enabled"):
+			zuck_npc.set_interaction_enabled(false)
+		zuck_npc.process_mode = Node.PROCESS_MODE_DISABLED
+		entities.add_child(zuck_npc)
+		_attach_placeholder_visual(zuck_npc, "ZUCK", Color(0.34, 0.44, 0.58, 0.98), Color(0.7, 0.96, 0.84, 0.94))
+
+		room_npc = ufo_npc
+		_refresh_encounter_density()
+		return
+
+	if room_key == "mountain_bunker":
+		var zelensky = NPC_SCENE.instantiate()
+		zelensky.name = "ZelenskyPlaceholder"
+		zelensky.character_id = "hidden_bunker_scene"
+		zelensky.character_name = "Zelensky"
+		zelensky.position = Vector2(-60, 22)
+		zelensky.z_index = 4
+		zelensky.set("patrol_range", 0.0)
+		zelensky.set("patrol_speed", 0.0)
+		zelensky.set("interaction_distance", 0.0)
+		zelensky.set("indicator_distance", 0.0)
+		if zelensky.has_method("set_interaction_enabled"):
+			zelensky.set_interaction_enabled(false)
+		zelensky.process_mode = Node.PROCESS_MODE_DISABLED
+		var zelensky_sprite := zelensky.get_node_or_null("Sprite2D") as Sprite2D
+		if zelensky_sprite:
+			zelensky_sprite.texture = null
+			zelensky_sprite.offset = Vector2(0, -18)
+		entities.add_child(zelensky)
+		_attach_placeholder_visual(zelensky, "ZEL", Color(0.18, 0.22, 0.26, 0.98), Color(0.72, 0.78, 0.82, 0.9))
+
+		var death = NPC_SCENE.instantiate()
+		death.name = "DeathPlaceholder"
+		death.character_id = "hidden_bunker_scene"
+		death.character_name = "Death"
+		death.position = Vector2(92, 4)
+		death.z_index = 4
+		death.set("patrol_range", 0.0)
+		death.set("patrol_speed", 0.0)
+		death.set("interaction_distance", 0.0)
+		death.set("indicator_distance", 0.0)
+		if death.has_method("set_interaction_enabled"):
+			death.set_interaction_enabled(false)
+		death.process_mode = Node.PROCESS_MODE_DISABLED
+		var death_sprite := death.get_node_or_null("Sprite2D") as Sprite2D
+		if death_sprite:
+			death_sprite.texture = null
+			death_sprite.offset = Vector2(0, -18)
+		entities.add_child(death)
+		_attach_death_visual(death)
+
+		room_npc = zelensky
+		return
+
 	var npc = NPC_SCENE.instantiate()
 	npc.name = "%sInterior" % character_name.replace(" ", "")
 	npc.character_id = character_id
@@ -795,6 +1104,197 @@ func _spawn_character() -> void:
 	npc.position = theme.get("npc_position", Vector2(0, 40))
 	npc.z_index = 3
 	entities.add_child(npc)
+	room_npc = npc
+	_refresh_encounter_density()
+
+func _attach_placeholder_visual(parent: Node, label_text: String, body_color: Color, accent_color: Color) -> void:
+	var shell := Node2D.new()
+	shell.name = "PlaceholderVisual"
+
+	_add_shadow_to_node(shell, Rect2(Vector2(-18, 8), Vector2(36, 10)), Color(0, 0, 0, 0.08))
+
+	var body = Polygon2D.new()
+	body.color = body_color
+	body.polygon = PackedVector2Array([
+		Vector2(-16, -10),
+		Vector2(16, -10),
+		Vector2(20, 22),
+		Vector2(-20, 22)
+	])
+	shell.add_child(body)
+
+	var head = Polygon2D.new()
+	head.color = accent_color
+	head.polygon = _make_ellipse(Vector2(0, -28), Vector2(26, 26), 14)
+	shell.add_child(head)
+
+	var shoulder = Polygon2D.new()
+	shoulder.color = accent_color.darkened(0.18)
+	shoulder.polygon = PackedVector2Array([
+		Vector2(-22, -6),
+		Vector2(22, -6),
+		Vector2(16, 4),
+		Vector2(-16, 4)
+	])
+	shell.add_child(shoulder)
+
+	var plate = Polygon2D.new()
+	plate.color = accent_color.lightened(0.2)
+	plate.polygon = PackedVector2Array([
+		Vector2(-30, -64),
+		Vector2(30, -64),
+		Vector2(26, -48),
+		Vector2(-26, -48)
+	])
+	shell.add_child(plate)
+
+	var tag = Label.new()
+	tag.text = label_text
+	tag.add_theme_font_size_override("font_size", 10)
+	tag.add_theme_color_override("font_color", Color(0.08, 0.1, 0.12))
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag.position = Vector2(-28, -63)
+	tag.size = Vector2(56, 16)
+	shell.add_child(tag)
+
+	parent.add_child(shell)
+
+func _attach_death_visual(parent: Node) -> void:
+	var shell := Node2D.new()
+	shell.name = "PlaceholderVisual"
+
+	_add_shadow_to_node(shell, Rect2(Vector2(-24, 10), Vector2(48, 10)), Color(0, 0, 0, 0.12))
+
+	var robe := Polygon2D.new()
+	robe.color = Color(0.03, 0.03, 0.04, 0.98)
+	robe.polygon = PackedVector2Array([
+		Vector2(-22, -6),
+		Vector2(22, -6),
+		Vector2(28, 34),
+		Vector2(-28, 34)
+	])
+	shell.add_child(robe)
+
+	var hood := Polygon2D.new()
+	hood.color = Color(0.0, 0.0, 0.0, 0.98)
+	hood.polygon = _make_ellipse(Vector2(0, -28), Vector2(28, 30), 16)
+	shell.add_child(hood)
+
+	var face_void := Polygon2D.new()
+	face_void.color = Color(0.02, 0.02, 0.03, 0.98)
+	face_void.polygon = PackedVector2Array([
+		Vector2(-10, -34),
+		Vector2(10, -34),
+		Vector2(6, -12),
+		Vector2(-6, -12)
+	])
+	shell.add_child(face_void)
+
+	var scythe_pole := Line2D.new()
+	scythe_pole.width = 4.0
+	scythe_pole.default_color = Color(0.34, 0.32, 0.26, 0.98)
+	scythe_pole.points = PackedVector2Array([Vector2(12, -54), Vector2(30, 38)])
+	shell.add_child(scythe_pole)
+
+	var scythe_blade := Polygon2D.new()
+	scythe_blade.color = Color(0.72, 0.74, 0.78, 0.9)
+	scythe_blade.polygon = PackedVector2Array([
+		Vector2(2, -60),
+		Vector2(28, -70),
+		Vector2(40, -48),
+		Vector2(16, -42)
+	])
+	shell.add_child(scythe_blade)
+
+	var hammer_handle := Line2D.new()
+	hammer_handle.width = 4.0
+	hammer_handle.default_color = Color(0.34, 0.32, 0.26, 0.98)
+	hammer_handle.points = PackedVector2Array([Vector2(-24, -10), Vector2(-38, 30)])
+	shell.add_child(hammer_handle)
+
+	var hammer_head := Polygon2D.new()
+	hammer_head.color = Color(0.42, 0.44, 0.48, 0.9)
+	hammer_head.polygon = PackedVector2Array([
+		Vector2(-52, -14),
+		Vector2(-26, -14),
+		Vector2(-26, -2),
+		Vector2(-52, -2)
+	])
+	shell.add_child(hammer_head)
+
+	parent.add_child(shell)
+
+func _create_ritual_station(name: String, origin: Vector2, station_id: String, visual: String, accent: Color) -> void:
+	var station = StaticBody2D.new()
+	station.name = name
+	station.position = origin
+	station.set_script(RITUAL_STATION_SCRIPT)
+	station.set("station_id", station_id)
+	station.set("station_name", name)
+	station.set("station_visual", visual)
+	station.set("accent_color", accent)
+	station.set("room_ref", self)
+
+	var col = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	shape.size = Vector2(34, 42)
+	col.shape = shape
+	col.position = Vector2(0, -12)
+	station.add_child(col)
+
+	entities.add_child(station)
+	ritual_stations[station_id] = station
+
+func _spawn_vault_aftermath_notice(residue_id: String) -> void:
+	var notice := Node2D.new()
+	notice.name = "AftermathNotice"
+	notice.position = Vector2(0, 126)
+	var shadow = Polygon2D.new()
+	shadow.color = Color(0, 0, 0, 0.08)
+	shadow.polygon = PackedVector2Array([
+		Vector2(-20, 8),
+		Vector2(20, 8),
+		Vector2(26, 18),
+		Vector2(-26, 18)
+	])
+	notice.add_child(shadow)
+
+	var sheet = Polygon2D.new()
+	sheet.color = Color(0.94, 0.9, 0.76, 0.96)
+	sheet.polygon = PackedVector2Array([
+		Vector2(-18, -20),
+		Vector2(16, -16),
+		Vector2(20, 18),
+		Vector2(-14, 14)
+	])
+	notice.add_child(sheet)
+
+	var stamp = Polygon2D.new()
+	stamp.color = Color(0.86, 0.66, 0.24, 0.92) if residue_id == "adjustment_invoice" else Color(0.76, 0.22, 0.18, 0.92)
+	stamp.polygon = _make_ellipse(Vector2(8, -2), Vector2(14, 14), 12)
+	notice.add_child(stamp)
+
+	var rule_a = Polygon2D.new()
+	rule_a.color = Color(0.42, 0.38, 0.3, 0.38)
+	rule_a.polygon = PackedVector2Array([
+		Vector2(-10, -8),
+		Vector2(8, -6),
+		Vector2(8, -2),
+		Vector2(-10, -4)
+	])
+	notice.add_child(rule_a)
+
+	var rule_b = Polygon2D.new()
+	rule_b.color = Color(0.42, 0.38, 0.3, 0.32)
+	rule_b.polygon = PackedVector2Array([
+		Vector2(-8, 0),
+		Vector2(10, 2),
+		Vector2(10, 5),
+		Vector2(-8, 3)
+	])
+	notice.add_child(rule_b)
+
+	decor_root.add_child(notice)
 
 func _create_exit_door() -> void:
 	var door := Area2D.new()
@@ -807,7 +1307,7 @@ func _create_exit_door() -> void:
 	door.set_script(DOORWAY_SCRIPT)
 	door.set("destination", "world")
 	door.set("spawn_marker", "%s_exterior" % room_key)
-	door.set("prompt_name", "Exit")
+	door.set("prompt_name", "Beam Out" if room_key == "ufo_lab" else "Exit")
 	var col = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
 	shape.size = Vector2(120, 36)
@@ -841,6 +1341,13 @@ func _add_point_light(local_pos: Vector2, color: Color, scale_factor: float, ene
 func _set_markers() -> void:
 	var entry := markers.get_node("EntryMarker") as Marker2D
 	entry.position = theme.get("spawn_position", Vector2(0, 168))
+	if room_key == "mountain_bunker":
+		var approach := markers.get_node_or_null("ApproachMarker") as Marker2D
+		if approach == null:
+			approach = Marker2D.new()
+			approach.name = "ApproachMarker"
+			markers.add_child(approach)
+		approach.position = theme.get("approach_position", Vector2(0, 118))
 
 func _create_barrier(rect: Rect2) -> void:
 	var body = StaticBody2D.new()
