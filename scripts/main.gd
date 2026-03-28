@@ -114,30 +114,30 @@ var intro_shutdown: bool = false
 var intro_shutdown_timer: float = 0.0
 
 var intro_headlines: Array = [
-	"War erupts across three continents.\nCivilians pay the price.\nLeaders pay nothing.",
-	"Stock markets hit record highs.\nHousing prices: unaffordable.\nThe rich get richer. Again.",
-	"Democracy index falls\nfor the 12th consecutive year.\nVoter turnout: historic low.",
-	"Billionaires launch vanity\nspace programs while hospitals\nclose for lack of funding.",
-	"Politicians promise change.\nNothing changes.\nRepeat every 4 years.",
-	"The system is broken.\nBut someone has to try.\n\n...don't they?",
+	"Seven wars. Zero ceasefires.\nThree arms manufacturers\npost record quarterly profits.",
+	"Billionaire buys historic bridge.\nThen removes it. For a yacht.\nRotterdam declines to comment.",
+	"AI replaces 800,000 jobs.\nCEO calls it 'exciting opportunity'.\nExciting for whom: unspecified.",
+	"Oligarch purchases social media platform.\nFires half the staff.\nCalls remaining employees 'warriors'.",
+	"Democracy index: historic low.\nTurnout: 38%.\nApathy index: not measured. Why bother.",
+	"The system is not broken.\nIt is working exactly as designed.\n\n...for someone.",
 ]
 
 var intro_breaking_titles: Array = [
 	"BREAKING NEWS",
 	"MARKETS UPDATE",
 	"WORLD REPORT",
-	"SPECIAL REPORT",
+	"SPECIAL ALERT",
 	"LIVE COVERAGE",
 	"EMERGENCY BROADCAST",
 ]
 
 var intro_ticker_texts: Array = [
-	"CASUALTIES RISING ... PEACE TALKS STALL ... ARMS DEALS APPROVED ... REFUGEES TURNED AWAY ... ",
-	"DOW +4.7% ... RENT UP 23% ... CEO PAY +340% ... FOOD BANKS OVERWHELMED ... RECORD PROFITS ... ",
-	"TRUST IN GOVERNMENT AT ALL-TIME LOW ... 47 COUNTRIES DOWNGRADED ... FREE PRESS UNDER ATTACK ... ",
-	"ORBITAL YACHT ANNOUNCED ... ER WAIT TIMES: 14 HOURS ... TAX LOOPHOLES EXPOSED ... ",
-	"ELECTION PROMISES RECYCLED FROM 2016 ... CAMPAIGN FUNDS: $2.4B ... TURNOUT: 38% ... ",
-	"SIGNAL LOST ... SIGNAL LOST ... PLEASE STAND BY ... CIVIC NIGHTMARE LOADING ... ",
+	"WAREHOUSE WORKER FIRED FOR 11-SEC TOILET BREAK ... AMAZON Q3: RECORD PROFITS ... PISS BOTTLES FOUND IN VAN: NO COMMENT ... ",
+	"MUSK BUYS TWITTER ... FIRES 75% ... REINSTATES NAZIS ... RENAMES IT X ... LOSES $20B ... CALLS IT WIN ... ",
+	"TRUMP INDICTED ... TRUMP ACQUITTED ... TRUMP ELECTED ... TRUMP INDICTED AGAIN ... MARKETS UNAFFECTED ... ",
+	"ZUCKERBERG BUILDS BUNKER IN HAWAII ... META LAYS OFF 11,000 ... METAVERSE: 38 DAILY USERS ... ",
+	"PUTIN INVADES UKRAINE ... UN CONDEMNS ... NOTHING HAPPENS ... REPEAT FOR 3RD YEAR ... ARMS SALES UP 400% ... ",
+	"SIGNAL LOST ... SIGNAL LOST ... PLEASE STAND BY ... CIVIC NIGHTMARE LOADING ... THIS IS FINE ... ",
 ]
 
 # --- Ending sequence ---
@@ -157,6 +157,7 @@ var bezos_cinematic_active: bool = false
 var bezos_cinematic_seen: bool = false
 var bezos_cinematic_layer: CanvasLayer
 var bezos_cinematic_root: Control
+var bezos_cinematic_frame: Control
 var bezos_cinematic_bg: ColorRect
 var bezos_cinematic_scanlines: ColorRect
 var bezos_cinematic_stage: Label
@@ -179,9 +180,11 @@ var bezos_cinematic_right_hp: ColorRect
 var bezos_cinematic_flash: ColorRect
 var bezos_cinematic_state: int = 0
 var bezos_cinematic_timer: float = 0.0
+var bezos_cinematic_frame_base_position: Vector2 = Vector2.ZERO
 
 enum BezosCinematicState { STAGE, SLIDE_IN, VS_SLAM, FIGHT, COMBAT, DENIED, OUTRO }
 
+const BEZOS_CINEMATIC_FRAME_SIZE := Vector2(1280, 720)
 const BEZOS_STAGE_DURATION := 2.0
 const BEZOS_SLIDE_IN_DURATION := 2.1
 const BEZOS_VS_DURATION := 2.0
@@ -471,12 +474,12 @@ var character_colors: Dictionary = {
 	"mark_zuckerberg_ufo": Color(0.12, 0.12, 0.12)
 }
 var portrait_paths: Dictionary = {
-	"donald_trump": "res://assets/mockups/trump_pure_sprite.png",
-	"elon_musk": "res://assets/mockups/musk_pure_sprite.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_pure_sprite.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_pure_sprite.png",
-	"vladimir_putin": "res://assets/mockups/putin_pure_sprite.png",
-	"emmanuel_macron": "res://assets/mockups/macron_pure_sprite.png",
+	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
+	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
+	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
+	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
+	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
+	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png",
 	"xi_jinping": "res://assets/mockups/xi_jinping_caricature.png",
 	"sam_altman": "res://assets/mockups/sam_altman_caricature.png",
 	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
@@ -484,6 +487,14 @@ var portrait_paths: Dictionary = {
 	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
 	"ZELENSKY": "res://assets/mockups/zelensky_portrait.png",
 	"DEATH": "res://assets/mockups/death_ironic.png"
+}
+var combat_portrait_paths: Dictionary = {
+	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
+	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
+	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
+	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
+	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
+	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png"
 }
 var npc_sprite_paths: Dictionary = {
 	"donald_trump": "res://assets/mockups/trump_pure_sprite.png",
@@ -755,6 +766,7 @@ func _create_bezos_drone_encounter() -> void:
 	bezos_drone_root.add_child(glow)
 
 	var logo := Label.new()
+	logo.name = "DroneLogo"
 	logo.text = "A M Z N  AIR"
 	logo.position = Vector2(-52, 44)
 	logo.add_theme_font_size_override("font_size", 12)
@@ -765,10 +777,15 @@ func _create_bezos_drone_encounter() -> void:
 	bezos_drone_root.add_child(logo)
 
 	var motto := Label.new()
+	motto.name = "DroneMotto"
 	motto.text = "DELIVERY IS DESTINY"
 	motto.position = Vector2(-72, 58)
 	motto.add_theme_font_size_override("font_size", 8)
-	motto.add_theme_color_override("font_color", Color(0.9, 0.9, 0.94, 0.62))
+	motto.add_theme_color_override("font_color", Color(0.98, 0.82, 0.3, 0.92))
+	motto.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
+	motto.add_theme_constant_override("shadow_offset_x", 1)
+	motto.add_theme_constant_override("shadow_offset_y", 1)
+	motto.visible = false
 	bezos_drone_root.add_child(motto)
 
 	var trigger := Area2D.new()
@@ -812,6 +829,9 @@ func _start_bezos_escalation() -> void:
 		var trigger := bezos_drone_root.get_node_or_null("BezosDroneTrigger") as Area2D
 		if trigger:
 			trigger.monitoring = false
+		var motto := bezos_drone_root.get_node_or_null("DroneMotto") as Label
+		if motto:
+			motto.visible = true
 	# Create in-world speech bubble above drone
 	_create_bezos_escalation_bubble()
 	_set_bezos_escalation_line(
@@ -877,6 +897,7 @@ func _start_bezos_cinematic() -> void:
 		bezos_cinematic_layer.visible = true
 		if bezos_cinematic_root:
 			bezos_cinematic_root.modulate.a = 1.0
+		_layout_bezos_cinematic_frame()
 		transition_overlay.visible = false
 		transition_overlay.modulate.a = 0.0
 		_begin_bezos_cinematic_state(BezosCinematicState.STAGE)
@@ -1370,7 +1391,6 @@ func _process_bezos_drone(delta: float) -> void:
 
 	match bezos_escalation_step:
 		0:
-			# "Renew Prime" — dark pattern, no "no" option
 			if bezos_escalation_timer >= 3.2:
 				bezos_escalation_step = 1
 				bezos_escalation_timer = 0.0
@@ -1380,69 +1400,107 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		1:
-			# Citizen notices the dark pattern
-			if bezos_escalation_timer >= 2.2:
+			if bezos_escalation_timer >= 2.4:
 				bezos_escalation_step = 2
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"AMZN DRONE",
-					"That feature was removed to\nstreamline your experience.",
+					"That option was deprecated.\nAlgorithmically, you already said yes.",
 					Color(1.0, 0.82, 0.3)
 				)
 		2:
-			# Corporate non-answer
-			if bezos_escalation_timer >= 2.8:
+			if bezos_escalation_timer >= 2.6:
 				bezos_escalation_step = 3
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"CITIZEN",
-					"Like you 'streamlined' bathroom breaks\nfor warehouse workers?!",
+					"I was just WALKING past a drone!\nThat counts as consent?!",
 					Color(0.4, 0.75, 1.0)
 				)
 		3:
-			# Citizen gets specific — the real jab
 			if bezos_escalation_timer >= 2.8:
 				bezos_escalation_step = 4
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
-					"BEZOS",
-					"Efficiency is a love language.\nNot everyone speaks it.",
-					Color(1.0, 0.92, 0.16)
+					"AMZN DRONE",
+					"Proximity within 8 meters of an Amazon device\nconstitutes passive agreement.\nSee Terms of Service §47, clause 'Existence'.",
+					Color(1.0, 0.82, 0.3)
 				)
 		4:
-			# Bezos materializes with peak corporate delusion
 			if bezos_escalation_timer >= 3.0:
 				bezos_escalation_step = 5
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"CITIZEN",
-					"You spent $500 MILLION on a yacht!\nYour workers unionized just to get\na @#$%ing CHAIR.",
+					"Your workers pee in BOTTLES.\nYou timed their toilet breaks to the SECOND\nand fired them for going over.",
 					Color(0.4, 0.75, 1.0)
 				)
 		5:
-			# The accusation that can't be deflected
-			if bezos_escalation_timer >= 3.2:
+			if bezos_escalation_timer >= 2.8:
 				bezos_escalation_step = 6
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"BEZOS",
-					"That yacht CREATES jobs.\nThe chair slows them down.\nYou clearly don't understand economics.",
+					"Bladder efficiency is an untapped frontier.\nWe are DISRUPTING hydration logistics.\nThe market demands it.",
 					Color(1.0, 0.92, 0.16)
 				)
 		6:
-			# Peak absurdity — then the fight declaration
-			if bezos_escalation_timer >= 3.4:
+			if bezos_escalation_timer >= 3.2:
 				bezos_escalation_step = 7
+				bezos_escalation_timer = 0.0
+				_set_bezos_escalation_line(
+					"CITIZEN",
+					"You had a BRIDGE dismantled in Rotterdam\nto move your $500M megayacht out of port.\nA HISTORIC BRIDGE. For a @#$%ing BOAT.",
+					Color(0.4, 0.75, 1.0)
+				)
+		7:
+			if bezos_escalation_timer >= 3.0:
+				bezos_escalation_step = 8
+				bezos_escalation_timer = 0.0
+				_set_bezos_escalation_line(
+					"BEZOS",
+					"It was structurally non-optimal.\nI liberated it from its original purpose.\nYou're welcome, Rotterdam.",
+					Color(1.0, 0.92, 0.16)
+				)
+		8:
+			if bezos_escalation_timer >= 3.4:
+				bezos_escalation_step = 9
+				bezos_escalation_timer = 0.0
+				_set_bezos_escalation_line(
+					"CITIZEN",
+					"Your ex-wife gave away $17 BILLION to charity\nwhile you were buying a ROCKET\nshaped like a—  ...you know what it looks like.",
+					Color(0.4, 0.75, 1.0)
+				)
+		9:
+			if bezos_escalation_timer >= 3.2:
+				bezos_escalation_step = 10
+				bezos_escalation_timer = 0.0
+				_set_bezos_escalation_line(
+					"BEZOS",
+					"Blue Origin is a LEGACY project for humanity.\nAlso she was slowing down my optimization.\nHer tax write-offs are frankly excessive.",
+					Color(1.0, 0.92, 0.16)
+				)
+		10:
+			if bezos_escalation_timer >= 3.4:
+				bezos_escalation_step = 11
+				bezos_escalation_timer = 0.0
+				_set_bezos_escalation_line(
+					"CITIZEN",
+					"Your Ring doorbells helped arrest more\ninnocent people than any spy network.\nYou turned SUBURBIA into a SURVEILLANCE STATE.",
+					Color(0.4, 0.75, 1.0)
+				)
+		11:
+			if bezos_escalation_timer >= 3.4:
+				bezos_escalation_step = 12
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"BEZOS",
 					"Your dissatisfaction has been ESCALATED\nto the Dispute Resolution Dept.\nThat's me. I AM the department.",
 					Color(1.0, 0.4, 0.2)
 				)
-		7:
-			# Final beat — transition to SF2
+		12:
 			if bezos_escalation_timer >= 3.0:
-				bezos_escalation_step = 8
+				bezos_escalation_step = 13
 				call_deferred("_start_bezos_cinematic")
 
 
@@ -3471,40 +3529,115 @@ void fragment() {
 	sep_top.offset_bottom = 40.0
 	intro_layer.add_child(sep_top)
 
-	# === BOTTOM: Dark ticker bar ===
+	# === BOTTOM: White ticker bar (CNN-style) ===
 	intro_ticker_bar = ColorRect.new()
-	intro_ticker_bar.color = Color(0.08, 0.08, 0.15, 0.92)
+	intro_ticker_bar.name = "TickerBar"
+	intro_ticker_bar.color = Color(1.0, 1.0, 1.0, 0.97)
 	intro_ticker_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	intro_ticker_bar.offset_top = -48.0
+	intro_ticker_bar.offset_top = -42.0
 	intro_layer.add_child(intro_ticker_bar)
 
-	# White separator above ticker
-	var sep_bot := ColorRect.new()
-	sep_bot.color = Color(0.75, 0.08, 0.08, 0.8)
-	sep_bot.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	sep_bot.offset_top = -50.0
-	sep_bot.offset_bottom = -48.0
-	intro_layer.add_child(sep_bot)
+	# Red "BREAKING" badge on left of ticker
+	var ticker_badge := ColorRect.new()
+	ticker_badge.name = "TickerBadge"
+	ticker_badge.color = Color(0.80, 0.04, 0.04, 1.0)
+	ticker_badge.position = Vector2(0, 0)
+	ticker_badge.size = Vector2(138, 42)
+	intro_ticker_bar.add_child(ticker_badge)
 
-	# Scrolling ticker text
+	var ticker_badge_label := Label.new()
+	ticker_badge_label.text = "BREAKING"
+	ticker_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ticker_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ticker_badge_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ticker_badge_label.add_theme_font_size_override("font_size", 15)
+	ticker_badge_label.add_theme_color_override("font_color", Color.WHITE)
+	ticker_badge_label.add_theme_color_override("font_outline_color", Color(0.4, 0.0, 0.0))
+	ticker_badge_label.add_theme_constant_override("outline_size", 2)
+	ticker_badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ticker_badge.add_child(ticker_badge_label)
+
+	# Scrolling ticker text — dark red on white, bigger font
 	intro_ticker_label = Label.new()
 	intro_ticker_label.text = intro_ticker_texts[0]
-	intro_ticker_label.add_theme_font_size_override("font_size", 14)
-	intro_ticker_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
-	intro_ticker_label.position = Vector2(800, -38)
+	intro_ticker_label.add_theme_font_size_override("font_size", 16)
+	intro_ticker_label.add_theme_color_override("font_color", Color(0.60, 0.0, 0.0))
+	intro_ticker_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.25))
+	intro_ticker_label.add_theme_constant_override("shadow_offset_x", 1)
+	intro_ticker_label.add_theme_constant_override("shadow_offset_y", 1)
+	intro_ticker_label.position = Vector2(148, 4)
 	intro_ticker_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	intro_ticker_bar.add_child(intro_ticker_label)
 
-	# === TOP-RIGHT: Channel logo ===
+	# Blue strip above ticker (CNN lower-third style)
+	var blue_strip := ColorRect.new()
+	blue_strip.name = "BlueStrip"
+	blue_strip.color = Color(0.04, 0.18, 0.58, 0.95)
+	blue_strip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	blue_strip.offset_top = -72.0
+	blue_strip.offset_bottom = -42.0
+	intro_layer.add_child(blue_strip)
+
+	# White 1px separator between blue strip and ticker
+	var sep_mid := ColorRect.new()
+	sep_mid.name = "SepMid"
+	sep_mid.color = Color(1.0, 1.0, 1.0, 0.7)
+	sep_mid.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	sep_mid.offset_top = -43.0
+	sep_mid.offset_bottom = -42.0
+	intro_layer.add_child(sep_mid)
+
+	# Network name inside blue strip (left)
+	var blue_network := Label.new()
+	blue_network.name = "BlueNetwork"
+	blue_network.text = "CIVIC NIGHTMARE NEWS NETWORK"
+	blue_network.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	blue_network.set_anchors_preset(Control.PRESET_FULL_RECT)
+	blue_network.offset_left = 12.0
+	blue_network.add_theme_font_size_override("font_size", 14)
+	blue_network.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	blue_network.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blue_strip.add_child(blue_network)
+
+	# === TOP-RIGHT: Channel logo (CNN-style red block) ===
+	var logo_bg := ColorRect.new()
+	logo_bg.name = "LogoBg"
+	logo_bg.color = Color(0.82, 0.05, 0.05, 0.95)
+	logo_bg.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	logo_bg.offset_left = -88.0
+	logo_bg.offset_top = 44.0
+	logo_bg.offset_right = -8.0
+	logo_bg.offset_bottom = 90.0
+	intro_layer.add_child(logo_bg)
+
+	# "CN" white text centered in red box
 	intro_channel_label = Label.new()
 	intro_channel_label.text = "CN"
-	intro_channel_label.add_theme_font_size_override("font_size", 28)
-	intro_channel_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.25))
-	intro_channel_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	intro_channel_label.offset_left = -60.0
-	intro_channel_label.offset_top = 46.0
+	intro_channel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_channel_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	intro_channel_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_channel_label.add_theme_font_size_override("font_size", 30)
+	intro_channel_label.add_theme_color_override("font_color", Color.WHITE)
+	intro_channel_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.5))
+	intro_channel_label.add_theme_constant_override("shadow_offset_x", 2)
+	intro_channel_label.add_theme_constant_override("shadow_offset_y", 2)
 	intro_channel_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(intro_channel_label)
+	logo_bg.add_child(intro_channel_label)
+
+	# "CIVIC NIGHTMARE" small subtitle under logo box
+	var logo_sub := Label.new()
+	logo_sub.name = "LogoSub"
+	logo_sub.text = "CIVIC NIGHTMARE"
+	logo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	logo_sub.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	logo_sub.offset_left = -88.0
+	logo_sub.offset_top = 92.0
+	logo_sub.offset_right = -8.0
+	logo_sub.offset_bottom = 106.0
+	logo_sub.add_theme_font_size_override("font_size", 9)
+	logo_sub.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.55))
+	logo_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_layer.add_child(logo_sub)
 
 	# === TOP-LEFT: Date / time ===
 	intro_datetime_label = Label.new()
@@ -3666,6 +3799,10 @@ func _set_intro_ui_visible(vis: bool) -> void:
 	intro_text.visible = vis
 	intro_vhs_overlay.visible = vis
 	intro_scanlines.visible = vis
+	# New CNN-style elements
+	for n in ["BlueStrip", "SepMid", "LogoBg", "LogoSub"]:
+		var nd := intro_layer.get_node_or_null(n)
+		if nd: nd.visible = vis
 	intro_live_dot.visible = vis
 	intro_live_label.visible = vis
 	intro_ch_label.visible = vis
@@ -4033,6 +4170,12 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_scanlines.material = sl_mat
 	bezos_cinematic_root.add_child(bezos_cinematic_scanlines)
 
+	bezos_cinematic_frame = Control.new()
+	bezos_cinematic_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bezos_cinematic_frame.size = BEZOS_CINEMATIC_FRAME_SIZE
+	bezos_cinematic_root.add_child(bezos_cinematic_frame)
+	bezos_cinematic_root.resized.connect(_layout_bezos_cinematic_frame)
+
 	# ═══ TOP HUD: HP bars + names + timer (SF2 style) ═══
 	# Symmetric: bars 480px each, 80px center gap for timer
 	# Left bar x=120→600, Right bar x=680→1160
@@ -4049,7 +4192,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	p1_name.add_theme_constant_override("shadow_offset_x", 2)
 	p1_name.add_theme_constant_override("shadow_offset_y", 2)
 	p1_name.visible = false
-	bezos_cinematic_root.add_child(p1_name)
+	bezos_cinematic_frame.add_child(p1_name)
 
 	# P2 name (above bar, right-aligned, white)
 	var p2_name := Label.new()
@@ -4064,7 +4207,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	p2_name.add_theme_constant_override("shadow_offset_x", 2)
 	p2_name.add_theme_constant_override("shadow_offset_y", 2)
 	p2_name.visible = false
-	bezos_cinematic_root.add_child(p2_name)
+	bezos_cinematic_frame.add_child(p2_name)
 
 	# P1 HP bar bg (Dark Red)
 	bezos_cinematic_left_bar = ColorRect.new()
@@ -4072,7 +4215,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_left_bar.size = Vector2(480, 26)
 	bezos_cinematic_left_bar.color = Color("#880000")
 	bezos_cinematic_left_bar.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_left_bar)
+	bezos_cinematic_frame.add_child(bezos_cinematic_left_bar)
 
 	# P1 HP fill (SF2 Yellow)
 	bezos_cinematic_left_hp = ColorRect.new()
@@ -4080,7 +4223,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_left_hp.size = Vector2(476, 22)
 	bezos_cinematic_left_hp.color = Color("#ffff29")
 	bezos_cinematic_left_hp.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_left_hp)
+	bezos_cinematic_frame.add_child(bezos_cinematic_left_hp)
 
 	# Timer "99" (center)
 	bezos_cinematic_timer_label = Label.new()
@@ -4096,7 +4239,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_timer_label.add_theme_constant_override("shadow_offset_x", 3)
 	bezos_cinematic_timer_label.add_theme_constant_override("shadow_offset_y", 3)
 	bezos_cinematic_timer_label.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_timer_label)
+	bezos_cinematic_frame.add_child(bezos_cinematic_timer_label)
 
 	# P2 HP bar bg (Dark Red)
 	bezos_cinematic_right_bar = ColorRect.new()
@@ -4104,7 +4247,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_right_bar.size = Vector2(480, 26)
 	bezos_cinematic_right_bar.color = Color("#880000")
 	bezos_cinematic_right_bar.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_right_bar)
+	bezos_cinematic_frame.add_child(bezos_cinematic_right_bar)
 
 	# P2 HP fill (SF2 Yellow)
 	bezos_cinematic_right_hp = ColorRect.new()
@@ -4112,7 +4255,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_right_hp.size = Vector2(476, 22)
 	bezos_cinematic_right_hp.color = Color("#ffff29")
 	bezos_cinematic_right_hp.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_right_hp)
+	bezos_cinematic_frame.add_child(bezos_cinematic_right_hp)
 
 	# ═══ BOTTOM: "PRIME MEMBERSHIP" energy bar (humor) ═══
 	# Bottom bar: Bezos's CORP. LEGAL SHIELD — aligned under his HP bar (left side only)
@@ -4125,7 +4268,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bottom_label.add_theme_font_size_override("font_size", 13)
 	bottom_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16, 0.85))
 	bottom_label.visible = false
-	bezos_cinematic_root.add_child(bottom_label)
+	bezos_cinematic_frame.add_child(bottom_label)
 
 	var bottom_bar_bg := ColorRect.new()
 	bottom_bar_bg.name = "BottomBarBg"
@@ -4133,7 +4276,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bottom_bar_bg.size = Vector2(480, 16)
 	bottom_bar_bg.color = Color(0.25, 0.0, 0.0)
 	bottom_bar_bg.visible = false
-	bezos_cinematic_root.add_child(bottom_bar_bg)
+	bezos_cinematic_frame.add_child(bottom_bar_bg)
 
 	var bottom_bar_hp := ColorRect.new()
 	bottom_bar_hp.name = "BottomBarHP"
@@ -4141,7 +4284,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bottom_bar_hp.size = Vector2(476, 12)
 	bottom_bar_hp.color = Color(1.0, 0.92, 0.16)
 	bottom_bar_hp.visible = false
-	bezos_cinematic_root.add_child(bottom_bar_hp)
+	bezos_cinematic_frame.add_child(bottom_bar_hp)
 
 	# ═══ Stage name (centered, big) ═══
 	bezos_cinematic_stage = Label.new()
@@ -4156,21 +4299,24 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_stage.add_theme_constant_override("shadow_offset_x", 3)
 	bezos_cinematic_stage.add_theme_constant_override("shadow_offset_y", 3)
 	bezos_cinematic_stage.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_stage)
+	bezos_cinematic_frame.add_child(bezos_cinematic_stage)
 
 	# ═══ Fighter cards — centered: each 360×480, 100px gap ═══
 	# Left: x=(1280-360-100-360)/2 = 230   Right: x=230+360+100 = 690
+	# Left Card: Bezos (Default Boss)
 	bezos_cinematic_left_card = _create_sf2_fighter_card(
 		"JEFF BEZOS", "B", Color(1.0, 1.0, 1.0), "FULFILLMENT PRIME",
 		"res://assets/mockups/bezos_combat_portrait.png")
 	bezos_cinematic_left_card.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_left_card)
+	bezos_cinematic_frame.add_child(bezos_cinematic_left_card)
 
+	# Right Card: The Player (Default Citizen) 
+	# Note: In a future expansion, this could be the leader we are facing!
 	bezos_cinematic_right_card = _create_sf2_fighter_card(
 		"CITIZEN", "?", Color(1.0, 1.0, 1.0), "MANUAL PROCESSING",
 		"res://assets/mockups/player_combat_portrait.png")
 	bezos_cinematic_right_card.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_right_card)
+	bezos_cinematic_frame.add_child(bezos_cinematic_right_card)
 
 	# ═══ VS (giant, perfectly centered) ═══
 	bezos_cinematic_vs = Label.new()
@@ -4185,7 +4331,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_vs.add_theme_constant_override("shadow_offset_x", 5)
 	bezos_cinematic_vs.add_theme_constant_override("shadow_offset_y", 5)
 	bezos_cinematic_vs.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_vs)
+	bezos_cinematic_frame.add_child(bezos_cinematic_vs)
 
 	# ═══ ROUND 1 ═══
 	bezos_cinematic_round = Label.new()
@@ -4200,7 +4346,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_round.add_theme_constant_override("shadow_offset_x", 4)
 	bezos_cinematic_round.add_theme_constant_override("shadow_offset_y", 4)
 	bezos_cinematic_round.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_round)
+	bezos_cinematic_frame.add_child(bezos_cinematic_round)
 
 	# ═══ FIGHT! ═══
 	bezos_cinematic_fight = Label.new()
@@ -4215,7 +4361,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_fight.add_theme_constant_override("shadow_offset_x", 0)
 	bezos_cinematic_fight.add_theme_constant_override("shadow_offset_y", 4) # Bottom flame shadow
 	bezos_cinematic_fight.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_fight)
+	bezos_cinematic_frame.add_child(bezos_cinematic_fight)
 
 	# ═══ K.O. ═══
 	bezos_cinematic_ko = Label.new()
@@ -4230,7 +4376,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_ko.add_theme_constant_override("shadow_offset_x", 6)
 	bezos_cinematic_ko.add_theme_constant_override("shadow_offset_y", 6)
 	bezos_cinematic_ko.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_ko)
+	bezos_cinematic_frame.add_child(bezos_cinematic_ko)
 
 	# ═══ PERFECT ═══
 	bezos_cinematic_perfect = Label.new()
@@ -4245,7 +4391,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_perfect.add_theme_constant_override("shadow_offset_x", 3)
 	bezos_cinematic_perfect.add_theme_constant_override("shadow_offset_y", 3)
 	bezos_cinematic_perfect.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_perfect)
+	bezos_cinematic_frame.add_child(bezos_cinematic_perfect)
 
 	# ═══ Flash overlay ═══
 	bezos_cinematic_flash = ColorRect.new()
@@ -4253,7 +4399,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_flash.color = Color(1, 1, 1, 0)
 	bezos_cinematic_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bezos_cinematic_flash.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_flash)
+	bezos_cinematic_frame.add_child(bezos_cinematic_flash)
 
 	# ═══ DENIED punchline ═══
 	bezos_cinematic_denial = Label.new()
@@ -4268,7 +4414,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_denial.add_theme_constant_override("shadow_offset_x", 3)
 	bezos_cinematic_denial.add_theme_constant_override("shadow_offset_y", 3)
 	bezos_cinematic_denial.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_denial)
+	bezos_cinematic_frame.add_child(bezos_cinematic_denial)
 
 	# Queue joke
 	bezos_cinematic_subtitle = Label.new()
@@ -4280,7 +4426,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_subtitle.add_theme_font_size_override("font_size", 18)
 	bezos_cinematic_subtitle.add_theme_color_override("font_color", Color(0.65, 0.65, 0.7, 0.85))
 	bezos_cinematic_subtitle.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_subtitle)
+	bezos_cinematic_frame.add_child(bezos_cinematic_subtitle)
 
 	bezos_cinematic_speaker = Label.new()
 	bezos_cinematic_speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -4292,7 +4438,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_speaker.add_theme_constant_override("shadow_offset_x", 2)
 	bezos_cinematic_speaker.add_theme_constant_override("shadow_offset_y", 2)
 	bezos_cinematic_speaker.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_speaker)
+	bezos_cinematic_frame.add_child(bezos_cinematic_speaker)
 
 	bezos_cinematic_dialogue = Label.new()
 	bezos_cinematic_dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -4306,9 +4452,51 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_dialogue.add_theme_constant_override("shadow_offset_x", 3)
 	bezos_cinematic_dialogue.add_theme_constant_override("shadow_offset_y", 3)
 	bezos_cinematic_dialogue.visible = false
-	bezos_cinematic_root.add_child(bezos_cinematic_dialogue)
+	bezos_cinematic_frame.add_child(bezos_cinematic_dialogue)
 
 	add_child(bezos_cinematic_layer)
+	_layout_bezos_cinematic_frame()
+
+func _get_combat_card_for_leader(character_id: String) -> PanelContainer:
+	var path: String = combat_portrait_paths.get(character_id, "res://assets/mockups/player_combat_portrait.png")
+	var c_name: String = "UNKNOWN"
+	var badge: String = "?"
+	var sub: String = "CITIZEN"
+	
+	match character_id:
+		"donald_trump":
+			c_name = "DONALD TRUMP"
+			badge = "T"
+			sub = "MAGA STRIKE"
+		"elon_musk":
+			c_name = "ELON MUSK"
+			badge = "X"
+			sub = "TECHNOKING"
+		"vladimir_putin":
+			c_name = "VLADIMIR PUTIN"
+			badge = "P"
+			sub = "KREMLIN OPS"
+		"ursula_von_der_leyen":
+			c_name = "V. D. LEYEN"
+			badge = "U"
+			sub = "EU OVERLORD"
+		"emmanuel_macron":
+			c_name = "E. MACRON"
+			badge = "M"
+			sub = "JUPITERIAN"
+		"christine_lagarde":
+			c_name = "C. LAGARDE"
+			badge = "L"
+			sub = "ECB LIQUIDITY"
+	
+	return _create_sf2_fighter_card(c_name, badge, character_colors.get(character_id, Color.WHITE), sub, path)
+
+func _layout_bezos_cinematic_frame() -> void:
+	if not bezos_cinematic_root or not bezos_cinematic_frame:
+		return
+	bezos_cinematic_frame.size = BEZOS_CINEMATIC_FRAME_SIZE
+	bezos_cinematic_frame_base_position = (bezos_cinematic_root.size - BEZOS_CINEMATIC_FRAME_SIZE) * 0.5
+	bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
 
 func _create_sf2_fighter_card(fighter_name: String, badge_text: String, accent: Color, subtitle_text: String, portrait_path: String = "") -> PanelContainer:
 	var card := PanelContainer.new()
@@ -4378,7 +4566,7 @@ func _bezos_hide_all_ui() -> void:
 			bezos_cinematic_timer_label]:
 		if node: node.visible = false
 	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP"]:
-		var nd := bezos_cinematic_root.get_node_or_null(n)
+		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
 		if nd: nd.visible = false
 
 func _bezos_show_hud() -> void:
@@ -4387,7 +4575,7 @@ func _bezos_show_hud() -> void:
 			bezos_cinematic_timer_label]:
 		if node: node.visible = true
 	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP"]:
-		var nd := bezos_cinematic_root.get_node_or_null(n)
+		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
 		if nd: nd.visible = true
 
 func _begin_bezos_cinematic_state(state: int) -> void:
@@ -4413,12 +4601,8 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 			tw.tween_property(bezos_cinematic_stage, "modulate:a", 1.0, 0.5)
 
 		BezosCinematicState.SLIDE_IN:
-			# Stage shrinks to small HUD position between bars
-			bezos_cinematic_stage.position = Vector2(540, 30)
-			bezos_cinematic_stage.size = Vector2(200, 24)
-			bezos_cinematic_stage.add_theme_font_size_override("font_size", 12)
-			bezos_cinematic_stage.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16, 0.5))
-			bezos_cinematic_stage.modulate.a = 1.0
+			# The stage title belongs only to the black intro beat.
+			bezos_cinematic_stage.visible = false
 			_bezos_show_hud()
 			bezos_cinematic_timer_label.text = "99"
 			# Cards slam in from sides
@@ -4432,6 +4616,7 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 			tw2.tween_property(bezos_cinematic_right_card, "position", Vector2(CARD_RIGHT_X, CARD_Y), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 		BezosCinematicState.VS_SLAM:
+			bezos_cinematic_stage.visible = false
 			# VS slams center between cards with flash
 			bezos_cinematic_vs.visible = true
 			bezos_cinematic_vs.modulate.a = 0.0
@@ -4446,6 +4631,7 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 			tw3.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.4)
 
 		BezosCinematicState.FIGHT:
+			bezos_cinematic_stage.visible = false
 			bezos_cinematic_vs.visible = false
 			bezos_cinematic_left_card.visible = false
 			bezos_cinematic_right_card.visible = false
@@ -4477,6 +4663,7 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 
 		BezosCinematicState.COMBAT:
 			# Fake combat: FIGHT! fades, timer counts down, HP bars animate
+			bezos_cinematic_stage.visible = false
 			bezos_cinematic_fight.visible = false
 			# Player HP starts full (476px), will drain in _process via shake/hits
 			# Bezos HP stays full (he's invincible, obviously)
@@ -4500,7 +4687,7 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 			tw6.parallel().tween_property(bezos_cinematic_right_hp, "position:x", 1158.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 			tw6.parallel().tween_callback(func(): bezos_cinematic_timer_label.text = "00")
 			# Bottom bar (Prime Membership) drains too
-			var bottom_hp := bezos_cinematic_root.get_node_or_null("BottomBarHP")
+			var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
 			if bottom_hp:
 				tw6.parallel().tween_property(bottom_hp, "size:x", 0.0, 1.0).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 			# Pause, then K.O.
@@ -4536,9 +4723,9 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 				bezos_cinematic_left_hp.modulate.a = 0.15
 				bezos_cinematic_stage.visible = false
 				bezos_cinematic_timer_label.visible = false
-				var bl := bezos_cinematic_root.get_node_or_null("BottomLabel")
-				var bg := bezos_cinematic_root.get_node_or_null("BottomBarBg")
-				var hp := bezos_cinematic_root.get_node_or_null("BottomBarHP")
+				var bl := bezos_cinematic_frame.get_node_or_null("BottomLabel") if bezos_cinematic_frame else null
+				var bg := bezos_cinematic_frame.get_node_or_null("BottomBarBg") if bezos_cinematic_frame else null
+				var hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
 				if bl: bl.modulate.a = 0.15
 				if bg: bg.modulate.a = 0.15
 				if hp: hp.visible = false
@@ -4617,22 +4804,22 @@ func _process_bezos_cinematic(delta: float) -> void:
 					bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.3)
 			elif bezos_cinematic_flash and bezos_cinematic_flash.color.a > 0.0:
 				bezos_cinematic_flash.color.a = maxf(bezos_cinematic_flash.color.a - delta * 6.0, 0.0)
-			# Screen shake: offset the root slightly
-			if bezos_cinematic_root and fmod(t, 0.5) < 0.12:
+			# Screen shake: offset only the fixed 1280x720 frame
+			if bezos_cinematic_frame and fmod(t, 0.5) < 0.12:
 				var shake_x := randf_range(-3.0, 3.0)
 				var shake_y := randf_range(-2.0, 2.0)
-				bezos_cinematic_root.position = Vector2(shake_x, shake_y)
-			elif bezos_cinematic_root:
-				bezos_cinematic_root.position = Vector2.ZERO
+				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position + Vector2(shake_x, shake_y)
+			elif bezos_cinematic_frame:
+				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
 			# Bottom bar (Prime Membership) also drains slowly
-			if bezos_cinematic_root:
-				var bottom_hp := bezos_cinematic_root.get_node_or_null("BottomBarHP")
+			if bezos_cinematic_frame:
+				var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP")
 				if bottom_hp:
 					bottom_hp.size.x = lerpf(476.0, 240.0, progress)
 			# Transition to DENIED (the devastating final blow)
 			if bezos_cinematic_timer >= BEZOS_COMBAT_DURATION:
-				if bezos_cinematic_root:
-					bezos_cinematic_root.position = Vector2.ZERO
+				if bezos_cinematic_frame:
+					bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
 				_begin_bezos_cinematic_state(BezosCinematicState.DENIED)
 		BezosCinematicState.DENIED:
 			# The fake victory and the corporate denial both need a readable pause.
@@ -4647,7 +4834,8 @@ func _finish_bezos_cinematic() -> void:
 		bezos_cinematic_layer.visible = false
 	if bezos_cinematic_root:
 		bezos_cinematic_root.modulate.a = 1.0
-		bezos_cinematic_root.position = Vector2.ZERO
+	if bezos_cinematic_frame:
+		bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
 	for node in [bezos_cinematic_left_card, bezos_cinematic_right_card,
 			bezos_cinematic_left_bar, bezos_cinematic_right_bar,
 			bezos_cinematic_left_hp]:
@@ -4665,12 +4853,12 @@ func _finish_bezos_cinematic() -> void:
 		bezos_cinematic_speaker.modulate = Color.WHITE
 	if bezos_cinematic_dialogue:
 		bezos_cinematic_dialogue.modulate = Color.WHITE
-	var bottom_hp := bezos_cinematic_root.get_node_or_null("BottomBarHP") if bezos_cinematic_root else null
+	var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
 	if bottom_hp:
 		bottom_hp.size.x = 476.0
 		bottom_hp.visible = true
 	for n in ["BottomLabel", "BottomBarBg", "BottomBarHP", "P1Name", "P2Name"]:
-		var nd := bezos_cinematic_root.get_node_or_null(n) if bezos_cinematic_root else null
+		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
 		if nd: nd.modulate = Color.WHITE
 	player.set_physics_process(true)
 	if bezos_drone_root:
