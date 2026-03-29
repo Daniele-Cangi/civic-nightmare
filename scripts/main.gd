@@ -535,7 +535,7 @@ var portrait_paths: Dictionary = {
 	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
 	"ufo_easter_egg": "res://assets/mockups/einstein_caricature.png",
 	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
-	"historical_contamination": "res://assets/sprites/npc_contamination.png",
+	"historical_contamination": "res://assets/mockups/contamination_portrait.png",
 	"ZELENSKY": "res://assets/mockups/zelensky_portrait.png",
 	"DEATH": "res://assets/mockups/death_ironic.png"
 }
