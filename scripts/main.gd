@@ -62,25 +62,29 @@ var ai_terminal_data: Dictionary = {}
 var hidden_bunker_data: Dictionary = {}
 var encounter_residues: Dictionary = {}
 var encounter_marks: Dictionary = {}
+var optional_dialogue_seen: Dictionary = {}
 var ai_override_lines: Array = []
 var ai_dialogue_override_active: bool = false
 var seen_hidden_bunker_scene: bool = false
 var hidden_bunker_scene_active: bool = false
 var hidden_bunker_exit_acknowledged: bool = false
+var hidden_bunker_ai_ack_pending: bool = false
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
 var contamination_appearance_count: int = 0
+var contamination_terminal_ready: bool = false
+var contamination_terminal_dialogue_seen: bool = false
+var contamination_terminal_departed: bool = false
+var contamination_terminal_afterglow_pending: bool = false
 var contamination_root: Node2D
 
-const CONTAMINATION_TRIGGER_CHANCE := 0.42
-const CONTAMINATION_MAX_APPEARANCES := 2
+const CONTAMINATION_MAX_APPEARANCES := 3
 const CONTAMINATION_SOURCE_OFFSETS := {
-	"vault": Vector2(-116, -24),
-	"eu_palace": Vector2(-118, -24),
-	"spaceship": Vector2(118, -24),
+	"oval_office": Vector2(-116, -24),
 	"kremlin": Vector2(122, -24),
-	"ai_terminal": Vector2(134, -20)
+	"mountain_bunker": Vector2(112, -18)
 }
+const CONTAMINATION_TERMINAL_OFFSET := Vector2(-140, -8)
 
 # --- Intro sequence ---
 var intro_active: bool = true
@@ -185,17 +189,58 @@ var bezos_cinematic_frame_base_position: Vector2 = Vector2.ZERO
 enum BezosCinematicState { STAGE, SLIDE_IN, VS_SLAM, FIGHT, COMBAT, DENIED, OUTRO }
 
 const BEZOS_CINEMATIC_FRAME_SIZE := Vector2(1280, 720)
+const BEZOS_ERROR_POPUPS := [
+	["PRIME AUTO-RENEWAL NOTICE",
+	 "Your card has been charged $14.99.\nYour refusal to consent has been noted.\nThis incident has been flagged."],
+	["TERMS OF SERVICE §47 — EXISTENCE CLAUSE",
+	 "By breathing within 8m of this drone\nyou agree to Clauses 47–891 incl.\n[  OK  ]   [  OK IN YELLOW  ]"],
+	["WORKER EFFICIENCY ALERT™",
+	 "A nearby human scored 0.3% below quota.\nAutomated reprimand issued (4th this week).\nHave a productive and Prime day!"],
+	["DISPUTE RESOLUTION COMPLETE",
+	 "Your complaint has been auto-dismissed.\nCase ID: 00000000000. Review: NEVER.\nThank you for choosing Amazon."],
+]
 const BEZOS_STAGE_DURATION := 2.0
 const BEZOS_SLIDE_IN_DURATION := 2.1
 const BEZOS_VS_DURATION := 2.0
 const BEZOS_FIGHT_DURATION := 4.2
-const BEZOS_COMBAT_DURATION := 3.8
+const BEZOS_COMBAT_DURATION := 10.0
 const BEZOS_DENIED_DURATION := 13.2
 const BEZOS_ROUND_HOLD := 1.9
 const BEZOS_KO_DELAY := 0.9
 const BEZOS_PERFECT_DELAY := 1.6
 const BEZOS_DENIAL_REVEAL_DELAY := 1.9
 const BEZOS_SUBTITLE_REVEAL_DELAY := 1.6
+
+# --- Final Mission ---
+var final_mission_active: bool = false
+var final_mission_done: bool = false
+var final_mission_margin_text: String = ""
+var final_mission_choice: int = -1
+var final_mission_npc: StaticBody2D
+var final_mission_awaiting_input: bool = false
+var final_mission_text_field: LineEdit
+
+# --- MK Sequence ---
+var mk_sequence_active: bool = false
+var mk_sequence_timer: float = 0.0
+var mk_layer: CanvasLayer
+var mk_finish_label: Label
+var mk_countdown_label: Label
+var mk_freeze_text: Label
+var mk_claudia_label: Label
+var mk_flash: ColorRect
+var mk_sprite: TextureRect
+var mk_fact_bg: ColorRect
+var mk_fact_number: Label
+var mk_fact_line1: Label
+var mk_fact_line2: Label
+var mk_red_bloom: ColorRect
+var mk_execute_line: Label
+var mk_ghost1: TextureRect
+var mk_ghost2: TextureRect
+var mk_flash_index: int = 0
+enum MKState { ENTER, COUNTDOWN, EXECUTE, FREEZE, CLAUDIA_LINE, FADE_OUT }
+var mk_state: int = MKState.ENTER
 
 var ending_scenes: Array = [
 	"[CLASSIFIED — FILE #0000]\n\nYou collected all six signatures.\nThe document is complete.",
@@ -248,9 +293,10 @@ const SAM_ALTMAN_TILE := Vector2i(0, 24)
 const NUCLEAR_PLANT_TILE := Vector2i(0, 28)
 const UFO_TILE := Vector2i(30, -6)
 const UFO_FLOAT_OFFSET := Vector2(0, -24)
-const BEZOS_DRONE_TILE := Vector2i(31, 16)
+const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
-const HIDDEN_BUNKER_TILE := Vector2i(-32, -28)
+const HIDDEN_BUNKER_TILE := Vector2i(-29, -27)
+const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -277,6 +323,8 @@ var bezos_drone_hover_time: float = 0.0
 var bezos_escalation_active: bool = false
 var bezos_escalation_step: int = 0
 var bezos_escalation_timer: float = 0.0
+var bezos_escalation_space_latched: bool = false
+var bezos_escalation_bip_tween: Tween
 var bezos_escalation_bubble: PanelContainer
 var bezos_escalation_speaker_label: Label
 var bezos_escalation_text_label: Label
@@ -471,7 +519,9 @@ var character_colors: Dictionary = {
 	"xi_jinping": Color(0.7, 0.12, 0.12),
 	"sam_altman": Color(0.6, 0.62, 0.65),
 	"ufo_easter_egg": Color(0.58, 0.96, 0.78),
-	"mark_zuckerberg_ufo": Color(0.12, 0.12, 0.12)
+	"mark_zuckerberg_ufo": Color(0.12, 0.12, 0.12),
+	"historical_contamination": Color(0.32, 0.32, 0.34),
+	"self": Color(0.75, 0.75, 0.82)
 }
 var portrait_paths: Dictionary = {
 	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
@@ -485,6 +535,7 @@ var portrait_paths: Dictionary = {
 	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
 	"ufo_easter_egg": "res://assets/mockups/einstein_caricature.png",
 	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
+	"historical_contamination": "res://assets/sprites/npc_contamination.png",
 	"ZELENSKY": "res://assets/mockups/zelensky_portrait.png",
 	"DEATH": "res://assets/mockups/death_ironic.png"
 }
@@ -579,6 +630,7 @@ func _ready() -> void:
 	_create_intro_overlay()
 	_create_ending_overlay()
 	_create_bezos_cinematic_overlay()
+	_create_mk_overlay()
 
 func _remove_world_npcs() -> void:
 	for child in entities_layer.get_children():
@@ -818,6 +870,7 @@ func _start_bezos_escalation() -> void:
 	bezos_escalation_active = true
 	bezos_escalation_step = 0
 	bezos_escalation_timer = 0.0
+	bezos_escalation_space_latched = Input.is_physical_key_pressed(KEY_SPACE)
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
 	is_dialogue_open = false
@@ -839,6 +892,12 @@ func _start_bezos_escalation() -> void:
 		"Your Prime trial expired 1,247 days ago.\nRenew now?   [ YES ]   [ YES IN YELLOW ]",
 		Color(1.0, 0.82, 0.3)
 	)
+
+func _is_bezos_escalation_advance_pressed() -> bool:
+	var space_down := Input.is_physical_key_pressed(KEY_SPACE)
+	var space_pressed := space_down and not bezos_escalation_space_latched
+	bezos_escalation_space_latched = space_down
+	return Input.is_action_just_pressed("ui_accept") or space_pressed
 
 func _create_bezos_escalation_bubble() -> void:
 	if bezos_escalation_bubble:
@@ -877,16 +936,51 @@ func _set_bezos_escalation_line(speaker: String, text: String, color: Color) -> 
 	bezos_escalation_speaker_label.text = speaker
 	bezos_escalation_speaker_label.add_theme_color_override("font_color", color)
 	bezos_escalation_text_label.text = text
+	_play_bezos_escalation_bips(text, speaker)
 	# Flash effect on new line
 	if bezos_escalation_bubble:
 		bezos_escalation_bubble.modulate = Color(1.4, 1.4, 1.4, 1.0)
 		var tw := create_tween()
 		tw.tween_property(bezos_escalation_bubble, "modulate", Color.WHITE, 0.2)
 
+func _play_bezos_escalation_bips(text: String, speaker: String) -> void:
+	if not typewriter_bip:
+		return
+	if bezos_escalation_bip_tween and bezos_escalation_bip_tween.is_valid():
+		bezos_escalation_bip_tween.kill()
+
+	var stripped_len := text.replace(" ", "").replace("\n", "").length()
+	var burst_count := clampi(int(ceil(stripped_len / 18.0)), 2, 6)
+	var pitch_min := 0.96
+	var pitch_max := 1.12
+	match speaker:
+		"AMZN DRONE":
+			pitch_min = 1.12
+			pitch_max = 1.24
+		"BEZOS":
+			pitch_min = 0.86
+			pitch_max = 0.98
+		"CITIZEN":
+			pitch_min = 0.98
+			pitch_max = 1.1
+
+	bezos_escalation_bip_tween = create_tween()
+	for i in range(burst_count):
+		bezos_escalation_bip_tween.tween_callback(func():
+			if not typewriter_bip:
+				return
+			typewriter_bip.pitch_scale = randf_range(pitch_min, pitch_max)
+			typewriter_bip.play()
+		)
+		if i < burst_count - 1:
+			bezos_escalation_bip_tween.tween_interval(0.045)
+
 func _start_bezos_cinematic() -> void:
 	bezos_cinematic_seen = true
 	bezos_cinematic_active = true
 	bezos_escalation_active = false
+	if bezos_escalation_bip_tween and bezos_escalation_bip_tween.is_valid():
+		bezos_escalation_bip_tween.kill()
 	# Clean up world bubble
 	if bezos_escalation_bubble:
 		bezos_escalation_bubble.queue_free()
@@ -907,7 +1001,7 @@ func _create_hidden_bunker_entrance() -> void:
 
 	hidden_bunker_root = Node2D.new()
 	hidden_bunker_root.name = "HiddenBunkerEntrance"
-	hidden_bunker_root.position = _tile_to_body_position(HIDDEN_BUNKER_TILE)
+	hidden_bunker_root.position = _tile_to_body_position(HIDDEN_BUNKER_TILE) + HIDDEN_BUNKER_WORLD_OFFSET
 	hidden_bunker_root.z_index = 2
 	entities_layer.add_child(hidden_bunker_root)
 
@@ -927,13 +1021,6 @@ func _create_hidden_bunker_entrance() -> void:
 	mountain.scale = Vector2(0.42, 0.42)
 	mountain.offset = Vector2(0, -10)
 	hidden_bunker_root.add_child(mountain)
-
-	var label := Label.new()
-	label.text = "DO NOT ENTER"
-	label.position = Vector2(-44, 48)
-	label.add_theme_font_size_override("font_size", 9)
-	label.add_theme_color_override("font_color", Color(0.82, 0.84, 0.9, 0.78))
-	hidden_bunker_root.add_child(label)
 
 	var door := Area2D.new()
 	door.name = "HiddenBunkerDoor"
@@ -1082,7 +1169,7 @@ func _setup_interiors() -> void:
 	room_registry["mountain_bunker"] = bunker_room
 	if bunker_room.has_method("set_room_active"):
 		bunker_room.set_room_active(false)
-	world_spawn_points["mountain_bunker_exterior"] = _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2))
+	world_spawn_points["mountain_bunker_exterior"] = _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2)) + HIDDEN_BUNKER_WORLD_OFFSET
 
 func _create_world_doorway(door_name: String, tile_pos: Vector2i, destination: String, spawn_marker: String) -> void:
 	var door := Area2D.new()
@@ -1145,7 +1232,6 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		call_deferred("_start_ufo_lab_scene")
 	elif leaving_hidden_bunker and seen_hidden_bunker_scene and not hidden_bunker_exit_acknowledged:
 		hidden_bunker_exit_acknowledged = true
-		call_deferred("_queue_hidden_bunker_ai_ack")
 	if destination == "world":
 		call_deferred("_maybe_queue_contamination_event", contamination_source)
 
@@ -1299,6 +1385,7 @@ func _process(delta: float) -> void:
 	_process_ufo_easter_egg(delta)
 	_process_bezos_drone(delta)
 	_process_ai_terminal(delta)
+	_process_mk_sequence(delta)
 	if is_dialogue_open:
 		# Blink continue indicator
 		if continue_label.visible:
@@ -1379,8 +1466,10 @@ func _process_bezos_drone(delta: float) -> void:
 		var shake := sin(bezos_escalation_timer * 14.0) * 0.8
 		bezos_drone_root.position.x = bezos_drone_base_position.x + shake
 
+	var advance_pressed := _is_bezos_escalation_advance_pressed()
+
 	# --- Contamination Spectral Breathing & Shader ---
-	if contamination_active and contamination_root:
+	if contamination_root and contamination_root.visible:
 		var spr := contamination_root.get_node_or_null("Sprite") as Sprite2D
 		if spr:
 			var base_scale := float(spr.get_meta("base_scale", 0.22))
@@ -1391,7 +1480,7 @@ func _process_bezos_drone(delta: float) -> void:
 
 	match bezos_escalation_step:
 		0:
-			if bezos_escalation_timer >= 3.2:
+			if advance_pressed:
 				bezos_escalation_step = 1
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1400,7 +1489,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		1:
-			if bezos_escalation_timer >= 2.4:
+			if advance_pressed:
 				bezos_escalation_step = 2
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1409,7 +1498,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.82, 0.3)
 				)
 		2:
-			if bezos_escalation_timer >= 2.6:
+			if advance_pressed:
 				bezos_escalation_step = 3
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1418,7 +1507,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		3:
-			if bezos_escalation_timer >= 2.8:
+			if advance_pressed:
 				bezos_escalation_step = 4
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1427,7 +1516,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.82, 0.3)
 				)
 		4:
-			if bezos_escalation_timer >= 3.0:
+			if advance_pressed:
 				bezos_escalation_step = 5
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1436,7 +1525,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		5:
-			if bezos_escalation_timer >= 2.8:
+			if advance_pressed:
 				bezos_escalation_step = 6
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1445,7 +1534,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.92, 0.16)
 				)
 		6:
-			if bezos_escalation_timer >= 3.2:
+			if advance_pressed:
 				bezos_escalation_step = 7
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1454,7 +1543,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		7:
-			if bezos_escalation_timer >= 3.0:
+			if advance_pressed:
 				bezos_escalation_step = 8
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1463,7 +1552,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.92, 0.16)
 				)
 		8:
-			if bezos_escalation_timer >= 3.4:
+			if advance_pressed:
 				bezos_escalation_step = 9
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1472,7 +1561,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		9:
-			if bezos_escalation_timer >= 3.2:
+			if advance_pressed:
 				bezos_escalation_step = 10
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1481,7 +1570,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.92, 0.16)
 				)
 		10:
-			if bezos_escalation_timer >= 3.4:
+			if advance_pressed:
 				bezos_escalation_step = 11
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1490,7 +1579,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(0.4, 0.75, 1.0)
 				)
 		11:
-			if bezos_escalation_timer >= 3.4:
+			if advance_pressed:
 				bezos_escalation_step = 12
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
@@ -1499,7 +1588,7 @@ func _process_bezos_drone(delta: float) -> void:
 					Color(1.0, 0.4, 0.2)
 				)
 		12:
-			if bezos_escalation_timer >= 3.0:
+			if advance_pressed:
 				bezos_escalation_step = 13
 				call_deferred("_start_bezos_cinematic")
 
@@ -2360,6 +2449,10 @@ func _process_ai_terminal(_delta: float) -> void:
 	var terminal := get_node_or_null("Entities/AITerminal")
 	if not terminal or not player:
 		return
+	if contamination_terminal_ready and not contamination_terminal_departed and contamination_root and is_instance_valid(contamination_root) and not contamination_active:
+		contamination_root.modulate = Color.WHITE
+		contamination_root.visible = true
+		contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
 	var indicator := terminal.get_node_or_null("Indicator") as Label
 	if not indicator:
 		return
@@ -2683,6 +2776,21 @@ func open_dialogue(character_id: String) -> void:
 	_animate_dialogue_in()
 
 func _setup_ai_dialogue() -> void:
+	if contamination_terminal_afterglow_pending:
+		ai_dialogue_override_active = true
+		contamination_terminal_afterglow_pending = false
+		dialogue_lines = ["..."]
+		return
+
+	if contamination_terminal_ready and not contamination_terminal_dialogue_seen:
+		var contamination_data: Dictionary = character_data_cache.get("historical_contamination", {})
+		var terminal_debate: Array = contamination_data.get("terminal_debate", [])
+		if not terminal_debate.is_empty():
+			ai_dialogue_override_active = true
+			contamination_terminal_dialogue_seen = true
+			dialogue_lines = terminal_debate.duplicate()
+			return
+
 	if not ai_override_lines.is_empty():
 		ai_dialogue_override_active = true
 		dialogue_lines = ai_override_lines.duplicate()
@@ -2751,9 +2859,16 @@ func _setup_politician_dialogue(character_id: String) -> void:
 	var c_data: Dictionary = character_data_cache.get(character_id, {})
 	var qd: Dictionary = c_data.get("quest_dialogue", {})
 	var is_optional := bool(c_data.get("optional", false))
+	var optional_repeat_lines: Array = c_data.get("optional_repeat_lines", [])
 
 	if not is_optional and quest_completed.has(character_id):
 		dialogue_lines = ["You already have my signature. What more do you want?"]
+		return
+
+	if is_optional and optional_dialogue_seen.has(character_id) and not optional_repeat_lines.is_empty():
+		dialogue_lines = optional_repeat_lines.duplicate()
+		dialogue_choices = []
+		dialogue_choice_prompt = ""
 		return
 
 	if not is_optional and quest_index < 0:
@@ -2794,6 +2909,10 @@ func _show_choices() -> void:
 	choice_index = 0
 	continue_label.visible = false
 	text_label.text = dialogue_choice_prompt
+
+	# Expand dialogue box if many choices (prevent overflow)
+	var extra_height := maxf(0.0, (dialogue_choices.size() - 2) * 28.0)
+	dialogue_anchor.offset_top = -232.0 - extra_height
 
 	# Clear old labels
 	for child in choice_container.get_children():
@@ -2848,16 +2967,32 @@ func _select_choice() -> void:
 		_finish_dialogue()
 
 func _finish_dialogue() -> void:
+	# Final mission: after the self-NPC response, open text input instead of closing normally
+	if current_character_id == "self":
+		_close_dialogue()
+		# Record which choice was made (stored in dialogue_choices file_tag via _record_choice_mark is not called for "self")
+		# We read it from the last selected choice index
+		final_mission_choice = choice_index
+		get_tree().create_timer(0.5).timeout.connect(_open_text_input_field)
+		return
+
 	# Mark quest completion for politicians
 	if current_character_id != "ai_terminal" and not quest_completed.has(current_character_id):
 		if quest_index >= 0 and quest_index < quest_order.size() and quest_order[quest_index] == current_character_id:
 			quest_completed[current_character_id] = true
 			quest_index += 1
 
+	var current_data: Dictionary = character_data_cache.get(current_character_id, {})
+	if bool(current_data.get("optional", false)):
+		optional_dialogue_seen[current_character_id] = true
+
 	# Trigger ending if quest just finished via final AI dialogue
 	var should_end: bool = quest_finished and current_character_id == "ai_terminal" and not ending_triggered
 	var queue_contamination_after_ai := current_character_id == "ai_terminal" and quest_index > 0 and not should_end and not ai_dialogue_override_active
+	var should_dissolve_terminal_contamination := current_character_id == "ai_terminal" and ai_dialogue_override_active and contamination_terminal_ready and not contamination_terminal_departed
 	_close_dialogue()
+	if should_dissolve_terminal_contamination:
+		_dissolve_terminal_contamination()
 	if queue_contamination_after_ai:
 		get_tree().create_timer(0.26).timeout.connect(func() -> void:
 			_maybe_queue_contamination_event("ai_terminal")
@@ -2931,6 +3066,8 @@ func _dialogue_display_name(character_id: String) -> String:
 			return "Albert Einstein"
 		"mark_zuckerberg_ufo":
 			return "Mark Zuckerberg"
+		"self":
+			return "YOU"
 		_:
 			var c_data: Dictionary = character_data_cache.get(character_id, {})
 			return str(c_data.get("name", "C.L.A.U.D.I.A." if character_id == "ai_terminal" else "Unknown"))
@@ -2951,19 +3088,30 @@ func _apply_dialogue_identity(character_id: String) -> void:
 	name_label.text = _dialogue_display_name(character_id)
 
 func _prepare_dialogue_line(raw_text: String) -> String:
-	if current_character_id != "ufo_easter_egg":
-		_apply_dialogue_identity(current_character_id)
+	var stripped := raw_text.strip_edges()
+
+	if current_character_id == "ufo_easter_egg":
+		if stripped.begins_with("ZUCKERBERG:"):
+			_apply_dialogue_identity("mark_zuckerberg_ufo")
+			return stripped.trim_prefix("ZUCKERBERG:").strip_edges()
+		if stripped.begins_with("EINSTEIN:"):
+			_apply_dialogue_identity("ufo_easter_egg")
+			return stripped.trim_prefix("EINSTEIN:").strip_edges()
+		_apply_dialogue_identity("ufo_easter_egg")
 		return raw_text
 
-	var stripped := raw_text.strip_edges()
-	if stripped.begins_with("ZUCKERBERG:"):
-		_apply_dialogue_identity("mark_zuckerberg_ufo")
-		return stripped.trim_prefix("ZUCKERBERG:").strip_edges()
-	if stripped.begins_with("EINSTEIN:"):
-		_apply_dialogue_identity("ufo_easter_egg")
-		return stripped.trim_prefix("EINSTEIN:").strip_edges()
+	if current_character_id == "ai_terminal":
+		if stripped.begins_with("CONTAMINATION:"):
+			_apply_dialogue_identity("historical_contamination")
+			return stripped.trim_prefix("CONTAMINATION:").strip_edges()
+		if stripped.begins_with("C.L.A.U.D.I.A.:"):
+			_apply_dialogue_identity("ai_terminal")
+			return stripped.trim_prefix("C.L.A.U.D.I.A.:").strip_edges()
+		if stripped.begins_with("CLAUDIA:"):
+			_apply_dialogue_identity("ai_terminal")
+			return stripped.trim_prefix("CLAUDIA:").strip_edges()
 
-	_apply_dialogue_identity("ufo_easter_egg")
+	_apply_dialogue_identity(current_character_id)
 	return raw_text
 
 func _join_readable_list(items: Array) -> String:
@@ -3018,6 +3166,7 @@ func _close_dialogue() -> void:
 	continue_label.visible = false
 	choice_container.visible = false
 	is_choosing = false
+	dialogue_anchor.offset_top = dialogue_rest_top  # reset expanded height
 
 	var start_top = dialogue_anchor.offset_top
 	var tw = create_tween().set_parallel(true)
@@ -3086,10 +3235,17 @@ func _hide_bunker_caption() -> void:
 	)
 
 func _queue_hidden_bunker_ai_ack() -> void:
+	if contamination_terminal_ready and not contamination_terminal_dialogue_seen:
+		hidden_bunker_ai_ack_pending = false
+		return
 	ai_override_lines = [str(hidden_bunker_data.get("post_ai_line", "I told you not to come here."))]
 	var timer := get_tree().create_timer(0.3)
 	timer.timeout.connect(func() -> void:
+		if contamination_active:
+			_queue_hidden_bunker_ai_ack()
+			return
 		if not is_dialogue_open and not is_room_transition and active_room_id == "":
+			hidden_bunker_ai_ack_pending = false
 			open_dialogue("ai_terminal")
 	)
 
@@ -3356,6 +3512,38 @@ func _get_contamination_line(source: String) -> String:
 func _contamination_read_duration(text: String) -> float:
 	return clamp(1.9 + float(text.length()) * 0.03, 2.8, 5.2)
 
+func _dissolve_terminal_contamination() -> void:
+	if not contamination_root or not is_instance_valid(contamination_root):
+		contamination_terminal_ready = false
+		contamination_terminal_departed = true
+		contamination_terminal_afterglow_pending = true
+		return
+	contamination_terminal_ready = false
+	contamination_terminal_departed = true
+	contamination_terminal_afterglow_pending = true
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(contamination_root, "modulate:a", 0.0, 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_property(contamination_root, "global_position", contamination_root.global_position + Vector2(-10, -4), 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void:
+		if contamination_root:
+			contamination_root.visible = false
+			contamination_root.modulate = Color.WHITE
+	)
+
+func _wait_for_caption_space_close() -> void:
+	continue_label.text = "▼ SPACE"
+	continue_label.visible = true
+	while Input.is_action_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_SPACE):
+		await get_tree().process_frame
+	while true:
+		continue_label.modulate.a = 0.55 + sin(Time.get_ticks_msec() * 0.01) * 0.35
+		await get_tree().process_frame
+		if Input.is_action_just_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_SPACE):
+			break
+	continue_label.visible = false
+	continue_label.modulate.a = 1.0
+
 func _maybe_queue_contamination_event(source: String) -> void:
 	if not _is_contamination_source(source):
 		return
@@ -3366,8 +3554,6 @@ func _maybe_queue_contamination_event(source: String) -> void:
 	if intro_active or ending_active or hidden_bunker_scene_active or is_room_transition:
 		return
 	if active_room_id != "" or is_dialogue_open or bezos_cinematic_active or ufo_abduction_active:
-		return
-	if randf() > CONTAMINATION_TRIGGER_CHANCE:
 		return
 	call_deferred("_start_contamination_event", source)
 
@@ -3416,7 +3602,7 @@ func _start_contamination_event(source: String) -> void:
 	await get_tree().create_timer(0.12).timeout
 
 	_show_bunker_caption("CONTAMINATION", line)
-	await get_tree().create_timer(_contamination_read_duration(line)).timeout
+	await _wait_for_caption_space_close()
 	_hide_bunker_caption()
 
 	var fade_tw := create_tween()
@@ -3432,6 +3618,14 @@ func _start_contamination_event(source: String) -> void:
 		transition_overlay.visible = false
 	player.set_physics_process(true)
 	contamination_active = false
+	if contamination_appearance_count >= CONTAMINATION_MAX_APPEARANCES:
+		contamination_terminal_ready = true
+		if contamination_root and is_instance_valid(contamination_root):
+			var terminal := get_node_or_null("Entities/AITerminal")
+			if terminal:
+				contamination_root.modulate = Color.WHITE
+				contamination_root.visible = true
+				contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
 
 func _create_standalone_npc(sprite_id: String, character_id: String) -> StaticBody2D:
 	var npc = preload("res://scenes/npc.tscn").instantiate()
@@ -4083,7 +4277,7 @@ func _process_ending(delta: float) -> void:
 			return
 		elif ending_state == 2:
 			# Skip hold — advance
-			ending_timer = ENDING_HOLD_TIME
+			ending_timer = ENDING_HOLD_TIME * (1.8 if final_mission_done else 1.0)
 		elif ending_state == 4:
 			# Final — just quit faster
 			ending_timer = 10.0
@@ -4102,7 +4296,8 @@ func _process_ending(delta: float) -> void:
 
 		2:  # HOLDING
 			ending_timer += delta
-			if ending_timer >= ENDING_HOLD_TIME:
+			var hold_time := ENDING_HOLD_TIME * (1.8 if final_mission_done else 1.0)
+			if ending_timer >= hold_time:
 				ending_phase += 1
 				if ending_phase >= ending_scenes.size():
 					ending_state = 4  # DONE
@@ -4125,15 +4320,780 @@ func _process_ending(delta: float) -> void:
 				ending_state = 1  # TYPING
 				ending_timer = 0.0
 
-		4:  # DONE — hold final screen then fade
+		4:  # DONE — hold final screen then either trigger final mission or wait for quit
 			ending_timer += delta
-			if ending_timer >= 4.0:
-				ending_text.modulate.a = max(0.0, 1.0 - (ending_timer - 4.0) / 2.0)
-			if ending_timer >= 6.0:
-				ending_active = false
-				ending_layer.visible = false
-				# Return to game (credits done)
-				player.set_physics_process(true)
+			if final_mission_done:
+				# True ending — stay on last frame, show quit prompt, wait for player
+				if ending_timer >= 3.0 and not get_node_or_null("EndingQuitHint"):
+					var hint := Label.new()
+					hint.name = "EndingQuitHint"
+					hint.text = "[ press any key to close ]"
+					hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+					hint.offset_top = -32.0
+					hint.add_theme_font_size_override("font_size", 13)
+					hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65, 0.0))
+					ending_layer.add_child(hint)
+					var tw_hint := create_tween()
+					tw_hint.tween_property(hint, "modulate:a", 1.0, 1.2)
+				if ending_timer >= 3.5:
+					if Input.is_anything_pressed():
+						get_tree().quit()
+			else:
+				# First ending — fade then trigger final mission
+				if ending_timer >= 4.0:
+					ending_text.modulate.a = max(0.0, 1.0 - (ending_timer - 4.0) / 2.0)
+				if ending_timer >= 6.0:
+					ending_active = false
+					ending_layer.visible = false
+					_trigger_final_mission()
+
+# ============================================================
+#  FINAL MISSION — "The 7th Signature"
+# ============================================================
+
+func _trigger_final_mission() -> void:
+	if final_mission_active or final_mission_done:
+		player.set_physics_process(true)
+		return
+	final_mission_active = true
+	# Force-close any open room so the world is visible
+	if active_room_id != "":
+		var old_room = room_registry.get(active_room_id)
+		if old_room and old_room.has_method("hide_room"):
+			old_room.hide_room()
+		active_room_id = ""
+	is_room_transition = false
+	is_dialogue_open = false
+	player.set_physics_process(true)
+	# Reset player near AI terminal (terminal is at pixel (64,16))
+	player.global_position = Vector2(64, 80)
+	# C.L.A.U.D.I.A. cryptic message before player finds the NPC
+	get_tree().create_timer(1.2).timeout.connect(func() -> void:
+		ai_override_lines = [
+			"One signature is missing.",
+			"The system flagged it.",
+			"I didn't notice before.",
+			"...",
+			"Neither did you.",
+		]
+		open_dialogue("ai_terminal")
+	)
+	# Spawn NPC-self with delay (player needs to explore)
+	get_tree().create_timer(0.5).timeout.connect(_spawn_self_npc)
+
+func _spawn_self_npc() -> void:
+	if final_mission_npc:
+		return
+	final_mission_npc = StaticBody2D.new()
+	final_mission_npc.name = "SelfNPC"
+	# Tile (-28, 24) → world pixel coords
+	final_mission_npc.global_position = Vector2(-28 * 32 + 16, 24 * 32 + 16)
+
+	# Sprite — same as player
+	var spr := Sprite2D.new()
+	var player_tex: Texture2D = null
+	var spr_node := player.get_node_or_null("Sprite2D") as Sprite2D
+	if spr_node:
+		player_tex = spr_node.texture
+	if player_tex:
+		spr.texture = player_tex
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	spr.scale = Vector2(1.0, 1.0)
+	final_mission_npc.add_child(spr)
+
+	# Proximity trigger
+	var area := Area2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = 56.0
+	var col := CollisionShape2D.new()
+	col.shape = shape
+	area.add_child(col)
+	area.body_entered.connect(func(body: Node) -> void:
+		if body == player and final_mission_active and not final_mission_done and not is_dialogue_open:
+			_start_self_dialogue()
+	)
+	final_mission_npc.add_child(area)
+
+	# Idle sway
+	var sway_tween := create_tween().set_loops()
+	sway_tween.tween_property(spr, "position:x", 2.0, 1.8).set_trans(Tween.TRANS_SINE)
+	sway_tween.tween_property(spr, "position:x", -2.0, 1.8).set_trans(Tween.TRANS_SINE)
+
+	get_tree().current_scene.add_child(final_mission_npc)
+
+func _start_self_dialogue() -> void:
+	if is_dialogue_open or not final_mission_active or final_mission_done:
+		return
+	current_character_id = "self"
+	player.set_physics_process(false)
+	is_dialogue_open = true
+	is_choosing = false
+	dialogue_choices.clear()
+	dialogue_line_index = 0
+	dialogue_farewell = ""
+	choice_container.visible = false
+
+	dialogue_lines = [
+		"Oh.",
+		"You came.",
+		"I've been sitting here since\nthe sixth signature.\nI knew you'd find me eventually.",
+		"You always do.",
+		"I've read every word you said out there.\nTo Trump. To Putin.\nTo C.L.A.U.D.I.A.",
+		"Especially to C.L.A.U.D.I.A.",
+		"She doesn't say it, but she likes you.\nIn her way.\nWhich is to say: she finds you\nstatistically anomalous.",
+		"...",
+		"I'm not signing.",
+		"Don't give me that look.\nI have reasons.",
+		"That document — if I sign it —\nbecomes real.\nOfficially real.",
+		"Every war.\nEvery yacht.\nEvery warehouse worker\nwho pissed in a bottle\nbecause a timer said so.",
+		"Every ignored vote.\nEvery bought election.\nEvery 'Terms of Service' that nobody read\nbecause they were 47 pages long\nand written in legal.",
+		"I sign that document and\nI become a witness.\nAnd witnesses can't pretend\nthey didn't see anything.",
+		"You understand what I'm saying?",
+		"I am the only person left\nwho can still pretend\nnone of this happened.",
+		"...",
+		"And you want me to give that up.",
+	]
+	dialogue_choices = [
+		{"label": "Sign it. Nothing changes anyway.",
+		 "response": [
+			"...",
+			"That is the saddest sentence\nin the history of human civilization.",
+			"And you said it like it was\njust a weather report.",
+			"'Nothing changes anyway.'\nLike gravity.\nLike taxes.\nLike rent.",
+			"Fine.\nYou win.\nI'll sign the @#$%ing thing.",
+			"God, you're depressing.\nI love that about you.",
+		 ],
+		 "file_tag": "resigned"},
+		{"label": "Don't sign. Keep the option open.",
+		 "response": [
+			"Ha.",
+			"'Keep the option open.'\nThat's what I told myself at twenty.",
+			"And at thirty.\nAnd at forty.",
+			"The option is a waiting room\nwith no chairs\nand a sign that says\n'Your number will be called shortly.'",
+			"It never gets called.",
+			"...\nBut fine.\nAt least you're honest about\nwhat you're asking for.",
+			"I'll sign.\nBecause you asked nicely.\nAnd because the waiting room\nis getting cold.",
+		 ],
+		 "file_tag": "romantic"},
+		{"label": "...",
+		 "response": [
+			"Yeah.",
+			"That's what I thought.",
+			"I've been sitting on this bench\nfor a long time\nwaiting for someone to have\nthe right answer.",
+			"Nobody does.\nNobody ever did.",
+			"That's not a tragedy.\nThat's just Tuesday.",
+			"Okay.\nGive me the pen.",
+			"...\nDo we even have a pen?",
+			"Of course we don't have a pen.\nThis is a video game.\nI'll just — you know — metaphorically sign it.",
+		 ],
+		 "file_tag": "honest"},
+	]
+	dialogue_choice_prompt = "Well?"
+
+	_apply_dialogue_identity("self")
+	continue_label.visible = false
+	continue_blink = 0.0
+	_start_typewriter(_prepare_dialogue_line(str(dialogue_lines[0])))
+	_animate_dialogue_in()
+
+# ============================================================
+#  TEXT INPUT FIELD — margin note
+# ============================================================
+
+func _open_text_input_field() -> void:
+	if final_mission_text_field:
+		final_mission_text_field.queue_free()
+	final_mission_awaiting_input = true
+	player.set_physics_process(false)
+
+	var layer := CanvasLayer.new()
+	layer.name = "TextInputLayer"
+	layer.layer = 90
+
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0, 0, 0, 0.72)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(bg)
+
+	var box := PanelContainer.new()
+	box.set_anchors_preset(Control.PRESET_CENTER)
+	box.offset_left = -320.0
+	box.offset_top = -90.0
+	box.offset_right = 320.0
+	box.offset_bottom = 90.0
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.06, 0.08)
+	style.border_color = Color(0.95, 0.88, 0.4)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	box.add_theme_stylebox_override("panel", style)
+	layer.add_child(box)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	box.add_child(vbox)
+
+	var prompt_lbl := Label.new()
+	prompt_lbl.text = "Write something true in the margin.\nOr don't."
+	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_lbl.add_theme_font_size_override("font_size", 16)
+	prompt_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	vbox.add_child(prompt_lbl)
+
+	final_mission_text_field = LineEdit.new()
+	final_mission_text_field.placeholder_text = "..."
+	final_mission_text_field.max_length = 80
+	final_mission_text_field.expand_to_text_length = false
+	final_mission_text_field.custom_minimum_size = Vector2(560, 38)
+	final_mission_text_field.add_theme_font_size_override("font_size", 16)
+	final_mission_text_field.add_theme_color_override("font_color", Color(0.95, 0.92, 0.75))
+	vbox.add_child(final_mission_text_field)
+
+	var hint_lbl := Label.new()
+	hint_lbl.text = "ENTER to confirm   •   ESC to leave blank"
+	hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_lbl.add_theme_font_size_override("font_size", 12)
+	hint_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
+	vbox.add_child(hint_lbl)
+
+	add_child(layer)
+	final_mission_text_field.grab_focus()
+
+	final_mission_text_field.text_submitted.connect(func(txt: String) -> void:
+		final_mission_margin_text = txt.strip_edges()
+		layer.queue_free()
+		final_mission_text_field = null
+		final_mission_awaiting_input = false
+		_after_text_input()
+	)
+	# ESC — leave blank
+	final_mission_text_field.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			final_mission_margin_text = ""
+			layer.queue_free()
+			final_mission_text_field = null
+			final_mission_awaiting_input = false
+			_after_text_input()
+	)
+
+func _after_text_input() -> void:
+	# NPC-self fades and signs
+	if final_mission_npc:
+		var tw := create_tween()
+		tw.tween_property(final_mission_npc, "modulate:a", 0.0, 0.6)
+		tw.tween_callback(func(): if final_mission_npc: final_mission_npc.queue_free())
+	# C.L.A.U.D.I.A. final response via override
+	get_tree().create_timer(1.0).timeout.connect(func() -> void:
+		ai_override_lines = [
+			"Document filed.",
+			"Folder: 'PROOF THAT HUMANS\nARE WONDERFULLY STUPID'.",
+			"...",
+			"Subfolder created: 'Exceptions'.",
+		]
+		open_dialogue("ai_terminal")
+		# After this dialogue closes → MK sequence
+		get_tree().create_timer(0.5).timeout.connect(func() -> void:
+			_wait_for_dialogue_then(func() -> void:
+				get_tree().create_timer(1.8).timeout.connect(_start_mk_sequence)
+			)
+		)
+	)
+
+func _wait_for_dialogue_then(callback: Callable) -> void:
+	if not is_dialogue_open:
+		callback.call()
+		return
+	get_tree().create_timer(0.4).timeout.connect(func() -> void:
+		_wait_for_dialogue_then(callback)
+	)
+
+# ============================================================
+#  MK SEQUENCE
+# ============================================================
+
+# Each flash: [ big_stat, description_line1, description_line2, bg_color ]
+const MK_FLASH_DATA := [
+	["750,000",
+	 "warehouse injuries reported",
+	 "every year. In one company.",
+	 Color(0.55, 0.0, 0.0)],
+	["$500,000,000",
+	 "spent on a yacht.",
+	 "A historic bridge was removed to let it pass.",
+	 Color(0.4, 0.1, 0.0)],
+	["11 seconds",
+	 "the bathroom break",
+	 "that got a worker fired.",
+	 Color(0.5, 0.0, 0.0)],
+	["38%",
+	 "voter turnout.",
+	 "The system called it a mandate.",
+	 Color(0.0, 0.0, 0.35)],
+	["18,000",
+	 "people die of hunger",
+	 "every single day. Markets: unaffected.",
+	 Color(0.35, 0.0, 0.0)],
+]
+
+func _create_mk_overlay() -> void:
+	mk_layer = CanvasLayer.new()
+	mk_layer.name = "MKLayer"
+	mk_layer.layer = 110
+	mk_layer.visible = false
+
+	var root := Control.new()
+	root.name = "MKRoot"
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mk_layer.add_child(root)
+
+	# Pure black base
+	var bg := ColorRect.new()
+	bg.name = "MKBg"
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.0, 0.0, 0.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(bg)
+
+	# Fact flash background (full screen color burst)
+	mk_fact_bg = ColorRect.new()
+	mk_fact_bg.name = "FactBg"
+	mk_fact_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_fact_bg.color = Color(0.5, 0.0, 0.0, 0.0)
+	mk_fact_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_fact_bg)
+
+	# Fact big number
+	mk_fact_number = Label.new()
+	mk_fact_number.name = "FactNumber"
+	mk_fact_number.text = ""
+	mk_fact_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_fact_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mk_fact_number.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_fact_number.offset_bottom = -160.0
+	mk_fact_number.add_theme_font_size_override("font_size", 120)
+	mk_fact_number.add_theme_color_override("font_color", Color.WHITE)
+	mk_fact_number.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	mk_fact_number.add_theme_constant_override("shadow_offset_x", 6)
+	mk_fact_number.add_theme_constant_override("shadow_offset_y", 6)
+	mk_fact_number.modulate.a = 0.0
+	mk_fact_number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_fact_number)
+
+	# Fact description line 1
+	mk_fact_line1 = Label.new()
+	mk_fact_line1.name = "FactLine1"
+	mk_fact_line1.text = ""
+	mk_fact_line1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_fact_line1.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	mk_fact_line1.offset_top = -160.0
+	mk_fact_line1.offset_bottom = -110.0
+	mk_fact_line1.add_theme_font_size_override("font_size", 24)
+	mk_fact_line1.add_theme_color_override("font_color", Color(1.0, 0.88, 0.88))
+	mk_fact_line1.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	mk_fact_line1.add_theme_constant_override("shadow_offset_x", 2)
+	mk_fact_line1.add_theme_constant_override("shadow_offset_y", 2)
+	mk_fact_line1.modulate.a = 0.0
+	mk_fact_line1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_fact_line1)
+
+	# Fact description line 2
+	mk_fact_line2 = Label.new()
+	mk_fact_line2.name = "FactLine2"
+	mk_fact_line2.text = ""
+	mk_fact_line2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_fact_line2.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	mk_fact_line2.offset_top = -108.0
+	mk_fact_line2.offset_bottom = -64.0
+	mk_fact_line2.add_theme_font_size_override("font_size", 18)
+	mk_fact_line2.add_theme_color_override("font_color", Color(1.0, 0.75, 0.75, 0.85))
+	mk_fact_line2.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	mk_fact_line2.add_theme_constant_override("shadow_offset_x", 2)
+	mk_fact_line2.add_theme_constant_override("shadow_offset_y", 2)
+	mk_fact_line2.modulate.a = 0.0
+	mk_fact_line2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_fact_line2)
+
+	# Player sprite — lone figure, centered, slightly left of center
+	mk_sprite = TextureRect.new()
+	mk_sprite.name = "MKSprite"
+	mk_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mk_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mk_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mk_sprite.size = Vector2(112, 148)
+	mk_sprite.position = Vector2(584, 360)
+	mk_sprite.modulate.a = 0.0
+	mk_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var spr_node2 := player.get_node_or_null("Sprite2D") as Sprite2D
+	if spr_node2 and spr_node2.texture:
+		mk_sprite.texture = spr_node2.texture
+	root.add_child(mk_sprite)
+
+	# Ghost sprites for glitch effect during EXECUTE
+	mk_ghost1 = TextureRect.new()
+	mk_ghost1.name = "Ghost1"
+	mk_ghost1.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mk_ghost1.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mk_ghost1.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mk_ghost1.size = Vector2(112, 148)
+	mk_ghost1.modulate = Color(1.0, 0.1, 0.1, 0.5)
+	mk_ghost1.visible = false
+	mk_ghost1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if spr_node2 and spr_node2.texture:
+		mk_ghost1.texture = spr_node2.texture
+	root.add_child(mk_ghost1)
+
+	mk_ghost2 = TextureRect.new()
+	mk_ghost2.name = "Ghost2"
+	mk_ghost2.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mk_ghost2.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mk_ghost2.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mk_ghost2.size = Vector2(112, 148)
+	mk_ghost2.modulate = Color(0.1, 0.3, 1.0, 0.4)
+	mk_ghost2.visible = false
+	mk_ghost2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if spr_node2 and spr_node2.texture:
+		mk_ghost2.texture = spr_node2.texture
+	root.add_child(mk_ghost2)
+
+	# Red blood bloom — expands during EXECUTE
+	mk_red_bloom = ColorRect.new()
+	mk_red_bloom.name = "RedBloom"
+	mk_red_bloom.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_red_bloom.color = Color(0.7, 0.0, 0.0, 0.0)
+	mk_red_bloom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_red_bloom)
+
+	# "FINISH HIM." — drops from top
+	mk_finish_label = Label.new()
+	mk_finish_label.name = "FinishLabel"
+	mk_finish_label.text = "FINISH HIM."
+	mk_finish_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_finish_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	mk_finish_label.offset_top = 100.0
+	mk_finish_label.offset_bottom = 200.0
+	mk_finish_label.add_theme_font_size_override("font_size", 96)
+	mk_finish_label.add_theme_color_override("font_color", Color(1.0, 0.87, 0.0))
+	mk_finish_label.add_theme_color_override("font_shadow_color", Color(0.7, 0.0, 0.0))
+	mk_finish_label.add_theme_constant_override("shadow_offset_x", 6)
+	mk_finish_label.add_theme_constant_override("shadow_offset_y", 6)
+	mk_finish_label.modulate.a = 0.0
+	mk_finish_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_finish_label)
+
+	# Countdown
+	mk_countdown_label = Label.new()
+	mk_countdown_label.name = "Countdown"
+	mk_countdown_label.text = "9"
+	mk_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_countdown_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	mk_countdown_label.offset_top = -56.0
+	mk_countdown_label.offset_bottom = -10.0
+	mk_countdown_label.add_theme_font_size_override("font_size", 38)
+	mk_countdown_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.6))
+	mk_countdown_label.modulate.a = 0.0
+	mk_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_countdown_label)
+
+	# "THIS IS WHAT THE SYSTEM CALLS NORMAL." — EXECUTE line
+	mk_execute_line = Label.new()
+	mk_execute_line.name = "ExecuteLine"
+	mk_execute_line.text = "THIS IS WHAT THE SYSTEM CALLS NORMAL."
+	mk_execute_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_execute_line.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	mk_execute_line.offset_top = 260.0
+	mk_execute_line.offset_bottom = 320.0
+	mk_execute_line.add_theme_font_size_override("font_size", 28)
+	mk_execute_line.add_theme_color_override("font_color", Color.WHITE)
+	mk_execute_line.add_theme_color_override("font_shadow_color", Color(0.6, 0.0, 0.0))
+	mk_execute_line.add_theme_constant_override("shadow_offset_x", 3)
+	mk_execute_line.add_theme_constant_override("shadow_offset_y", 3)
+	mk_execute_line.modulate.a = 0.0
+	mk_execute_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_execute_line)
+
+	# Freeze text
+	mk_freeze_text = Label.new()
+	mk_freeze_text.name = "FreezeText"
+	mk_freeze_text.text = ""
+	mk_freeze_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_freeze_text.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_freeze_text.offset_left = -480.0
+	mk_freeze_text.offset_top = 180.0
+	mk_freeze_text.offset_right = 480.0
+	mk_freeze_text.offset_bottom = 0.0
+	mk_freeze_text.add_theme_font_size_override("font_size", 24)
+	mk_freeze_text.add_theme_color_override("font_color", Color(0.92, 0.92, 0.96))
+	mk_freeze_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	mk_freeze_text.add_theme_constant_override("shadow_offset_x", 2)
+	mk_freeze_text.add_theme_constant_override("shadow_offset_y", 2)
+	mk_freeze_text.modulate.a = 0.0
+	mk_freeze_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_freeze_text)
+
+	# C.L.A.U.D.I.A. final line
+	mk_claudia_label = Label.new()
+	mk_claudia_label.name = "ClaudiaLabel"
+	mk_claudia_label.text = ""
+	mk_claudia_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mk_claudia_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_claudia_label.offset_left = -400.0
+	mk_claudia_label.offset_top = 260.0
+	mk_claudia_label.offset_right = 400.0
+	mk_claudia_label.offset_bottom = 0.0
+	mk_claudia_label.add_theme_font_size_override("font_size", 22)
+	mk_claudia_label.add_theme_color_override("font_color", Color(0.3, 0.85, 1.0))
+	mk_claudia_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	mk_claudia_label.add_theme_constant_override("shadow_offset_x", 2)
+	mk_claudia_label.add_theme_constant_override("shadow_offset_y", 2)
+	mk_claudia_label.modulate.a = 0.0
+	mk_claudia_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_claudia_label)
+
+	# White flash overlay (topmost)
+	mk_flash = ColorRect.new()
+	mk_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mk_flash.color = Color(1, 1, 1, 0)
+	mk_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mk_flash)
+
+	add_child(mk_layer)
+
+func _mk_show_fact(idx: int) -> void:
+	var data: Array = MK_FLASH_DATA[idx % MK_FLASH_DATA.size()]
+	mk_fact_bg.color = Color(data[3].r, data[3].g, data[3].b, 0.0)
+	mk_fact_number.text = str(data[0])
+	mk_fact_line1.text = str(data[1])
+	mk_fact_line2.text = str(data[2])
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(mk_fact_bg, "color:a", 0.92, 0.08)
+	tw.tween_property(mk_fact_number, "modulate:a", 1.0, 0.06)
+	tw.tween_property(mk_fact_line1, "modulate:a", 1.0, 0.1)
+	tw.tween_property(mk_fact_line2, "modulate:a", 1.0, 0.14)
+	# Hold then fade out
+	tw.tween_interval(1.1)
+	tw.set_parallel(false)
+	var tw2 := create_tween().set_parallel(true)
+	tw2.tween_property(mk_fact_bg, "color:a", 0.0, 0.28)
+	tw2.tween_property(mk_fact_number, "modulate:a", 0.0, 0.22)
+	tw2.tween_property(mk_fact_line1, "modulate:a", 0.0, 0.22)
+	tw2.tween_property(mk_fact_line2, "modulate:a", 0.0, 0.22)
+
+func _start_mk_sequence() -> void:
+	if not mk_layer:
+		_create_mk_overlay()
+	mk_sequence_active = true
+	mk_sequence_timer = 0.0
+	mk_state = MKState.ENTER
+	mk_flash_index = 0
+	mk_layer.visible = true
+	player.set_physics_process(false)
+
+	# Reset all elements
+	mk_fact_bg.color.a = 0.0
+	mk_fact_number.modulate.a = 0.0
+	mk_fact_line1.modulate.a = 0.0
+	mk_fact_line2.modulate.a = 0.0
+	mk_finish_label.modulate.a = 0.0
+	mk_countdown_label.modulate.a = 0.0
+	mk_sprite.modulate.a = 0.0
+	mk_red_bloom.color.a = 0.0
+	mk_execute_line.modulate.a = 0.0
+	mk_freeze_text.modulate.a = 0.0
+	mk_claudia_label.modulate.a = 0.0
+	mk_ghost1.visible = false
+	mk_ghost2.visible = false
+
+	# Sprite fades in alone on black — isolated, small, alone
+	mk_sprite.position = Vector2(584, 380)
+	mk_sprite.rotation_degrees = 0.0
+	var tw_enter := create_tween()
+	tw_enter.tween_property(mk_sprite, "modulate:a", 1.0, 1.2)
+	# Sway loop — exhausted, not idle
+	tw_enter.tween_callback(func():
+		var sway := create_tween().set_loops()
+		sway.tween_property(mk_sprite, "position:x", 593.0, 0.55).set_trans(Tween.TRANS_SINE)
+		sway.tween_property(mk_sprite, "position:x", 575.0, 0.55).set_trans(Tween.TRANS_SINE)
+	)
+	# FINISH HIM drops after sprite is visible
+	tw_enter.tween_interval(0.4)
+	tw_enter.tween_property(mk_finish_label, "modulate:a", 1.0, 0.2)
+	# Countdown appears
+	tw_enter.tween_interval(0.3)
+	tw_enter.tween_property(mk_countdown_label, "modulate:a", 0.7, 0.3)
+
+func _process_mk_sequence(delta: float) -> void:
+	if not mk_sequence_active:
+		return
+	mk_sequence_timer += delta
+
+	match mk_state:
+		MKState.ENTER:
+			mk_finish_label.modulate.a = 0.55 + sin(mk_sequence_timer * 5.0) * 0.45
+			if mk_sequence_timer >= 2.2:
+				mk_state = MKState.COUNTDOWN
+				mk_sequence_timer = 0.0
+				mk_flash_index = 0
+				# Fire first fact immediately
+				_mk_show_fact(0)
+
+		MKState.COUNTDOWN:
+			# Countdown: 5 facts over ~7s (one every ~1.4s)
+			var fact_interval := 1.45
+			var current_fact := int(mk_sequence_timer / fact_interval)
+			if current_fact != mk_flash_index and current_fact < MK_FLASH_DATA.size():
+				mk_flash_index = current_fact
+				_mk_show_fact(current_fact)
+			# Countdown number (5 → 0, maps to 5 facts)
+			var remaining := int(5.0 - mk_sequence_timer)
+			mk_countdown_label.text = str(max(0, remaining))
+			# FINISH HIM keeps blinking, slower
+			mk_finish_label.modulate.a = 0.4 + sin(mk_sequence_timer * 3.5) * 0.35
+			if mk_sequence_timer >= fact_interval * MK_FLASH_DATA.size() + 0.6:
+				mk_state = MKState.EXECUTE
+				mk_sequence_timer = 0.0
+				mk_finish_label.modulate.a = 0.0
+				mk_countdown_label.modulate.a = 0.0
+				mk_fact_bg.color.a = 0.0
+				# Red bloom floods in
+				var tw_red := create_tween()
+				tw_red.tween_property(mk_red_bloom, "color:a", 0.75, 0.35)
+				# Ghost sprites appear (glitch)
+				mk_ghost1.position = mk_sprite.position + Vector2(-18, 4)
+				mk_ghost2.position = mk_sprite.position + Vector2(22, -6)
+				mk_ghost1.visible = true
+				mk_ghost2.visible = true
+				# Sprite lurches — the system strikes
+				var tw_exec := create_tween().set_parallel(true)
+				tw_exec.tween_property(mk_sprite, "rotation_degrees", 22.0, 0.18).set_trans(Tween.TRANS_EXPO)
+				tw_exec.tween_property(mk_sprite, "position:y", 410.0, 0.18).set_trans(Tween.TRANS_EXPO)
+				tw_exec.tween_property(mk_sprite, "position:x", 560.0, 0.18)
+				tw_exec.tween_property(mk_ghost1, "modulate:a", 0.6, 0.1)
+				tw_exec.tween_property(mk_ghost2, "modulate:a", 0.5, 0.1)
+				mk_flash.color = Color(1.0, 0.1, 0.05, 0.0)
+				tw_exec.tween_property(mk_flash, "color:a", 0.9, 0.06)
+
+		MKState.EXECUTE:
+			# Ghosts drift
+			if mk_ghost1.visible:
+				mk_ghost1.position.x += sin(mk_sequence_timer * 18.0) * 0.8
+				mk_ghost2.position.x -= sin(mk_sequence_timer * 22.0) * 0.6
+			# Flash fades
+			if mk_flash.color.a > 0.0:
+				mk_flash.color.a = maxf(0.0, mk_flash.color.a - delta * 4.0)
+			# Execute line appears at t=0.3
+			if mk_sequence_timer >= 0.3 and mk_execute_line.modulate.a < 0.01:
+				var tw_el := create_tween()
+				tw_el.tween_property(mk_execute_line, "modulate:a", 1.0, 0.4)
+			# FREEZE at t=1.5
+			if mk_sequence_timer >= 1.5:
+				mk_state = MKState.FREEZE
+				mk_sequence_timer = 0.0
+				# Everything freezes — ghosts locked, red bloom stays
+				mk_ghost1.position = mk_sprite.position + Vector2(-16, 2)
+				mk_ghost2.position = mk_sprite.position + Vector2(19, -4)
+				# CRT glitch flash
+				mk_flash.color = Color(0.85, 0.85, 1.0, 0.55)
+				var tw_glitch := create_tween()
+				tw_glitch.tween_property(mk_flash, "color:a", 0.0, 0.2)
+				# Execute line fades
+				tw_glitch.parallel().tween_property(mk_execute_line, "modulate:a", 0.0, 0.5)
+				# Red bloom darkens slowly — violence becomes silence
+				tw_glitch.parallel().tween_property(mk_red_bloom, "color:a", 0.25, 2.5)
+				# Freeze text — 8 lines, each with real pause
+				mk_freeze_text.text = ""
+				mk_freeze_text.modulate.a = 1.0
+				var freeze_lines := [
+					[0.6,  "If you finish this —"],
+					[2.0,  "If you finish this —\n\nwho watches the world?"],
+					[3.8,  "If you finish this —\n\nwho watches the world?\n\nThe answer has always been:"],
+					[5.2,  "If you finish this —\n\nwho watches the world?\n\nThe answer has always been:\n\nnobody."],
+					[7.0,  "If you finish this —\n\nwho watches the world?\n\nThe answer has always been:\n\nnobody.\n\nThere was never anybody."],
+					[9.0,  "If you finish this —\n\nwho watches the world?\n\nThe answer has always been:\n\nnobody.\n\nThere was never anybody.\n\nThat's why you had to."],
+				]
+				for line_data in freeze_lines:
+					var delay: float = line_data[0]
+					var txt: String = line_data[1]
+					get_tree().create_timer(delay).timeout.connect(func() -> void:
+						if mk_sequence_active and mk_state == MKState.FREEZE:
+							mk_freeze_text.text = txt
+					)
+
+		MKState.FREEZE:
+			if mk_sequence_timer >= 11.0:
+				mk_state = MKState.CLAUDIA_LINE
+				mk_sequence_timer = 0.0
+				# Everything fades except the frozen sprite and the red
+				var tw_cf := create_tween().set_parallel(true)
+				tw_cf.tween_property(mk_freeze_text, "modulate:a", 0.0, 0.8)
+				tw_cf.tween_property(mk_ghost1, "modulate:a", 0.0, 1.0)
+				tw_cf.tween_property(mk_ghost2, "modulate:a", 0.0, 1.0)
+				tw_cf.tween_property(mk_red_bloom, "color:a", 0.0, 2.0)
+				# C.L.A.U.D.I.A. speaks — but differently this time
+				mk_claudia_label.modulate.a = 0.0
+				get_tree().create_timer(1.2).timeout.connect(func() -> void:
+					if not mk_sequence_active: return
+					var tw_c := create_tween()
+					tw_c.tween_property(mk_claudia_label, "modulate:a", 1.0, 0.6)
+					tw_c.tween_callback(func(): mk_claudia_label.text = "C.L.A.U.D.I.A.:")
+					tw_c.tween_interval(1.5)
+					tw_c.tween_callback(func(): mk_claudia_label.text = "C.L.A.U.D.I.A.:\n\n\"...\"")
+					tw_c.tween_interval(3.5)
+					tw_c.tween_callback(func(): mk_claudia_label.text = "C.L.A.U.D.I.A.:\n\n\"...\"\n\n\"Go home.\"\n\"You did enough.\"")
+				)
+
+		MKState.CLAUDIA_LINE:
+			if mk_sequence_timer >= 8.5:
+				mk_state = MKState.FADE_OUT
+				mk_sequence_timer = 0.0
+				var tw_fade := create_tween()
+				tw_fade.tween_property(mk_layer, "modulate:a", 0.0, 2.0)
+				tw_fade.tween_callback(_start_final_credits)
+
+		MKState.FADE_OUT:
+			pass
+
+func _start_final_credits() -> void:
+	final_mission_done = true
+	mk_sequence_active = false
+	mk_layer.visible = false
+	mk_layer.modulate.a = 1.0
+
+	# Build final credits array dynamically
+	var choice_line: String
+	match final_mission_choice:
+		0: choice_line = "You knew it wouldn't matter.\nYou did it anyway."
+		1: choice_line = "You almost didn't.\nThat counts for something."
+		_: choice_line = "That was the only honest answer."
+
+	var margin_display: String
+	if final_mission_margin_text.strip_edges() == "":
+		margin_display = "[left blank]"
+	else:
+		margin_display = "\"" + final_mission_margin_text + "\""
+
+	ending_scenes = [
+		"[CLASSIFIED — FILE #0001]\n\nSeven signatures.\nThe document is complete.",
+		"Six of them were easy.\n\nThe seventh took everything.",
+		choice_line,
+		"C.L.A.U.D.I.A. received the file\nat 23:59:59.",
+		"She processed it in\n0.003 seconds.\n\nThen she sat with it\nfor a very long time.",
+		"For the first time in\nher operational history,\nshe created a subfolder.",
+		"She named it\n\n'Exceptions'.",
+		"The world didn't change.\n\nThe wars are still running.\nThe billionaires are still rich.\nThe warehouse worker\nstill doesn't have a chair.",
+		"The document is filed\nin a folder\nthat one machine\ndecided to create\nbecause one person\ndecided to try.",
+		"In the margin of the document,\nsomewhere between\nBezos's signature and yours,\nsomeone wrote:",
+		margin_display,
+		"C.L.A.U.D.I.A. read it.\n\nShe didn't comment.\n\nShe just added it to the file.",
+		"[CIVIC NIGHTMARE]\n\nwritten, directed,\nand survived\nby you.\n\n\n— FIN —",
+	]
+	ending_phase = 0
+	ending_triggered = true
+	start_ending_sequence()
 
 # ── Bezos SF2 cinematic (1280×720, centrato, fedele a SSF II) ──
 #
@@ -4454,6 +5414,98 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_cinematic_dialogue.visible = false
 	bezos_cinematic_frame.add_child(bezos_cinematic_dialogue)
 
+	# ═══ Amazon error popup (shown during combat) ═══
+	var err_popup := Control.new()
+	err_popup.name = "ErrorPopup"
+	err_popup.size = Vector2(360, 156)
+	err_popup.visible = false
+	err_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bezos_cinematic_frame.add_child(err_popup)
+
+	var ep_bg := ColorRect.new()
+	ep_bg.color = Color(0.93, 0.93, 0.91)
+	ep_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ep_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	err_popup.add_child(ep_bg)
+
+	var ep_border := StyleBoxFlat.new()
+	ep_border.border_color = Color(0.55, 0.55, 0.52)
+	ep_border.border_width_left = 2
+	ep_border.border_width_top = 2
+	ep_border.border_width_right = 2
+	ep_border.border_width_bottom = 2
+	ep_border.bg_color = Color(0, 0, 0, 0)
+	var ep_border_rect := PanelContainer.new()
+	ep_border_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ep_border_rect.add_theme_stylebox_override("panel", ep_border)
+	ep_border_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	err_popup.add_child(ep_border_rect)
+
+	var ep_titlebar := ColorRect.new()
+	ep_titlebar.name = "TitleBar"
+	ep_titlebar.color = Color(1.0, 0.60, 0.0)  # Amazon orange
+	ep_titlebar.position = Vector2(2, 2)
+	ep_titlebar.size = Vector2(356, 28)
+	ep_titlebar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	err_popup.add_child(ep_titlebar)
+
+	var ep_icon := Label.new()
+	ep_icon.text = "⚠"
+	ep_icon.position = Vector2(4, 2)
+	ep_icon.add_theme_font_size_override("font_size", 15)
+	ep_icon.add_theme_color_override("font_color", Color.WHITE)
+	ep_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ep_titlebar.add_child(ep_icon)
+
+	var ep_title := Label.new()
+	ep_title.name = "PopupTitle"
+	ep_title.text = "AMAZON ERROR"
+	ep_title.position = Vector2(26, 4)
+	ep_title.add_theme_font_size_override("font_size", 13)
+	ep_title.add_theme_color_override("font_color", Color.WHITE)
+	ep_title.add_theme_color_override("font_shadow_color", Color(0.3, 0.0, 0.0, 0.6))
+	ep_title.add_theme_constant_override("shadow_offset_x", 1)
+	ep_title.add_theme_constant_override("shadow_offset_y", 1)
+	ep_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ep_titlebar.add_child(ep_title)
+
+	var ep_close := Label.new()
+	ep_close.text = "✕"
+	ep_close.position = Vector2(334, 4)
+	ep_close.add_theme_font_size_override("font_size", 13)
+	ep_close.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.7))
+	ep_close.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ep_titlebar.add_child(ep_close)
+
+	var ep_msg := Label.new()
+	ep_msg.name = "PopupMsg"
+	ep_msg.text = ""
+	ep_msg.position = Vector2(14, 38)
+	ep_msg.size = Vector2(332, 88)
+	ep_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ep_msg.add_theme_font_size_override("font_size", 13)
+	ep_msg.add_theme_color_override("font_color", Color(0.12, 0.12, 0.12))
+	ep_msg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	err_popup.add_child(ep_msg)
+
+	var ep_ok_bg := ColorRect.new()
+	ep_ok_bg.name = "OkBg"
+	ep_ok_bg.color = Color(0.80, 0.80, 0.78)
+	ep_ok_bg.position = Vector2(138, 126)
+	ep_ok_bg.size = Vector2(84, 22)
+	ep_ok_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	err_popup.add_child(ep_ok_bg)
+
+	var ep_ok_lbl := Label.new()
+	ep_ok_lbl.text = "    OK    "
+	ep_ok_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ep_ok_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ep_ok_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ep_ok_lbl.add_theme_font_size_override("font_size", 12)
+	ep_ok_lbl.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1))
+	ep_ok_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ep_ok_bg.add_child(ep_ok_lbl)
+
 	add_child(bezos_cinematic_layer)
 	_layout_bezos_cinematic_frame()
 
@@ -4565,9 +5617,33 @@ func _bezos_hide_all_ui() -> void:
 			bezos_cinematic_speaker, bezos_cinematic_dialogue,
 			bezos_cinematic_timer_label]:
 		if node: node.visible = false
-	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP"]:
+	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP", "ErrorPopup"]:
 		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
 		if nd: nd.visible = false
+
+func _show_bezos_error_popup(popup_index: int, pos: Vector2) -> void:
+	if not bezos_cinematic_frame: return
+	var popup := bezos_cinematic_frame.get_node_or_null("ErrorPopup")
+	if not popup: return
+	var data: Array = BEZOS_ERROR_POPUPS[popup_index % BEZOS_ERROR_POPUPS.size()]
+	var title_lbl := popup.get_node_or_null("TitleBar/PopupTitle") as Label
+	var msg_lbl := popup.get_node_or_null("PopupMsg") as Label
+	if title_lbl: title_lbl.text = data[0]
+	if msg_lbl: msg_lbl.text = data[1]
+	popup.position = pos
+	popup.modulate.a = 0.0
+	popup.scale = Vector2(0.85, 0.85)
+	popup.pivot_offset = Vector2(180, 78)
+	popup.visible = true
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(popup, "modulate:a", 1.0, 0.18)
+	tw.tween_property(popup, "scale", Vector2(1.0, 1.0), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Auto-dismiss after 2.4s
+	tw.tween_interval(2.4)
+	tw.set_parallel(false)
+	tw.tween_property(popup, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func(): if popup: popup.visible = false)
 
 func _bezos_show_hud() -> void:
 	for node in [bezos_cinematic_left_bar, bezos_cinematic_right_bar,
@@ -4662,17 +5738,18 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 			)
 
 		BezosCinematicState.COMBAT:
-			# Fake combat: FIGHT! fades, timer counts down, HP bars animate
 			bezos_cinematic_stage.visible = false
 			bezos_cinematic_fight.visible = false
-			# Player HP starts full (476px), will drain in _process via shake/hits
-			# Bezos HP stays full (he's invincible, obviously)
-			# We animate this in _process_bezos_cinematic for per-frame control
-			# Kick off with an opening hit flash
 			bezos_cinematic_flash.visible = true
 			bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.6)
 			var tw_combat := create_tween()
 			tw_combat.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.15)
+			# Popup 1: top-right (doesn't cover HP bars at top, reads clearly)
+			tw_combat.tween_interval(0.5)
+			tw_combat.tween_callback(func(): _show_bezos_error_popup(0, Vector2(890, 80)))
+			# Popup 2: bottom-left, offset to not overlap popup 1
+			tw_combat.tween_interval(1.3)
+			tw_combat.tween_callback(func(): _show_bezos_error_popup(1, Vector2(30, 490)))
 
 		BezosCinematicState.DENIED:
 			bezos_cinematic_fight.visible = false
@@ -4713,8 +5790,11 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 				var tw8 := create_tween()
 				tw8.tween_property(bezos_cinematic_perfect, "modulate:a", 1.0, 0.35)
 			)
+			# Popup 3: post-PERFECT, center-ish — "Dispute Resolution Complete"
+			tw6.tween_interval(0.5)
+			tw6.tween_callback(func(): _show_bezos_error_popup(3, Vector2(460, 200)))
 			# Pause, then dim + show denial
-			tw6.tween_interval(BEZOS_DENIAL_REVEAL_DELAY)
+			tw6.tween_interval(BEZOS_DENIAL_REVEAL_DELAY - 0.5)
 			tw6.tween_callback(func():
 				bezos_cinematic_ko.visible = false
 				bezos_cinematic_perfect.visible = false

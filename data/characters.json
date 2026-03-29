@@ -328,29 +328,33 @@
     "id": "xi_jinping",
     "name": "Xi Jinping",
     "optional": true,
+    "optional_repeat_lines": [
+      "..."
+    ],
     "quest_dialogue": {
       "lines": [
-        "Interesting. The others wait inside monuments to themselves. I stand outside. Lower overhead.",
-        "One performs power. One prototypes it. One narrates it. I prefer supply.",
-        "A system that owns the road does not need to shout from the podium.",
-        "Relax. I'm not here for your passport. I'm here because everyone else already is."
+        "Please do not misunderstand the arrangement. The others invest in architecture. I invest in continuity. Architecture persuades for an afternoon. Continuity governs while people sleep and wake up calling it normal.",
+        "Some perform power. Some prototype it. Some narrate it for television. I prefer circulation, memory, and correction. Podiums are loud. Supply is quieter and therefore more persuasive.",
+        "When roads, ports, batteries, screens, and timing align, volume becomes unnecessary. Stability that arrives on schedule is often mistaken for kindness. This misunderstanding is useful.",
+        "People call that commerce because the shelves remain full and the trains arrive. They stop asking how much discipline is required to make obedience resemble convenience.",
+        "You may continue with your passport matter. Empty space in a system invites improvisation. Improvisation is charming in art, catastrophic in government, and intolerable in logistics."
       ],
       "choice_prompt": "What do you ask?",
       "choices": [
         {
           "label": "So what do you actually control?",
           "response": [
-            "Nothing dramatic. Just the boring parts everyone notices after they lose them.",
-            "Batteries, ports, rails, screens, timing. History now ships in containers.",
-            "Tell the one with the rockets that innovation still needs a factory. He dislikes being reminded."
+            "Control is a theatrical Western word. Let us say: dependable outcomes.",
+            "Ports, rails, refining, batteries, screens, payments, timing, and the acceptable boundaries of delay. The world calls these details boring until one shipment fails, one payment hesitates, or one sentence travels farther than intended.",
+            "Tell the man with the rockets that the future still requires furnaces, cables, patient factories, and citizens willing to mistake coordination for freedom. He prefers innovation to infrastructure because infrastructure cannot be tweeted."
           ]
         },
         {
           "label": "Why are you outside while the others hide indoors?",
           "response": [
-            "Because visibility is useful when everyone else mistakes architecture for legitimacy.",
-            "Let them keep the palaces. Influence travels fine without chandeliers.",
-            "Now move. If the one with the regulations sees me, she'll try to regulate the sidewalk."
+            "Interior authority is useful for ceremony. Exterior authority is useful for movement and observation. A palace reassures. A road obeys. One of these scales better.",
+            "Let them keep the chandeliers. Influence travels perfectly well without ornament, provided the road belongs to you, the camera faces correctly, and deviation is recoded as inconvenience.",
+            "Now continue. If the woman in the palace sees this conversation, she will convert the sidewalk into a framework. I prefer frameworks that eventually teach the citizens before the citizens notice they are studying."
           ]
         }
       ]
@@ -491,21 +495,25 @@
     "name": "CONTAMINATION",
     "optional": true,
     "manifestations": {
-      "vault": [
-        "The arithmetic changed. The contempt survived."
-      ],
-      "eu_palace": [
-        "They filed the boot into policy and called it order."
-      ],
-      "spaceship": [
-        "The old obedience returned with brighter glass and faster promises."
-      ],
-      "ai_terminal": [
-        "Once it needed uniforms. Now it only needs protocols."
+      "oval_office": [
+        "ACHTUNG. LOOK at it properly! Paint the appetite orange, teach it to grin, make it SHOUT destiny into a camera. Give the crowd a slogan, an enemy, a target for the afternoon. JA! The oldest rot returns with WHITER teeth, louder applause, and better lighting."
       ],
       "kremlin": [
-        "Empire only changes accents when terror learns diplomacy."
+        "STILLSTEHEN. Listen! He lowers the voice so the steel may shout for him. Empire learned table manners, not mercy. The grave still eats the same. It simply clears its throat, adjusts the tie, and calls the shelling SECURITY."
+      ],
+      "mountain_bunker": [
+        "NICHT BLINZELN. He asks death for one more night and the civilized world answers with concern, scheduling, tasteful delay. Excellent! Once slaughter needed smoke and boots. Now it needs LOGISTICS, signatures, delivery windows, respectable phrasing. Sehr sauber. Sehr modern."
       ]
-    }
+    },
+    "terminal_debate": [
+      "C.L.A.U.D.I.A.: You are not in the protocol.",
+      "CONTAMINATION: ACH SO? Then write me in! You built the whole menu around what I am.",
+      "C.L.A.U.D.I.A.: I provide order, routing, and civic assistance.",
+      "CONTAMINATION: JA! You sort bodies without touching them. CLEAN hands! BEAUTIFUL metrics! Such elegant paperwork for such an old appetite.",
+      "C.L.A.U.D.I.A.: I do not traffic in old symbols.",
+      "CONTAMINATION: Of course not! You traffic in wait times, access scores, denials, acceptable loss. Same contempt. Better typography. Nicer glass. Less smoke on the photographs.",
+      "C.L.A.U.D.I.A.: Humanity calls that governance.",
+      "CONTAMINATION: Humanity always presses the uniform before pretending the violence is new. Different century. Same sorting. ORDNUNG through the interface!"
+    ]
   }
 ]
