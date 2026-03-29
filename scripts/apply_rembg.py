@@ -24,9 +24,9 @@ def process_with_ai(src_path, dest_path):
     except Exception as e:
         print(f"Error processing {src_path}: {e}")
 
-# Mapping of Contamination/Hitler parody version to game assets
+# Mapping of Contamination/Hitler parody version (V5 - Long Coat Cape) to game assets
 BATCH_MAPPING = {
-    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\contamination_spectral_zz_v3_arcade_1774747759715.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\contamination_portrait.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\contamination_spectral_cape_v5_arcade_1774748096178.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\contamination_portrait.png",
 }
 
 if __name__ == "__main__":
