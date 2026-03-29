@@ -35,9 +35,11 @@ def process_with_ai(src_path, dest_path):
     except Exception as e:
         print(f"Error processing {src_path}: {e}")
 
-# Mapping of Pyongyang Landmark satire to game assets
+# Mapping of Pyongyang Square + Kim Jong-un parody to game assets
 BATCH_MAPPING = {
     r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\landmark_pyongyang_satire_1774779199106.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\landmark_pyongyang.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\kim_jong_un_pure_sprite_1774779343382.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\kim_jong_un_sprite.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\kim_jong_un_honda_portrait_v13_arcade_1774779364027.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\kim_jong_un_portrait.png",
 }
 
 if __name__ == "__main__":

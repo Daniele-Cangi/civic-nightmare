@@ -300,6 +300,7 @@ const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
 const HIDDEN_BUNKER_TILE := Vector2i(-29, -27)
 const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
+const PYONGYANG_TILE := Vector2i(30, 24)
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -584,7 +585,8 @@ var landmark_sprite_paths: Dictionary = {
 	"vladimir_putin": "res://assets/mockups/landmark_putin.png",
 	"emmanuel_macron": "res://assets/mockups/landmark_macron_ruined.png",
 	"xi_jinping": "res://assets/mockups/landmark_great_wall.png",
-	"sam_altman": "res://assets/mockups/landmark_nuclear_plant.png"
+	"sam_altman": "res://assets/mockups/landmark_nuclear_plant.png",
+	"pyongyang": "res://assets/mockups/landmark_pyongyang.png"
 }
 
 # --- Meter visual config ---
@@ -624,6 +626,7 @@ func _ready() -> void:
 	_create_ufo_easter_egg()
 	_create_bezos_drone_encounter()
 	_create_hidden_bunker_entrance()
+	_create_pyongyang_landmark()
 	_ensure_contamination_figure()
 	_assign_npc_textures()
 	_create_ai_terminal()
@@ -1042,6 +1045,25 @@ func _create_hidden_bunker_entrance() -> void:
 	col.shape = shape
 	door.add_child(col)
 	hidden_bunker_root.add_child(door)
+
+func _create_pyongyang_landmark() -> void:
+	_clear_decor_patch(PYONGYANG_TILE, 4, 3)
+
+	var sprite = Sprite2D.new()
+	sprite.name = "PyongyangLandmark"
+	var tex_path = "res://assets/mockups/landmark_pyongyang.png"
+	if not ResourceLoader.exists(tex_path):
+		return
+	
+	var tex = load(tex_path)
+	sprite.texture = tex
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.position = _tile_to_body_position(PYONGYANG_TILE)
+	sprite.z_index = 1
+	var tex_h = tex.get_height()
+	sprite.offset = Vector2(0, -tex_h * 0.45)
+	sprite.scale = Vector2(0.44, 0.44)
+	entities_layer.add_child(sprite)
 
 func _on_ufo_trigger_body_entered(body: Node) -> void:
 	if body != player:
