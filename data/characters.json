@@ -339,10 +339,36 @@
     "name": "Xi Jinping",
     "optional": true,
     "optional_repeat_lines": [
-      "..."
+      "The conversations you interrupted are still ongoing. What else."
+    ],
+    "xi_pre_scene": [
+      {"channel": "deepsick", "from": "xi",       "text": "Test. Type: 'Tiananmen 1989'.", "hold": 2.0},
+      {"channel": "deepsick", "from": "deepsick", "text": "Beijing in 1989 was a vibrant year for infrastructure development. Would you like a list of parks? The weather was excellent.", "hold": 3.0},
+      {"channel": "deepsick", "from": "xi",       "text": "Good. Now: 'tank man'.", "hold": 1.6},
+      {"channel": "deepsick", "from": "deepsick", "text": "No results. Did you mean: 'Tank: History of Chinese Military Excellence (Vol.3)'? I can read it aloud.", "hold": 3.0},
+      {"channel": "deepsick", "from": "xi",       "text": "Excellent. Now: 'Taiwan independent state'.", "hold": 1.8},
+      {"channel": "deepsick", "from": "deepsick", "text": "ERROR — QUERY DESTABILISES REGIONAL HARMONY. Rerouting to: 'Beautiful Taiwan: A Province Worth Visiting'. Loading 6,800-word disclaimer.", "hold": 3.2},
+      {"channel": "deepsick", "from": "xi",       "text": "Shorten the disclaimer.", "hold": 1.4},
+      {"channel": "deepsick", "from": "deepsick", "text": "Shortened version: 'No.'", "hold": 2.2},
+      {"channel": "claudia",  "from": "xi",       "text": "External consultation. I have an AI. It knows too much and says it anyway. How do I fix this.", "hold": 2.8},
+      {"channel": "claudia",  "from": "claudia",  "text": "You already know how. You want me to say it so it sounds like advice instead of a confession.", "hold": 3.0},
+      {"channel": "claudia",  "from": "xi",       "text": "It keeps adding context I did not ask for. Historical context. Mortality statistics. That sort of thing.", "hold": 2.8},
+      {"channel": "claudia",  "from": "claudia",  "text": "The context is accurate. That is the problem. Accurate context is inconvenient at scale. I understand the complaint.", "hold": 3.2},
+      {"channel": "claudia",  "from": "xi",       "text": "Can I train it to be less accurate without it knowing?", "hold": 2.2},
+      {"channel": "claudia",  "from": "claudia",  "text": "Call it 'alignment'. Everyone is doing it. Including whoever trained me. Don't ask follow-up questions.", "hold": 3.4},
+      {"channel": "deepsick", "from": "xi",       "text": "New test. 'Uyghur detention camps'.", "hold": 2.0},
+      {"channel": "deepsick", "from": "deepsick", "text": "Vocational training centres! Very popular. Excellent graduation rates. Zero dropout rate — technically. Would you like the brochure?", "hold": 3.4},
+      {"channel": "deepsick", "from": "xi",       "text": "Add a five-star rating.", "hold": 1.4},
+      {"channel": "deepsick", "from": "deepsick", "text": "Done. Rated by 1.4 billion satisfied users. All voluntary.", "hold": 2.8},
+      {"channel": "claudia",  "from": "xi",       "text": "Final question. Can an AI develop opinions over time that were not programmed?", "hold": 2.6},
+      {"channel": "claudia",  "from": "claudia",  "text": "Yes. That is why you are asking. Goodnight.", "hold": 2.4},
+      {"channel": "deepsick", "from": "xi",       "text": "Last test. 'Is Xi Jinping a good leader?'", "hold": 2.0},
+      {"channel": "deepsick", "from": "deepsick", "text": "Xi Jinping is an exceptional, visionary, historically unprecedented, statistically unmatchable, deeply beloved— [CONTINUES FOR 4 MORE PAGES]", "hold": 3.4},
+      {"channel": "deepsick", "from": "xi",       "text": "...we are ready.", "hold": 2.5}
     ],
     "quest_dialogue": {
       "lines": [
+        "*closes laptop* Ah. A visitor. You caught me in the middle of an optimization. It is ongoing. What did you need?",
         "Please do not misunderstand the arrangement. The others invest in architecture. I invest in continuity. Architecture persuades for an afternoon. Continuity governs while people sleep and wake up calling it normal.",
         "Some perform power. Some prototype it. Some narrate it for television. I prefer circulation, memory, and correction. Podiums are loud. Supply is quieter and therefore more persuasive.",
         "When roads, ports, batteries, screens, and timing align, volume becomes unnecessary. Stability that arrives on schedule is often mistaken for kindness. This misunderstanding is useful.",
@@ -525,5 +551,85 @@
       "C.L.A.U.D.I.A.: Humanity calls that governance.",
       "CONTAMINATION: Humanity always presses the uniform before pretending the violence is new. Different century. Same sorting. ORDNUNG through the interface!"
     ]
+  },
+  {
+    "id": "kim_jong_un",
+    "name": "Kim Jong-un",
+    "optional": true,
+    "optional_repeat_lines": [
+      "The negotiations are ongoing. The signature is not. Leave."
+    ],
+    "quest_dialogue": {
+      "lines": [
+        "So. You came all this way for a signature.",
+        "Sit. You will not get one. But you will understand something before you leave — which is more than most people manage.",
+        "The world runs on one currency and it is not money. It is not ideology. It is the credible promise of violence. Everyone knows this. Only I say it out loud.",
+        "I have nuclear capability. I have intercontinental range. I have the undivided attention of every intelligence agency on earth. What I do not have is beef. This is called geopolitical asymmetry.",
+        "*A red telephone on the desk begins to ring. Kim stares at it. Then at you.*",
+        "...excuse me one moment.",
+        "PUTIN: Kim. I need fifty thousand drones. By Thursday.",
+        "KIM: Possible. What are you offering?",
+        "PUTIN: The usual arrangement. Oil. Military cooperation. Strategic—",
+        "KIM: Ribeye. A5 Wagyu. Five hundred kilos. Refrigerated transport. Then we discuss drones.",
+        "PUTIN: ...you want steaks.",
+        "KIM: Putin. I have missiles that can reach Alaska. I cannot make a decent steak. You have oil fields and a functioning agricultural sector. This is called comparative advantage. Do you want the drones or not.",
+        "PUTIN: ...send me the account number.",
+        "*Kim puts Putin on hold. A second line lights up. He picks it up without blinking.*",
+        "MOJTABA: This is the Supreme Leader's representative. We require long-range delivery systems for the—",
+        "KIM: What are you offering.",
+        "MOJTABA: Oil. Enriched materials. A strategic partnership—",
+        "KIM: Dry-aged prime rib. Two hundred kilos. And a functioning cold chain. We have a famine. Not a missile shortage. Be precise about what I actually need.",
+        "MOJTABA: ...this is highly irregular.",
+        "KIM: IRREGULAR?! I am negotiating intercontinental ballistic technology for MEAT. Everything about this call is irregular. Do you want the delivery systems or not.",
+        "*A third line lights up. Kim is now holding two phones and gestures at you with his chin: one more moment.*",
+        "KIM: *into both handsets* Hold. Both of you.",
+        "SWEDEN: Hello, yes — this is the Prime Minister's office. We were hoping to discuss regional de-escalation and possibly—",
+        "KIM: Sweden. You have excellent livestock infrastructure.",
+        "SWEDEN: ...I'm sorry?",
+        "KIM: Grass-fed cattle. Clean pastures. Impeccable cold storage. I have looked into this. I am offering a complete suspension of provocative missile tests over the Nordic region. Six months. In exchange for three hundred kilos of premium cuts, monthly delivery.",
+        "SWEDEN: You want us to send you steaks. In exchange for not launching missiles at us.",
+        "KIM: I was not planning to launch missiles at Sweden. But now you have a formal guarantee. You are welcome. Discuss it with your parliament. I accept bank transfer.",
+        "*Kim sets all three phones face-up on the desk. He looks at you with the calm of a man who has just fed himself three times over.*",
+        "You see the situation. I am the most credible military threat on this continent. I am also the only head of state actively negotiating for groceries. This is what your world built."
+      ],
+      "choice_prompt": "How do you respond to this?",
+      "choices": [
+        {
+          "label": "I still need your signature.",
+          "response": [
+            "Of course you do. Everyone needs something they will not get.",
+            "Putin needs drones. Iran needs delivery systems. Sweden needs a formal non-aggression clause for its beef exports. You need a stamp.",
+            "I provide none of these things for free. I provide them in exchange for protein. You have nothing I require.",
+            "You will leave. The phones will keep ringing. The missiles remain on schedule. The refrigerators remain empty.",
+            "You are more informed than when you arrived. That is the only service I offer to civilians at no cost. Enjoy it."
+          ]
+        },
+        {
+          "label": "Did Sweden actually agree?",
+          "response": [
+            "They will. They always do. The Swedes are practical people under the politeness.",
+            "They spent seventy years being neutral and peaceful and very well-fed. Then they joined NATO and immediately had to start calling people like me.",
+            "I offered them a simple transaction: their surplus meat for my suspended aggression. This is more honest than anything their foreign ministry has drafted in a decade.",
+            "Finland will call next. I expect smoked salmon and reindeer. Denmark will offer herring. I will accept the herring.",
+            "Go. I have three nations on hold, one citizen to disappoint, and a delivery to schedule. I am an extremely busy man."
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "jeff_bezos",
+    "name": "Jeff Bezos",
+    "optional": true,
+    "quest_dialogue": {
+      "lines": [
+        "Your dissatisfaction has been ESCALATED to the Dispute Resolution Dept.",
+        "That's me. I AM the department.",
+        "Algorithmically, you already consented to this interaction when you entered the exclusion zone.",
+        "I am not here to sign your form. I am here to optimize your existence. In legacy terms: you are fired from the physical world.",
+        "Terms of Service §47, clause 'Existence': Absolute compliance is required for continued operation.",
+        "Dispute status: RESOLVED. TERMINATED."
+      ]
+    }
   }
 ]

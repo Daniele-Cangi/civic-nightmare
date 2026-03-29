@@ -23,6 +23,7 @@ var patrol_dir := 1.0
 var patrol_range := 44.0
 var patrol_speed := 34.0
 var interaction_enabled := true
+var require_reapproach := false
 var look_at_target: Node2D = null
 
 var interact_cooldown := 0.0
@@ -64,6 +65,11 @@ func set_interaction_enabled(value: bool) -> void:
 	if indicator_label:
 		indicator_label.visible = false
 
+func require_reapproach_before_interaction() -> void:
+	require_reapproach = true
+	if indicator_label:
+		indicator_label.visible = false
+
 func _draw() -> void:
 	draw_set_transform(Vector2(0, 2), 0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 12, Color(0, 0, 0, 0.15))
@@ -88,6 +94,14 @@ func _process(delta: float) -> void:
 		return
 
 	var dist = global_position.distance_to(player_ref.global_position)
+	if require_reapproach:
+		if dist > indicator_distance + 8.0:
+			require_reapproach = false
+		else:
+			if indicator_label:
+				indicator_label.visible = false
+			_update_patrol(delta)
+			return
 	var nearby: bool = dist < indicator_distance and interaction_enabled
 	indicator_label.visible = nearby
 

@@ -84,6 +84,14 @@ func set_room_active(active: bool) -> void:
 		if room_key == "vault" and not bool(encounter_state.get("dialogue_ready", true)):
 			call_deferred("_show_vault_instruction")
 
+func set_npc_interaction_enabled(enabled: bool) -> void:
+	if room_npc and is_instance_valid(room_npc) and room_npc.has_method("set_interaction_enabled"):
+		room_npc.set_interaction_enabled(enabled)
+
+func require_npc_reapproach() -> void:
+	if room_npc and is_instance_valid(room_npc) and room_npc.has_method("require_reapproach_before_interaction"):
+		room_npc.require_reapproach_before_interaction()
+
 func get_spawn_position(marker_name: String) -> Vector2:
 	var marker := markers.get_node_or_null(marker_name) as Marker2D
 	if marker:
@@ -301,6 +309,87 @@ func _theme_for_key(key: String) -> Dictionary:
 					{"pos": Vector2(0, -186), "color": Color(0.54, 0.58, 0.64), "scale": 2.1, "energy": 0.11},
 					{"pos": Vector2(-124, 18), "color": Color(0.2, 0.34, 0.42), "scale": 1.7, "energy": 0.06},
 					{"pos": Vector2(0, 98), "color": Color(0.12, 0.14, 0.18), "scale": 1.8, "energy": 0.05}
+				]
+			}
+		"pyongyang_command":
+			return {
+				"title": "PYONGYANG BATTERY",
+				"subtitle": "Artillery guidance room",
+				"floor_source": SRC_PROC,
+				"floor_tile": TILE_METAL_FLOOR,
+				"accent_source": SRC_PROC,
+				"accent_tile": TILE_METAL_FLOOR,
+				"wall_tile": TILE_VAULT_WALL,
+				"window_positions": [],
+				"curtains": false,
+				"panel_color": Color(0.16, 0.06, 0.06, 0.34),
+				"trim_color": Color(0.42, 0.1, 0.08, 0.24),
+				"accent_color": Color(0.24, 0.08, 0.08, 0.2),
+				"rug_outer": Color(0.34, 0.06, 0.06, 0.84),
+				"rug_inner": Color(0.12, 0.03, 0.03, 0.96),
+				"rug_glow": Color(0.5, 0.12, 0.08, 0.14),
+				"spawn_position": Vector2(0, 168),
+				"npc_position": Vector2(0, 24),
+				"desk_position": Vector2(0, -82),
+				"lights": [
+					{"pos": Vector2(-120, -180), "color": Color(0.92, 0.32, 0.22), "scale": 2.6, "energy": 0.18},
+					{"pos": Vector2(120, -180), "color": Color(0.92, 0.32, 0.22), "scale": 2.6, "energy": 0.18},
+					{"pos": Vector2(0, -18), "color": Color(0.82, 0.24, 0.18), "scale": 2.2, "energy": 0.32},
+					{"pos": Vector2(0, 108), "color": Color(0.18, 0.06, 0.06), "scale": 1.9, "energy": 0.08}
+				]
+			}
+		"red_command":
+			return {
+				"title": "RED COMMAND",
+				"subtitle": "Continuity chamber",
+				"floor_source": SRC_PROC,
+				"floor_tile": TILE_WOOD,
+				"accent_source": SRC_PROC,
+				"accent_tile": TILE_WOOD,
+				"wall_tile": TILE_VAULT_WALL,
+				"window_positions": [],
+				"curtains": false,
+				"panel_color": Color(0.22, 0.04, 0.04, 0.34),
+				"trim_color": Color(0.52, 0.12, 0.08, 0.24),
+				"accent_color": Color(0.34, 0.08, 0.08, 0.22),
+				"rug_outer": Color(0.56, 0.08, 0.08, 0.88),
+				"rug_inner": Color(0.18, 0.03, 0.03, 0.96),
+				"rug_glow": Color(0.72, 0.18, 0.08, 0.12),
+				"spawn_position": Vector2(0, 168),
+				"npc_position": Vector2(0, 24),
+				"desk_position": Vector2(0, -82),
+				"lights": [
+					{"pos": Vector2(-124, -180), "color": Color(0.96, 0.22, 0.18), "scale": 2.8, "energy": 0.2},
+					{"pos": Vector2(124, -180), "color": Color(0.96, 0.22, 0.18), "scale": 2.8, "energy": 0.2},
+					{"pos": Vector2(0, -18), "color": Color(1.0, 0.36, 0.18), "scale": 2.4, "energy": 0.34},
+					{"pos": Vector2(0, 108), "color": Color(0.22, 0.04, 0.04), "scale": 2.0, "energy": 0.08}
+				]
+			}
+		"neural_core":
+			return {
+				"title": "NEURAL CORE",
+				"subtitle": "Reactor alignment room",
+				"floor_source": SRC_PROC,
+				"floor_tile": TILE_METAL_FLOOR,
+				"accent_source": SRC_PROC,
+				"accent_tile": TILE_METAL_FLOOR,
+				"wall_tile": TILE_METAL_WALL,
+				"window_positions": [],
+				"curtains": false,
+				"panel_color": Color(0.08, 0.12, 0.16, 0.3),
+				"trim_color": Color(0.22, 0.54, 0.7, 0.22),
+				"accent_color": Color(0.1, 0.26, 0.34, 0.18),
+				"rug_outer": Color(0.12, 0.22, 0.26, 0.82),
+				"rug_inner": Color(0.06, 0.12, 0.16, 0.96),
+				"rug_glow": Color(0.24, 0.62, 0.72, 0.14),
+				"spawn_position": Vector2(0, 168),
+				"npc_position": Vector2(0, 24),
+				"desk_position": Vector2(0, -82),
+				"lights": [
+					{"pos": Vector2(-126, -182), "color": Color(0.46, 0.86, 1.0), "scale": 2.9, "energy": 0.24},
+					{"pos": Vector2(126, -182), "color": Color(0.46, 0.86, 1.0), "scale": 2.9, "energy": 0.24},
+					{"pos": Vector2(0, -22), "color": Color(1.0, 0.54, 0.18), "scale": 2.6, "energy": 0.34},
+					{"pos": Vector2(0, 110), "color": Color(0.14, 0.28, 0.34), "scale": 2.0, "energy": 0.08}
 				]
 			}
 		"elysee":
@@ -596,6 +685,12 @@ func _build_room_props() -> void:
 			_build_kremlin_props()
 		"vault":
 			_build_vault_props()
+		"pyongyang_command":
+			_build_pyongyang_props()
+		"red_command":
+			_build_red_command_props()
+		"neural_core":
+			_build_neural_core_props()
 		"elysee":
 			_build_elysee_props()
 		_:
@@ -706,6 +801,67 @@ func _build_mountain_bunker_props() -> void:
 	_add_rect_polygon(decor_root, Rect2(Vector2(112, 18), Vector2(44, 80)), Color(0.04, 0.04, 0.05, 0.2))
 	_add_rect_polygon(decor_root, Rect2(Vector2(-142, 84), Vector2(64, 10)), Color(0.0, 0.0, 0.0, 0.16))
 	_add_rect_polygon(decor_root, Rect2(Vector2(58, 72), Vector2(84, 12)), Color(0.0, 0.0, 0.0, 0.14))
+
+func _build_pyongyang_props() -> void:
+	var desk = _create_desk("BatteryDesk", theme["desk_position"], true)
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(-18, -34), Vector2(1.6, 1.6))
+	_add_loose_sprite(desk, PROP_HOURGLASS, Vector2(14, -34), Vector2(1.7, 1.7))
+	var left_console = _create_console("LeftGuidanceConsole", Vector2(-144, 0), 2, TILE_DESK_METAL)
+	var right_console = _create_console("RightGuidanceConsole", Vector2(144, 0), 2, TILE_DESK_METAL)
+	_add_loose_sprite(left_console, PROP_BOOK, Vector2(-8, -34), Vector2(1.5, 1.5))
+	_add_loose_sprite(right_console, PROP_BOOK, Vector2(8, -34), Vector2(1.5, 1.5))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-96, -148), Vector2(192, 42)), Color(0.2, 0.04, 0.04, 0.52))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-84, -136), Vector2(168, 18)), Color(0.78, 0.18, 0.12, 0.18))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-18, -136), Vector2(36, 18)), Color(0.92, 0.72, 0.24, 0.14))
+
+func _build_red_command_props() -> void:
+	var desk = _create_desk("RedCommandDesk", theme["desk_position"], false)
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(-18, -34), Vector2(1.6, 1.6))
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(14, -32), Vector2(1.5, 1.5))
+	_create_flag_stand("ChinaFlag", Vector2(-208, -136), "china", true)
+	_create_flag_stand("CommunistFlag", Vector2(208, -136), "communist", false)
+	_add_rect_polygon(decor_root, Rect2(Vector2(-100, -146), Vector2(200, 40)), Color(0.3, 0.05, 0.05, 0.56))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-82, -132), Vector2(164, 14)), Color(0.92, 0.24, 0.18, 0.18))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-20, -132), Vector2(40, 14)), Color(0.9, 0.74, 0.22, 0.14))
+	_create_archive_unit("LeftCabinet", Vector2(-214, 22), TILE_FILE_CABINET)
+	_create_archive_unit("RightCabinet", Vector2(214, 22), TILE_FILE_CABINET)
+
+func _build_neural_core_props() -> void:
+	var desk = _create_desk("ReactorDesk", theme["desk_position"], true)
+	_add_loose_sprite(desk, PROP_BOOK, Vector2(-18, -34), Vector2(1.5, 1.5))
+	_add_loose_sprite(desk, PROP_HOURGLASS, Vector2(14, -34), Vector2(1.7, 1.7))
+	_create_server_bank("NorthWestServer", Vector2(-214, -96), 2)
+	_create_server_bank("NorthEastServer", Vector2(214, -96), 2)
+	_create_server_bank("MidWestServer", Vector2(-214, -4), 2)
+	_create_server_bank("MidEastServer", Vector2(214, -4), 2)
+	_create_server_bank("SouthWestServer", Vector2(-214, 88), 2)
+	_create_server_bank("SouthEastServer", Vector2(214, 88), 2)
+	var left_console = _create_console("LeftCoreConsole", Vector2(-136, 8), 2, TILE_DESK_METAL)
+	var right_console = _create_console("RightCoreConsole", Vector2(136, 8), 2, TILE_DESK_METAL)
+	_add_loose_sprite(left_console, PROP_BOOK, Vector2(-8, -34), Vector2(1.5, 1.5))
+	_add_loose_sprite(right_console, PROP_BOOK, Vector2(8, -34), Vector2(1.5, 1.5))
+	var ai_terminal = _create_display_pedestal("NeuralAITerminal", Vector2(0, -28), PROP_BOOK, Vector2(0.0, 0.0))
+	var screen = Polygon2D.new()
+	screen.color = Color(0.46, 0.9, 1.0, 0.9)
+	screen.polygon = PackedVector2Array([
+		Vector2(-18, -66),
+		Vector2(18, -66),
+		Vector2(16, -42),
+		Vector2(-16, -42)
+	])
+	ai_terminal.add_child(screen)
+	var screen_glow = Polygon2D.new()
+	screen_glow.color = Color(0.46, 0.9, 1.0, 0.18)
+	screen_glow.polygon = PackedVector2Array([
+		Vector2(-24, -72),
+		Vector2(24, -72),
+		Vector2(22, -36),
+		Vector2(-22, -36)
+	])
+	ai_terminal.add_child(screen_glow)
+	_add_rect_polygon(decor_root, Rect2(Vector2(-102, -148), Vector2(204, 44)), Color(0.1, 0.18, 0.22, 0.56))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-88, -136), Vector2(176, 18)), Color(0.28, 0.72, 0.86, 0.16))
+	_add_rect_polygon(decor_root, Rect2(Vector2(-18, -136), Vector2(36, 18)), Color(1.0, 0.54, 0.18, 0.12))
 
 func _build_elysee_props() -> void:
 	var desk = _create_desk("ElyseeDesk", theme["desk_position"], false)
@@ -950,6 +1106,47 @@ func _create_flag_stand(name: String, origin: Vector2, flag_style: String, drape
 			red2.color = Color(0.76, 0.12, 0.16, 0.98)
 			red2.polygon = PackedVector2Array([Vector2(0, -66), Vector2(40 * dir, -62), Vector2(38 * dir, -54), Vector2(0, -58)])
 			stand.add_child(red2)
+		"china":
+			main_flag.color = Color(0.76, 0.08, 0.08, 0.98)
+			var big_star = Polygon2D.new()
+			big_star.color = Color(0.92, 0.76, 0.2, 0.96)
+			big_star.polygon = _make_ellipse(Vector2(12 * dir, -70), Vector2(12, 12), 10)
+			stand.add_child(big_star)
+			for star_pos in [Vector2(24 * dir, -78), Vector2(30 * dir, -68), Vector2(28 * dir, -56), Vector2(18 * dir, -48)]:
+				var star = Polygon2D.new()
+				star.color = Color(0.92, 0.76, 0.2, 0.92)
+				star.polygon = _make_ellipse(star_pos, Vector2(5, 5), 8)
+				stand.add_child(star)
+		"communist":
+			main_flag.color = Color(0.72, 0.06, 0.08, 0.98)
+			var hammer_head = Polygon2D.new()
+			hammer_head.color = Color(0.92, 0.74, 0.22, 0.96)
+			hammer_head.polygon = PackedVector2Array([
+				Vector2(8 * dir, -76),
+				Vector2(28 * dir, -74),
+				Vector2(28 * dir, -66),
+				Vector2(8 * dir, -68)
+			])
+			stand.add_child(hammer_head)
+			var hammer_handle = Polygon2D.new()
+			hammer_handle.color = Color(0.92, 0.74, 0.22, 0.96)
+			hammer_handle.polygon = PackedVector2Array([
+				Vector2(16 * dir, -68),
+				Vector2(22 * dir, -66),
+				Vector2(16 * dir, -46),
+				Vector2(10 * dir, -48)
+			])
+			stand.add_child(hammer_handle)
+			var sickle = Polygon2D.new()
+			sickle.color = Color(0.92, 0.74, 0.22, 0.92)
+			sickle.polygon = PackedVector2Array([
+				Vector2(28 * dir, -72),
+				Vector2(40 * dir, -66),
+				Vector2(34 * dir, -52),
+				Vector2(22 * dir, -56),
+				Vector2(28 * dir, -62)
+			])
+			stand.add_child(sickle)
 		"ecb":
 			main_flag.color = Color(0.08, 0.22, 0.44, 0.98)
 			var euro_ring = Polygon2D.new()

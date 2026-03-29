@@ -81,13 +81,42 @@ var contamination_terminal_departed: bool = false
 var contamination_terminal_afterglow_pending: bool = false
 var contamination_root: Node2D
 
+# --- Kim phone overlay ---
+var kim_phone_layer: CanvasLayer = null
+var kim_phone_panel: Control = null
+var kim_phone_dot1: ColorRect = null
+var kim_phone_dot2: ColorRect = null
+var kim_phone_dot3: ColorRect = null
+var kim_phone_row2: Control = null
+var kim_phone_row3: Control = null
+var kim_phone_base_pos: Vector2 = Vector2.ZERO
+var kim_phone_active: bool = false
+var kim_phone_blink_t: float = 0.0
+var kim_phone_intensity: float = 0.0
+var kim_phone_ringing: bool = false
+
+# --- Xi pre-scene ---
+var xi_pre_scene_seen: bool = false
+var xi_pre_scene_active: bool = false
+var xi_pre_skip_requested: bool = false
+var xi_scene_layer: CanvasLayer = null
+var xi_scene_root: Control = null
+var xi_scene_frame: Control = null
+var xi_scene_left_vbox: VBoxContainer = null
+var xi_scene_right_vbox: VBoxContainer = null
+
 const CONTAMINATION_MAX_APPEARANCES := 3
+const KIM_PHONE_LINE_SHOW  := 4
+const KIM_PHONE_LINE_LINE2 := 13
+const KIM_PHONE_LINE_LINE3 := 21
+const KIM_PHONE_LINE_SETTLE := 29
 const CONTAMINATION_SOURCE_OFFSETS := {
 	"oval_office": Vector2(-116, -24),
 	"kremlin": Vector2(122, -24),
 	"mountain_bunker": Vector2(112, -18)
 }
 const CONTAMINATION_TERMINAL_OFFSET := Vector2(-140, -8)
+const XI_SCENE_FRAME_SIZE := Vector2(1280.0, 720.0)
 
 # --- Intro sequence ---
 var intro_active: bool = true
@@ -222,6 +251,7 @@ var final_mission_choice: int = -1
 var final_mission_npc: StaticBody2D
 var final_mission_awaiting_input: bool = false
 var final_mission_text_field: LineEdit
+var postgame_free_roam_started: bool = false
 
 # --- MK Sequence ---
 var mk_sequence_active: bool = false
@@ -300,7 +330,7 @@ const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
 const HIDDEN_BUNKER_TILE := Vector2i(-29, -27)
 const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
-const PYONGYANG_TILE := Vector2i(30, 24)
+const PYONGYANG_TILE := Vector2i(-31, 16)
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -525,7 +555,10 @@ var character_colors: Dictionary = {
 	"ufo_easter_egg": Color(0.58, 0.96, 0.78),
 	"mark_zuckerberg_ufo": Color(0.12, 0.12, 0.12),
 	"historical_contamination": Color(0.32, 0.32, 0.34),
-	"self": Color(0.75, 0.75, 0.82)
+	"self": Color(0.75, 0.75, 0.82),
+	"mojtaba_khamenei": Color(0.12, 0.45, 0.12), # Iranian Green
+	"swedish_pm": Color(0.12, 0.45, 0.82), # Swedish Blue
+	"jeff_bezos": Color(1.0, 0.5, 0.0) # Amazon Orange
 }
 var portrait_paths: Dictionary = {
 	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
@@ -541,7 +574,11 @@ var portrait_paths: Dictionary = {
 	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
 	"historical_contamination": "res://assets/mockups/contamination_portrait.png",
 	"ZELENSKY": "res://assets/mockups/zelensky_portrait.png",
-	"DEATH": "res://assets/mockups/death_ironic.png"
+	"DEATH": "res://assets/mockups/death_ironic.png",
+	"kim_jong_un": "res://assets/mockups/kim_jong_un_portrait.png",
+	"mojtaba_khamenei": "res://assets/mockups/mojtaba_portrait.png",
+	"swedish_pm": "res://assets/mockups/swedish_pm_portrait.png",
+	"jeff_bezos": "res://assets/mockups/bezos_portrait.png"
 }
 var combat_portrait_paths: Dictionary = {
 	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
@@ -563,7 +600,8 @@ var npc_sprite_paths: Dictionary = {
 	"ufo_easter_egg": "res://assets/characters/einstein_sprite.png",
 	"mark_zuckerberg_ufo": "res://assets/characters/zuckerberg_sprite.png",
 	"zelensky_bunker": "res://assets/mockups/zelensky_move.png",
-	"death_bunker": "res://assets/mockups/death_ironic.png"
+	"death_bunker": "res://assets/mockups/death_ironic.png",
+	"kim_jong_un": "res://assets/mockups/kim_jong_un_sprite.png"
 }
 
 const NPC_TARGET_SPRITE_HEIGHT := 128.0
@@ -575,7 +613,8 @@ var npc_facing_defaults: Dictionary = {
 	"vladimir_putin": true,
 	"emmanuel_macron": false,
 	"xi_jinping": false,
-	"sam_altman": false
+	"sam_altman": false,
+	"kim_jong_un": false
 }
 var landmark_sprite_paths: Dictionary = {
 	"donald_trump": "res://assets/mockups/landmark_trump.png",
@@ -620,7 +659,6 @@ func _ready() -> void:
 	_create_transition_fx()
 	_setup_interiors()
 	_remove_world_npcs()
-	_create_xi_world_npc()
 	_create_great_wall_landmark()
 	_create_sam_altman_encounter()
 	_create_ufo_easter_egg()
@@ -646,66 +684,58 @@ func _remove_world_npcs() -> void:
 			entities_layer.remove_child(child)
 			child.queue_free()
 
-func _create_xi_world_npc() -> void:
-	var npc = NPC_SCENE.instantiate()
-	npc.name = "XiJinpingWorld"
-	npc.character_id = "xi_jinping"
-	npc.character_name = "Xi Jinping"
-	npc.interaction_distance = 96.0
-	npc.indicator_distance = 140.0
-	var sprite := npc.get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.scale = Vector2(1.0, 1.0)
-	# Position: attached to the side of the Great Wall
-	npc.position = _tile_to_body_position(GREAT_WALL_TILE) + XI_WORLD_PIXEL_OFFSET
-	npc.z_index = 3
-	entities_layer.add_child(npc)
-	_clear_decor_near_xi(npc)
-
 func _create_great_wall_landmark() -> void:
-	var sprite = Sprite2D.new()
-	sprite.name = "GreatWallLandmark"
+	_clear_decor_patch(GREAT_WALL_TILE, 4, 3)
+
 	var tex_path = "res://assets/mockups/landmark_great_wall.png"
 	if not ResourceLoader.exists(tex_path):
 		return
-	
+
+	var root := Node2D.new()
+	root.name = "GreatWallEntrance"
+	root.position = _tile_to_body_position(GREAT_WALL_TILE)
+	root.z_index = 2
+	entities_layer.add_child(root)
+
 	var tex = load(tex_path)
+	var sprite = Sprite2D.new()
+	sprite.name = "GreatWallLandmark"
 	sprite.texture = tex
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.position = _tile_to_body_position(GREAT_WALL_TILE)
-	sprite.z_index = 1
 	var tex_h = tex.get_height()
 	sprite.offset = Vector2(0, -tex_h * 0.5)
 	sprite.scale = Vector2(0.38, 0.38)
-	entities_layer.add_child(sprite)
+	root.add_child(sprite)
+
+	_add_landmark_entry_trigger(root, "GreatWallDoorLeft", Vector2(-82, -40), Vector2(92, 86), "red_command", "EntryMarker", "Wall Gate")
+	_add_landmark_entry_trigger(root, "GreatWallDoorCenter", Vector2(2, -156), Vector2(72, 62), "red_command", "EntryMarker", "Wall Gate")
+	_add_landmark_entry_trigger(root, "GreatWallDoorRight", Vector2(76, -106), Vector2(92, 96), "red_command", "EntryMarker", "Wall Gate")
 
 func _create_sam_altman_encounter() -> void:
-	# Create Landmark (Nuclear Plant)
+	_clear_decor_patch(NUCLEAR_PLANT_TILE, 4, 3)
+
+	var tex_path = "res://assets/mockups/landmark_nuclear_plant.png"
+	if not ResourceLoader.exists(tex_path):
+		return
+
+	var root := Node2D.new()
+	root.name = "NuclearPlantEntrance"
+	root.position = _tile_to_body_position(NUCLEAR_PLANT_TILE)
+	root.z_index = 2
+	entities_layer.add_child(root)
+
+	var tex = load(tex_path)
 	var plant = Sprite2D.new()
 	plant.name = "NuclearPlantLandmark"
-	var tex_path = "res://assets/mockups/landmark_nuclear_plant.png"
-	if ResourceLoader.exists(tex_path):
-		var tex = load(tex_path)
-		plant.texture = tex
-		plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		plant.position = _tile_to_body_position(NUCLEAR_PLANT_TILE)
-		plant.z_index = 1
-		plant.offset = Vector2(0, -tex.get_height() * 0.5)
-		plant.scale = Vector2(0.38, 0.38)
-		entities_layer.add_child(plant)
-	
-	# Create NPC (Sam)
-	var npc = NPC_SCENE.instantiate()
-	npc.name = "SamAltmanWorld"
-	npc.character_id = "sam_altman"
-	npc.character_name = "Sam Altman"
-	npc.position = _tile_to_body_position(SAM_ALTMAN_TILE) + Vector2(165, 75)
-	npc.z_index = 3
-	entities_layer.add_child(npc)
-	var sprite := npc.get_node_or_null("Sprite2D") as Sprite2D
-	if sprite:
-		sprite.scale = Vector2(1.0, 1.0)
-	_clear_decor_near_xi(npc)
+	plant.texture = tex
+	plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	plant.offset = Vector2(0, -tex.get_height() * 0.5)
+	plant.scale = Vector2(0.38, 0.38)
+	root.add_child(plant)
+
+	_add_landmark_entry_trigger(root, "NeuralCoreDoorLeft", Vector2(-76, -18), Vector2(92, 88), "neural_core", "EntryMarker", "Containment Door")
+	_add_landmark_entry_trigger(root, "NeuralCoreDoorCenter", Vector2(6, -28), Vector2(94, 102), "neural_core", "EntryMarker", "Containment Door")
+	_add_landmark_entry_trigger(root, "NeuralCoreDoorRight", Vector2(92, 12), Vector2(84, 82), "neural_core", "EntryMarker", "Containment Door")
 
 func _create_ufo_easter_egg() -> void:
 	_clear_decor_patch(UFO_TILE, 3, 2)
@@ -1049,21 +1079,48 @@ func _create_hidden_bunker_entrance() -> void:
 func _create_pyongyang_landmark() -> void:
 	_clear_decor_patch(PYONGYANG_TILE, 4, 3)
 
-	var sprite = Sprite2D.new()
-	sprite.name = "PyongyangLandmark"
 	var tex_path = "res://assets/mockups/landmark_pyongyang.png"
 	if not ResourceLoader.exists(tex_path):
 		return
-	
+
+	var root := Node2D.new()
+	root.name = "PyongyangEntrance"
+	root.position = _tile_to_body_position(PYONGYANG_TILE)
+	root.z_index = 2
+	entities_layer.add_child(root)
+
 	var tex = load(tex_path)
+	var sprite = Sprite2D.new()
+	sprite.name = "PyongyangLandmark"
 	sprite.texture = tex
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.position = _tile_to_body_position(PYONGYANG_TILE)
-	sprite.z_index = 1
 	var tex_h = tex.get_height()
 	sprite.offset = Vector2(0, -tex_h * 0.45)
-	sprite.scale = Vector2(0.44, 0.44)
-	entities_layer.add_child(sprite)
+	sprite.scale = Vector2(0.2, 0.2)
+	root.add_child(sprite)
+
+	_add_landmark_entry_trigger(root, "PyongyangCannonDoorLeft", Vector2(-52, -56), Vector2(74, 94), "pyongyang_command", "EntryMarker", "Cannon Hatch")
+	_add_landmark_entry_trigger(root, "PyongyangCannonDoorCenter", Vector2(2, -96), Vector2(82, 108), "pyongyang_command", "EntryMarker", "Cannon Hatch")
+	_add_landmark_entry_trigger(root, "PyongyangCannonDoorRight", Vector2(50, -136), Vector2(74, 86), "pyongyang_command", "EntryMarker", "Cannon Hatch")
+
+func _add_landmark_entry_trigger(parent: Node2D, trigger_name: String, local_pos: Vector2, size: Vector2, destination: String, spawn_marker: String, prompt_name: String) -> void:
+	var door := Area2D.new()
+	door.name = trigger_name
+	door.position = local_pos
+	door.collision_layer = 0
+	door.collision_mask = 1
+	door.monitoring = true
+	door.monitorable = true
+	door.set_script(DOORWAY_SCRIPT)
+	door.set("destination", destination)
+	door.set("spawn_marker", spawn_marker)
+	door.set("prompt_name", prompt_name)
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = size
+	col.shape = shape
+	door.add_child(col)
+	parent.add_child(door)
 
 func _on_ufo_trigger_body_entered(body: Node) -> void:
 	if body != player:
@@ -1196,6 +1253,42 @@ func _setup_interiors() -> void:
 		bunker_room.set_room_active(false)
 	world_spawn_points["mountain_bunker_exterior"] = _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2)) + HIDDEN_BUNKER_WORLD_OFFSET
 
+	var xi_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
+	xi_room.name = "RedCommandInterior"
+	xi_room.position = Vector2(0, 3200 + (building_specs.size() + 2) * 960)
+	xi_room.set("room_key", "red_command")
+	xi_room.set("character_id", "xi_jinping")
+	xi_room.set("character_name", "Xi Jinping")
+	interiors_layer.add_child(xi_room)
+	room_registry["red_command"] = xi_room
+	if xi_room.has_method("set_room_active"):
+		xi_room.set_room_active(false)
+	world_spawn_points["red_command_exterior"] = _tile_to_actor_position(GREAT_WALL_TILE + Vector2i(0, 3))
+
+	var pyongyang_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
+	pyongyang_room.name = "PyongyangCommandInterior"
+	pyongyang_room.position = Vector2(0, 3200 + (building_specs.size() + 3) * 960)
+	pyongyang_room.set("room_key", "pyongyang_command")
+	pyongyang_room.set("character_id", "kim_jong_un")
+	pyongyang_room.set("character_name", "Kim Jong-un")
+	interiors_layer.add_child(pyongyang_room)
+	room_registry["pyongyang_command"] = pyongyang_room
+	if pyongyang_room.has_method("set_room_active"):
+		pyongyang_room.set_room_active(false)
+	world_spawn_points["pyongyang_command_exterior"] = _tile_to_actor_position(PYONGYANG_TILE + Vector2i(0, 3))
+
+	var neural_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
+	neural_room.name = "NeuralCoreInterior"
+	neural_room.position = Vector2(0, 3200 + (building_specs.size() + 4) * 960)
+	neural_room.set("room_key", "neural_core")
+	neural_room.set("character_id", "sam_altman")
+	neural_room.set("character_name", "Sam Altman")
+	interiors_layer.add_child(neural_room)
+	room_registry["neural_core"] = neural_room
+	if neural_room.has_method("set_room_active"):
+		neural_room.set_room_active(false)
+	world_spawn_points["neural_core_exterior"] = _tile_to_actor_position(NUCLEAR_PLANT_TILE + Vector2i(0, -3))
+
 func _create_world_doorway(door_name: String, tile_pos: Vector2i, destination: String, spawn_marker: String) -> void:
 	var door := Area2D.new()
 	door.name = door_name
@@ -1216,7 +1309,7 @@ func _create_world_doorway(door_name: String, tile_pos: Vector2i, destination: S
 	entities_layer.add_child(door)
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
 		return
 	var now := Time.get_ticks_msec()
 	if now < door_cooldown_until_ms:
@@ -1283,6 +1376,10 @@ func _enter_room(room_id: String, spawn_marker: String) -> void:
 	if room.has_method("get_spawn_position"):
 		player.velocity = Vector2.ZERO
 		player.global_position = room.get_spawn_position(spawn_marker)
+	if room_id == "red_command" and not xi_pre_scene_seen and not xi_pre_scene_active:
+		if room.has_method("set_npc_interaction_enabled"):
+			room.set_npc_interaction_enabled(false)
+		call_deferred("_start_xi_pre_scene")
 
 func _exit_room(spawn_marker: String) -> void:
 	var room = room_registry.get(active_room_id)
@@ -1415,6 +1512,10 @@ func _process(delta: float) -> void:
 	_process_bezos_drone(delta)
 	_process_ai_terminal(delta)
 	_process_mk_sequence(delta)
+	if kim_phone_active:
+		_tick_kim_phone(delta)
+	if xi_pre_scene_active and Input.is_action_just_pressed("ui_accept"):
+		xi_pre_skip_requested = true
 	if is_dialogue_open:
 		# Blink continue indicator
 		if continue_label.visible:
@@ -1609,17 +1710,21 @@ func _process_bezos_drone(delta: float) -> void:
 				)
 		11:
 			if advance_pressed:
+				# --- TRANSITION TO CHAT BOX ---
+				# Instead of the floating bubble, we now trigger the high-fidelity Terminator Card chat.
+				bezos_escalation_active = false
+				if bezos_escalation_bubble:
+					bezos_escalation_bubble.visible = false
+				
+				# Ensure variables are reset for the post-dialogue cinematic trigger
 				bezos_escalation_step = 12
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"BEZOS",
-					"Your dissatisfaction has been ESCALATED\nto the Dispute Resolution Dept.\nThat's me. I AM the department.",
-					Color(1.0, 0.4, 0.2)
-				)
+				call_deferred("open_dialogue", "jeff_bezos")
 		12:
-			if advance_pressed:
-				bezos_escalation_step = 13
-				call_deferred("_start_bezos_cinematic")
+			# This step is now handled by the dialogue system's callback
+			pass
+		13:
+			# Cinematic state
+			pass
 
 
 # ============================================================
@@ -2774,6 +2879,9 @@ func _create_dialogue_ui() -> void:
 func open_dialogue(character_id: String) -> void:
 	if is_dialogue_open or contamination_active:
 		return
+	if character_id == "xi_jinping" and not xi_pre_scene_seen and not xi_pre_scene_active:
+		call_deferred("_start_xi_pre_scene")
+		return
 
 	current_character_id = character_id
 	player.set_physics_process(false)
@@ -2790,6 +2898,10 @@ func open_dialogue(character_id: String) -> void:
 		_setup_ai_dialogue()
 	else:
 		_setup_politician_dialogue(character_id)
+
+	# Kim Jong-un: spawn red phone overlay if it's a full quest dialogue (not repeat)
+	if character_id == "kim_jong_un" and dialogue_lines.size() > 10:
+		_init_kim_phone_overlay()
 
 	# Set border color
 	_apply_dialogue_identity(character_id)
@@ -2934,6 +3046,8 @@ func _setup_politician_dialogue(character_id: String) -> void:
 
 func _advance_dialogue() -> void:
 	dialogue_line_index += 1
+	if current_character_id == "kim_jong_un" and kim_phone_active:
+		_update_kim_phone_overlay(dialogue_line_index)
 
 	if dialogue_line_index < dialogue_lines.size():
 		# Show next line
@@ -3034,6 +3148,12 @@ func _finish_dialogue() -> void:
 				get_tree().create_timer(0.24).timeout.connect(_try_open_optional_ai_followup)
 			elif current_character_id == "ufo_easter_egg":
 				ufo_ai_followup_pending = true
+
+	# Trigger Bezos cinematic if his Terminator dialogue just finished
+	if current_character_id == "jeff_bezos":
+		_close_dialogue()
+		get_tree().create_timer(0.4).timeout.connect(_start_bezos_cinematic)
+		return
 
 	# Trigger ending if quest just finished via final AI dialogue
 	var should_end: bool = quest_finished and current_character_id == "ai_terminal" and not ending_triggered
@@ -3181,12 +3301,30 @@ func _prepare_dialogue_line(raw_text: String) -> String:
 		if stripped.begins_with("CONTAMINATION:"):
 			_apply_dialogue_identity("historical_contamination")
 			return stripped.trim_prefix("CONTAMINATION:").strip_edges()
-		if stripped.begins_with("C.L.A.U.D.I.A.:"):
-			_apply_dialogue_identity("ai_terminal")
-			return stripped.trim_prefix("C.L.A.U.D.I.A.:").strip_edges()
 		if stripped.begins_with("CLAUDIA:"):
 			_apply_dialogue_identity("ai_terminal")
 			return stripped.trim_prefix("CLAUDIA:").strip_edges()
+		_apply_dialogue_identity("ai_terminal")
+		return raw_text
+
+	if current_character_id == "kim_jong_un":
+		if stripped.begins_with("KIM:"):
+			_apply_dialogue_identity("kim_jong_un")
+			return stripped.trim_prefix("KIM:").strip_edges()
+		if stripped.begins_with("PUTIN:"):
+			_apply_dialogue_identity("vladimir_putin")
+			name_label.text = "VLADIMIR PUTIN (TELEPHONE)"
+			return stripped.trim_prefix("PUTIN:").strip_edges()
+		if stripped.begins_with("MOJTABA:"):
+			_apply_dialogue_identity("mojtaba_khamenei")
+			name_label.text = "MOJTABA KHAMENEI (TELEPHONE)"
+			return stripped.trim_prefix("MOJTABA:").strip_edges()
+		if stripped.begins_with("SWEDEN:"):
+			_apply_dialogue_identity("swedish_pm")
+			name_label.text = "ULF KRISTERSSON (TELEPHONE)"
+			return stripped.trim_prefix("SWEDEN:").strip_edges()
+		_apply_dialogue_identity("kim_jong_un")
+		return raw_text
 
 	_apply_dialogue_identity(current_character_id)
 	return raw_text
@@ -3244,6 +3382,8 @@ func _close_dialogue() -> void:
 	choice_container.visible = false
 	is_choosing = false
 	dialogue_anchor.offset_top = dialogue_rest_top  # reset expanded height
+	if kim_phone_active:
+		_destroy_kim_phone_overlay()
 
 	var start_top = dialogue_anchor.offset_top
 	var tw = create_tween().set_parallel(true)
@@ -3494,6 +3634,409 @@ func _load_contamination_texture() -> Texture2D:
 
 	push_error("Failed to load contamination sprite at %s" % tex_path)
 	return null
+
+func _init_kim_phone_overlay() -> void:
+	if kim_phone_layer and is_instance_valid(kim_phone_layer):
+		return
+	kim_phone_layer = CanvasLayer.new()
+	kim_phone_layer.layer = 8
+	kim_phone_layer.name = "KimPhoneLayer"
+	add_child(kim_phone_layer)
+
+	var panel := Control.new()
+	panel.name = "KimPhonePanel"
+	panel.custom_minimum_size = Vector2(236, 122)
+	panel.position = Vector2(1040, 345)
+	kim_phone_base_pos = panel.position
+	kim_phone_panel = panel
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.07, 0.07, 0.09, 0.96)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(bg)
+
+	var title_bar := ColorRect.new()
+	title_bar.color = Color(0.72, 0.0, 0.0)
+	title_bar.position = Vector2(0, 0)
+	title_bar.size = Vector2(236, 28)
+	panel.add_child(title_bar)
+
+	var title_lbl := Label.new()
+	title_lbl.text = "  RED PHONE — INCOMING"
+	title_lbl.add_theme_font_size_override("font_size", 11)
+	title_lbl.add_theme_color_override("font_color", Color.WHITE)
+	title_lbl.position = Vector2(0, 5)
+	title_lbl.size = Vector2(236, 22)
+	panel.add_child(title_lbl)
+
+	kim_phone_dot1 = _make_kim_phone_row(panel, 36.0, "LINE 1  —  MOSCOW")
+	var row2 := _make_kim_phone_row_container(panel, 62.0)
+	kim_phone_row2 = row2
+	kim_phone_dot2 = _fill_kim_phone_row(row2, "LINE 2  —  TEHRAN")
+	var row3 := _make_kim_phone_row_container(panel, 88.0)
+	kim_phone_row3 = row3
+	kim_phone_dot3 = _fill_kim_phone_row(row3, "LINE 3  —  STOCKHOLM")
+
+	panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	kim_phone_layer.add_child(panel)
+	kim_phone_active = true
+	kim_phone_blink_t = 0.0
+	kim_phone_intensity = 0.0
+	kim_phone_ringing = false
+
+func _make_kim_phone_row(parent: Control, y: float, text: String) -> ColorRect:
+	var row := _make_kim_phone_row_container(parent, y)
+	return _fill_kim_phone_row(row, text)
+
+func _make_kim_phone_row_container(parent: Control, y: float) -> Control:
+	var row := Control.new()
+	row.position = Vector2(0.0, y)
+	row.size = Vector2(236.0, 26.0)
+	row.visible = false
+	parent.add_child(row)
+	return row
+
+func _fill_kim_phone_row(row: Control, text: String) -> ColorRect:
+	var dot := ColorRect.new()
+	dot.color = Color(1.0, 0.1, 0.1)
+	dot.position = Vector2(10.0, 9.0)
+	dot.size = Vector2(8.0, 8.0)
+	row.add_child(dot)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.position = Vector2(26.0, 3.0)
+	lbl.size = Vector2(206.0, 20.0)
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	row.add_child(lbl)
+	return dot
+
+func _update_kim_phone_overlay(idx: int) -> void:
+	if not kim_phone_active or not kim_phone_panel or not is_instance_valid(kim_phone_panel):
+		return
+	if idx == KIM_PHONE_LINE_SHOW:
+		# Slide in from right
+		kim_phone_panel.position = kim_phone_base_pos + Vector2(240.0, 0.0)
+		if kim_phone_row2:
+			kim_phone_row2.visible = false
+		if kim_phone_row3:
+			kim_phone_row3.visible = false
+		if kim_phone_dot1:
+			kim_phone_dot1.modulate.a = 1.0
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(kim_phone_panel, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+		tw.tween_property(kim_phone_panel, "position:x", kim_phone_base_pos.x, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		kim_phone_ringing = true
+		kim_phone_intensity = 1.0
+	elif idx == KIM_PHONE_LINE_LINE2:
+		if kim_phone_row2:
+			kim_phone_row2.visible = true
+		kim_phone_intensity = 2.0
+	elif idx == KIM_PHONE_LINE_LINE3:
+		if kim_phone_row3:
+			kim_phone_row3.visible = true
+		kim_phone_intensity = 3.2
+	elif idx == KIM_PHONE_LINE_SETTLE:
+		kim_phone_ringing = false
+		kim_phone_intensity = 0.0
+		kim_phone_panel.position = kim_phone_base_pos
+		var settled_color := Color(0.1, 0.55, 0.1)
+		if kim_phone_dot1:
+			kim_phone_dot1.color = settled_color
+		if kim_phone_dot2:
+			kim_phone_dot2.color = settled_color
+		if kim_phone_dot3:
+			kim_phone_dot3.color = settled_color
+
+func _destroy_kim_phone_overlay() -> void:
+	if not kim_phone_layer or not is_instance_valid(kim_phone_layer):
+		kim_phone_active = false
+		return
+	var tw := create_tween()
+	tw.tween_property(kim_phone_panel, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func() -> void:
+		if kim_phone_layer and is_instance_valid(kim_phone_layer):
+			kim_phone_layer.queue_free()
+		kim_phone_layer = null
+		kim_phone_panel = null
+		kim_phone_dot1 = null
+		kim_phone_dot2 = null
+		kim_phone_dot3 = null
+		kim_phone_row2 = null
+		kim_phone_row3 = null
+		kim_phone_active = false
+	)
+
+func _tick_kim_phone(delta: float) -> void:
+	if not kim_phone_panel or not is_instance_valid(kim_phone_panel):
+		return
+	kim_phone_blink_t += delta
+	var blink_speed := 6.0 + kim_phone_intensity * 2.5
+	var b1 := fmod(kim_phone_blink_t * blink_speed, 1.0) < 0.5
+	var b2 := fmod((kim_phone_blink_t + 0.18) * blink_speed, 1.0) < 0.5
+	var b3 := fmod((kim_phone_blink_t + 0.36) * blink_speed, 1.0) < 0.5
+	var red_on  := Color(1.0, 0.1, 0.1)
+	var red_off := Color(0.22, 0.0, 0.0)
+	if kim_phone_ringing:
+		if kim_phone_dot1:
+			kim_phone_dot1.color = red_on if b1 else red_off
+		if kim_phone_dot2 and kim_phone_row2 and kim_phone_row2.visible:
+			kim_phone_dot2.color = red_on if b2 else red_off
+		if kim_phone_dot3 and kim_phone_row3 and kim_phone_row3.visible:
+			kim_phone_dot3.color = red_on if b3 else red_off
+		if kim_phone_intensity > 0.0:
+			var sx := sin(kim_phone_blink_t * 24.0) * kim_phone_intensity * 1.1
+			var sy := cos(kim_phone_blink_t * 19.0) * kim_phone_intensity * 0.55
+			kim_phone_panel.position = kim_phone_base_pos + Vector2(sx, sy)
+
+func _start_xi_pre_scene() -> void:
+	if xi_pre_scene_seen or xi_pre_scene_active or active_room_id != "red_command":
+		return
+	xi_pre_scene_active = true
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+
+	var xi_data: Dictionary = character_data_cache.get("xi_jinping", {})
+	var beats: Array = xi_data.get("xi_pre_scene", [])
+	if beats.is_empty():
+		xi_pre_scene_active = false
+		player.set_physics_process(true)
+		return
+
+	xi_pre_skip_requested = false
+	var intro_tween := _build_xi_scene_overlay()
+	if intro_tween:
+		await intro_tween.finished
+	if xi_pre_skip_requested:
+		xi_pre_skip_requested = false
+		xi_pre_scene_seen = true
+		_destroy_xi_scene_overlay(func() -> void:
+			xi_pre_scene_active = false
+			player.set_physics_process(true)
+			var xi_room = room_registry.get("red_command")
+			if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
+				xi_room.set_npc_interaction_enabled(true)
+			if xi_room and xi_room.has_method("require_npc_reapproach"):
+				xi_room.require_npc_reapproach()
+		)
+		return
+	await get_tree().create_timer(0.18).timeout
+
+	for beat in beats:
+		if xi_pre_skip_requested:
+			break
+		var channel: String = str(beat.get("channel", "deepsick"))
+		var from_sender: String = str(beat.get("from", "xi"))
+		var text: String = str(beat.get("text", ""))
+		var hold: float = float(beat.get("hold", 2.0))
+		var reveal_tween = await _xi_scene_add_message(channel, from_sender, text)
+		if reveal_tween:
+			await reveal_tween.finished
+		var elapsed: float = 0.0
+		while elapsed < hold:
+			await get_tree().process_frame
+			elapsed += get_process_delta_time()
+			if xi_pre_skip_requested:
+				break
+
+	xi_pre_skip_requested = false
+
+	# Show "press space" hint and wait for player input
+	if xi_scene_frame and is_instance_valid(xi_scene_frame):
+		var close_lbl := Label.new()
+		close_lbl.name = "XiCloseHint"
+		close_lbl.text = "[ SPACE — close transmission ]"
+		close_lbl.add_theme_font_size_override("font_size", 14)
+		close_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+		close_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		close_lbl.position = Vector2(0.0, 690.0)
+		close_lbl.size = Vector2(1280.0, 24.0)
+		xi_scene_frame.add_child(close_lbl)
+		var blink_t: float = 0.0
+		while true:
+			await get_tree().process_frame
+			blink_t += get_process_delta_time() * 3.0
+			close_lbl.modulate.a = 0.45 + sin(blink_t) * 0.45
+			if Input.is_action_just_pressed("ui_accept"):
+				break
+
+	xi_pre_scene_seen = true
+	_destroy_xi_scene_overlay(func() -> void:
+		xi_pre_scene_active = false
+		player.set_physics_process(true)
+		var xi_room = room_registry.get("red_command")
+		if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
+			xi_room.set_npc_interaction_enabled(true)
+		if xi_room and xi_room.has_method("require_npc_reapproach"):
+			xi_room.require_npc_reapproach()
+	)
+
+func _layout_xi_scene_frame() -> void:
+	if not xi_scene_root or not xi_scene_frame:
+		return
+	xi_scene_frame.size = XI_SCENE_FRAME_SIZE
+	xi_scene_frame.position = (xi_scene_root.size - XI_SCENE_FRAME_SIZE) * 0.5
+
+func _build_xi_scene_overlay() -> Tween:
+	xi_scene_layer = CanvasLayer.new()
+	xi_scene_layer.layer = 7
+	xi_scene_layer.name = "XiSceneLayer"
+	add_child(xi_scene_layer)
+
+	xi_scene_root = Control.new()
+	xi_scene_root.name = "XiSceneRoot"
+	xi_scene_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	xi_scene_root.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	xi_scene_layer.add_child(xi_scene_root)
+	xi_scene_root.resized.connect(_layout_xi_scene_frame)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.03, 0.93)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	xi_scene_root.add_child(bg)
+
+	xi_scene_frame = Control.new()
+	xi_scene_frame.name = "XiSceneFrame"
+	xi_scene_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xi_scene_frame.size = XI_SCENE_FRAME_SIZE
+	xi_scene_root.add_child(xi_scene_frame)
+	_layout_xi_scene_frame()
+
+	var intercept_lbl := Label.new()
+	intercept_lbl.text = "[ INTERCEPTED COMMUNICATIONS — CLASSIFIED ]"
+	intercept_lbl.add_theme_font_size_override("font_size", 15)
+	intercept_lbl.add_theme_color_override("font_color", Color(0.38, 0.38, 0.38))
+	intercept_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intercept_lbl.position = Vector2(0.0, 20.0)
+	intercept_lbl.size = Vector2(1280.0, 24.0)
+	xi_scene_frame.add_child(intercept_lbl)
+
+	var skip_lbl := Label.new()
+	skip_lbl.text = "[ SPACE — skip ]"
+	skip_lbl.add_theme_font_size_override("font_size", 13)
+	skip_lbl.add_theme_color_override("font_color", Color(0.28, 0.28, 0.28))
+	skip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	skip_lbl.position = Vector2(0.0, 700.0)
+	skip_lbl.size = Vector2(1270.0, 20.0)
+	xi_scene_frame.add_child(skip_lbl)
+
+	var left_panel := _xi_make_panel(
+		Vector2(40.0, 58.0), Vector2(570.0, 630.0),
+		Color(0.02, 0.04, 0.12), "DEEPSICK  v3.1  [ 国内版 ]",
+		Color(0.05, 0.22, 0.72))
+	xi_scene_frame.add_child(left_panel)
+	xi_scene_left_vbox = left_panel.get_node_or_null("Scroll") as VBoxContainer
+
+	var right_panel := _xi_make_panel(
+		Vector2(670.0, 58.0), Vector2(570.0, 630.0),
+		Color(0.10, 0.05, 0.01), "C.L.A.U.D.I.A.  EXTERNAL  RELAY",
+		Color(0.80, 0.38, 0.02))
+	xi_scene_frame.add_child(right_panel)
+	xi_scene_right_vbox = right_panel.get_node_or_null("Scroll") as VBoxContainer
+
+	var tw := create_tween()
+	tw.tween_property(xi_scene_root, "modulate:a", 1.0, 0.55).set_trans(Tween.TRANS_SINE)
+	return tw
+
+func _xi_make_panel(pos: Vector2, sz: Vector2, bg_col: Color, header_text: String, header_col: Color) -> Control:
+	var panel := Control.new()
+	panel.position = pos
+	panel.size = sz
+
+	var bg := ColorRect.new()
+	bg.color = bg_col
+	bg.size = sz
+	panel.add_child(bg)
+
+	var hdr := ColorRect.new()
+	hdr.color = header_col
+	hdr.size = Vector2(sz.x, 30.0)
+	panel.add_child(hdr)
+
+	var hdr_lbl := Label.new()
+	hdr_lbl.text = "  " + header_text
+	hdr_lbl.add_theme_font_size_override("font_size", 14)
+	hdr_lbl.add_theme_color_override("font_color", Color.WHITE)
+	hdr_lbl.position = Vector2(0.0, 6.0)
+	hdr_lbl.size = Vector2(sz.x, 22.0)
+	panel.add_child(hdr_lbl)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "Scroll"
+	vbox.position = Vector2(8.0, 38.0)
+	vbox.size = Vector2(sz.x - 16.0, 10.0)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 8)
+	panel.add_child(vbox)
+
+	return panel
+
+func _xi_scene_add_message(channel: String, from_sender: String, text: String) -> Tween:
+	var vbox: VBoxContainer = xi_scene_left_vbox if channel == "deepsick" else xi_scene_right_vbox
+	if not vbox or not is_instance_valid(vbox):
+		return null
+
+	var is_xi := from_sender == "xi"
+	var prefix: String
+	var col: Color
+	if is_xi:
+		prefix = "[XI]:"
+		col = Color(0.92, 0.88, 0.55)
+	elif channel == "deepsick":
+		prefix = "[DEEPSICK]:"
+		col = Color(0.38, 0.72, 1.00)
+	else:
+		prefix = "[C.L.A.U.D.I.A.]:"
+		col = Color(1.00, 0.55, 0.12)
+
+	var lbl := Label.new()
+	lbl.text = prefix + " " + text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.custom_minimum_size = Vector2(vbox.size.x, 0.0)
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_color", col)
+	lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	vbox.add_child(lbl)
+
+	# Expand panel bg to match growing vbox
+	var panel := vbox.get_parent() as Control
+	if panel:
+		var bg := panel.get_child(0) as ColorRect
+		if bg:
+			await get_tree().process_frame
+			var new_h := maxf(vbox.position.y + vbox.size.y + 10.0, panel.size.y)
+			bg.size.y = new_h
+
+	var tw := create_tween()
+	tw.tween_property(lbl, "modulate:a", 1.0, 0.28)
+	return tw
+
+func _destroy_xi_scene_overlay(on_done: Callable = Callable()) -> void:
+	if not xi_scene_root or not is_instance_valid(xi_scene_root):
+		if xi_scene_layer and is_instance_valid(xi_scene_layer):
+			xi_scene_layer.queue_free()
+		xi_scene_layer = null
+		xi_scene_root = null
+		xi_scene_frame = null
+		xi_scene_left_vbox = null
+		xi_scene_right_vbox = null
+		if on_done.is_valid():
+			on_done.call()
+		return
+	var tw := create_tween()
+	tw.tween_property(xi_scene_root, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func() -> void:
+		if xi_scene_layer and is_instance_valid(xi_scene_layer):
+			xi_scene_layer.queue_free()
+		xi_scene_layer = null
+		xi_scene_root = null
+		xi_scene_frame = null
+		xi_scene_left_vbox = null
+		xi_scene_right_vbox = null
+		if on_done.is_valid():
+			on_done.call()
+	)
 
 func _ensure_contamination_figure() -> void:
 	var tex := _load_contamination_texture()
@@ -4401,22 +4944,11 @@ func _process_ending(delta: float) -> void:
 		4:  # DONE — hold final screen then either trigger final mission or wait for quit
 			ending_timer += delta
 			if final_mission_done:
-				# True ending — stay on last frame, show quit prompt, wait for player
-				if ending_timer >= 3.0 and not get_node_or_null("EndingQuitHint"):
-					var hint := Label.new()
-					hint.name = "EndingQuitHint"
-					hint.text = "[ press any key to close ]"
-					hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-					hint.offset_top = -32.0
-					hint.add_theme_font_size_override("font_size", 13)
-					hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65, 0.0))
-					ending_layer.add_child(hint)
-					var tw_hint := create_tween()
-					tw_hint.tween_property(hint, "modulate:a", 1.0, 1.2)
-				if ending_timer >= 3.5:
-					if Input.is_anything_pressed():
-						get_tree().quit()
+				# True ending — dissolve back into free roam with one last AI line.
+				if ending_timer >= 4.0:
+					ending_text.modulate.a = max(0.0, 1.0 - (ending_timer - 4.0) / 1.6)
+				if ending_timer >= 5.8 and not postgame_free_roam_started:
+					_start_postgame_free_roam()
 			else:
 				# First ending — fade then trigger final mission
 				if ending_timer >= 4.0:
@@ -4459,6 +4991,41 @@ func _trigger_final_mission() -> void:
 	)
 	# Spawn NPC-self with delay (player needs to explore)
 	get_tree().create_timer(0.5).timeout.connect(_spawn_self_npc)
+
+func _start_postgame_free_roam() -> void:
+	if postgame_free_roam_started:
+		return
+	postgame_free_roam_started = true
+	ending_active = false
+	if ending_layer:
+		ending_layer.visible = false
+	var quit_hint := ending_layer.get_node_or_null("EndingQuitHint") if ending_layer else null
+	if quit_hint:
+		quit_hint.queue_free()
+	is_room_transition = false
+	is_dialogue_open = false
+	player.set_physics_process(true)
+	if final_mission_npc:
+		final_mission_npc.queue_free()
+		final_mission_npc = null
+	final_mission_active = false
+	if active_room_id != "":
+		var room = room_registry.get(active_room_id)
+		if room and room.has_method("set_room_active"):
+			room.set_room_active(false)
+		if player.get_parent() != entities_layer:
+			player.reparent(entities_layer, true)
+		active_room_id = ""
+	player.global_position = Vector2(64, 80)
+	ai_override_lines = [
+		"The file is filed. The catastrophe, I am delighted to report, remains fully operational.",
+		"Congratulations. You completed the official process and unlocked the unofficial one: wandering freely through the surviving nonsense.",
+		"No more signatures. No more protocol. Just monuments, delusions, optional scandals, and several premium-grade civic hallucinations.",
+		"If you encounter anything ridiculous, spiritually offensive, or administratively impossible, do not panic. That is our highest fidelity mode."
+	]
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
+		open_dialogue("ai_terminal")
+	)
 
 func _spawn_self_npc() -> void:
 	if final_mission_npc:

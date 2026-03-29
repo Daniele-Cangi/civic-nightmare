@@ -35,11 +35,12 @@ def process_with_ai(src_path, dest_path):
     except Exception as e:
         print(f"Error processing {src_path}: {e}")
 
-# Mapping of Pyongyang Square + Kim Jong-un (Chubby/Steak version) to game assets
+# Mapping for final satirical integration
 BATCH_MAPPING = {
-    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\landmark_pyongyang_satire_1774779199106.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\landmark_pyongyang.png",
-    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\kim_jong_un_chubby_steak_sprite_v2_arcade_1774779699817.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\kim_jong_un_sprite.png",
-    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\kim_jong_un_honda_steak_portrait_v14_arcade_1774779721550.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\kim_jong_un_portrait.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\xi_funny_django_caricature_v1_1774789442422.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\xi_jinping_caricature.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\bezos_terminator_portrait_v1_arcade_1774799070850.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\bezos_portrait.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\putin_agent_smith_v1_arcade_1774800668748.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\putin_combat_portrait.png",
+    r"C:\Users\dacan\.gemini\antigravity\brain\e1ff93e5-feb9-40de-bb1e-b46aafdf7fd1\trump_pure_sprite_v2_arcade_1774802008651.png": r"c:\Users\dacan\OneDrive\Documenti\My Games\civic-nightmare\assets\mockups\trump_pure_sprite.png",
 }
 
 if __name__ == "__main__":
