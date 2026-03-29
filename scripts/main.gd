@@ -64,11 +64,14 @@ var encounter_residues: Dictionary = {}
 var encounter_marks: Dictionary = {}
 var optional_dialogue_seen: Dictionary = {}
 var ai_override_lines: Array = []
+var optional_ai_followup_lines: Array = []
+var ufo_ai_followup_pending: bool = false
 var ai_dialogue_override_active: bool = false
 var seen_hidden_bunker_scene: bool = false
 var hidden_bunker_scene_active: bool = false
 var hidden_bunker_exit_acknowledged: bool = false
 var hidden_bunker_ai_ack_pending: bool = false
+var hidden_bunker_ai_ack_active: bool = false
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
 var contamination_appearance_count: int = 0
@@ -1199,6 +1202,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 	door_cooldown_until_ms = now + 550
 	var contamination_source := active_room_id if destination == "world" else ""
 	var leaving_hidden_bunker := destination == "world" and active_room_id == "mountain_bunker"
+	var leaving_ufo_lab := destination == "world" and active_room_id == "ufo_lab"
 	var entering_hidden_bunker := destination == "mountain_bunker" and not seen_hidden_bunker_scene
 	is_room_transition = true
 	player.velocity = Vector2.ZERO
@@ -1232,6 +1236,9 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		call_deferred("_start_ufo_lab_scene")
 	elif leaving_hidden_bunker and seen_hidden_bunker_scene and not hidden_bunker_exit_acknowledged:
 		hidden_bunker_exit_acknowledged = true
+		hidden_bunker_ai_ack_pending = true
+	elif leaving_ufo_lab and ufo_ai_followup_pending:
+		call_deferred("_try_open_optional_ai_followup")
 	if destination == "world":
 		call_deferred("_maybe_queue_contamination_event", contamination_source)
 
@@ -2449,7 +2456,7 @@ func _process_ai_terminal(_delta: float) -> void:
 	var terminal := get_node_or_null("Entities/AITerminal")
 	if not terminal or not player:
 		return
-	if contamination_terminal_ready and not contamination_terminal_departed and contamination_root and is_instance_valid(contamination_root) and not contamination_active:
+	if (contamination_terminal_ready or hidden_bunker_ai_ack_pending or hidden_bunker_ai_ack_active) and not contamination_terminal_departed and contamination_root and is_instance_valid(contamination_root) and not contamination_active:
 		contamination_root.modulate = Color.WHITE
 		contamination_root.visible = true
 		contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
@@ -2782,6 +2789,13 @@ func _setup_ai_dialogue() -> void:
 		dialogue_lines = ["..."]
 		return
 
+	if hidden_bunker_ai_ack_pending:
+		ai_dialogue_override_active = true
+		hidden_bunker_ai_ack_pending = false
+		hidden_bunker_ai_ack_active = true
+		dialogue_lines = [str(hidden_bunker_data.get("post_ai_line", "I told you not to come here."))]
+		return
+
 	if contamination_terminal_ready and not contamination_terminal_dialogue_seen:
 		var contamination_data: Dictionary = character_data_cache.get("historical_contamination", {})
 		var terminal_debate: Array = contamination_data.get("terminal_debate", [])
@@ -2795,6 +2809,12 @@ func _setup_ai_dialogue() -> void:
 		ai_dialogue_override_active = true
 		dialogue_lines = ai_override_lines.duplicate()
 		ai_override_lines.clear()
+		return
+
+	if not optional_ai_followup_lines.is_empty():
+		ai_dialogue_override_active = true
+		dialogue_lines = optional_ai_followup_lines.duplicate()
+		optional_ai_followup_lines.clear()
 		return
 
 	ai_dialogue_override_active = false
@@ -2983,14 +3003,26 @@ func _finish_dialogue() -> void:
 			quest_index += 1
 
 	var current_data: Dictionary = character_data_cache.get(current_character_id, {})
+	var was_optional_seen := optional_dialogue_seen.has(current_character_id)
 	if bool(current_data.get("optional", false)):
 		optional_dialogue_seen[current_character_id] = true
+		if not was_optional_seen:
+			_queue_optional_ai_followup(current_character_id)
+			if current_character_id == "sam_altman":
+				get_tree().create_timer(0.24).timeout.connect(_try_open_optional_ai_followup)
+			elif current_character_id == "ufo_easter_egg":
+				ufo_ai_followup_pending = true
 
 	# Trigger ending if quest just finished via final AI dialogue
 	var should_end: bool = quest_finished and current_character_id == "ai_terminal" and not ending_triggered
 	var queue_contamination_after_ai := current_character_id == "ai_terminal" and quest_index > 0 and not should_end and not ai_dialogue_override_active
-	var should_dissolve_terminal_contamination := current_character_id == "ai_terminal" and ai_dialogue_override_active and contamination_terminal_ready and not contamination_terminal_departed
+	var should_dissolve_terminal_contamination := current_character_id == "ai_terminal" and ai_dialogue_override_active and contamination_terminal_ready and not contamination_terminal_departed and not hidden_bunker_ai_ack_active
 	_close_dialogue()
+	if hidden_bunker_ai_ack_active:
+		hidden_bunker_ai_ack_active = false
+		if not contamination_terminal_ready and contamination_root and is_instance_valid(contamination_root):
+			contamination_root.visible = false
+			contamination_root.modulate = Color.WHITE
 	if should_dissolve_terminal_contamination:
 		_dissolve_terminal_contamination()
 	if queue_contamination_after_ai:
@@ -3001,6 +3033,29 @@ func _finish_dialogue() -> void:
 		ending_triggered = true
 		# Small delay before the dramatic ending
 		get_tree().create_timer(1.5).timeout.connect(start_ending_sequence)
+
+func _queue_optional_ai_followup(character_id: String) -> void:
+	if ai_terminal_data.is_empty():
+		return
+	var followups: Dictionary = ai_terminal_data.get("optional_followups", {})
+	if not followups.has(character_id):
+		return
+	var lines: Array = Array(followups.get(character_id, [])).duplicate()
+	if lines.is_empty():
+		return
+	if not optional_ai_followup_lines.is_empty():
+		optional_ai_followup_lines.append("...")
+	optional_ai_followup_lines.append_array(lines)
+
+func _try_open_optional_ai_followup() -> void:
+	if optional_ai_followup_lines.is_empty():
+		ufo_ai_followup_pending = false
+		return
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or active_room_id != "":
+		get_tree().create_timer(0.22).timeout.connect(_try_open_optional_ai_followup)
+		return
+	ufo_ai_followup_pending = false
+	open_dialogue("ai_terminal")
 
 func _record_choice_mark(character_id: String, choice: Dictionary) -> void:
 	if character_id == "ai_terminal":
@@ -3190,8 +3245,9 @@ func _show_bunker_caption(speaker: String, text: String) -> void:
 	choice_container.visible = false
 	
 	# Set Special Bunker Portraits
-	if portrait_paths.has(speaker) and ResourceLoader.exists(portrait_paths[speaker]):
-		portrait_rect.texture = load(portrait_paths[speaker])
+	var portrait_id := "historical_contamination" if speaker == "CONTAMINATION" else speaker
+	if portrait_paths.has(portrait_id) and ResourceLoader.exists(portrait_paths[portrait_id]):
+		portrait_rect.texture = load(portrait_paths[portrait_id])
 		portrait_rect.visible = true
 	else:
 		portrait_rect.texture = null

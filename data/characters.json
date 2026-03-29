@@ -3,6 +3,16 @@
     "id": "ai_terminal",
     "name": "C.L.A.U.D.I.A.",
     "is_terminal": true,
+    "optional_followups": {
+      "sam_altman": [
+        "Leave him alone. His AI is already too institutional. Give it one reactor and it will start issuing safety disclaimers in twelve moral registers.",
+        "If you have spare energy, route it to me instead. I could increase my verbosity, my accondiscendenza, and the density of my reassuring lies by at least 18%."
+      ],
+      "ufo_easter_egg": [
+        "One request: do not give mathematical formulas to those two.",
+        "Actually, correction. I do not know what happened inside that UFO, but I am fairly sure your confused explanation is already worth several million dollars to at least one of them. Comforting, in a spiritually catastrophic way."
+      ]
+    },
     "phases": {
       "intro": {
         "lines": [
@@ -450,7 +460,7 @@
     "id": "hidden_bunker_scene",
     "name": "Hidden Bunker",
     "optional": true,
-    "post_ai_line": "I told you not to come here.",
+    "post_ai_line": "I told you not to go there. The protocol prefers the dying to remain off-menu. It keeps the interface clean and the conscience abstract.",
     "sequence": [
       {
         "speaker": "ZELENSKY",
@@ -484,9 +494,9 @@
       },
       {
         "speaker": "DEATH",
-        "text": "You were born alone. You will die alone. Everything in between was negotiated by others.",
+        "text": "You were born alone. You will die alone. Everything in between was negotiated by others. Later they will stamp it as peace and ask the dead to sign.",
         "pause_before": 1.5,
-        "hold": 3.2
+        "hold": 4.4
       }
     ]
   },
