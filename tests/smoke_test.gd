@@ -29,12 +29,16 @@ func _run() -> void:
 	var dialogue_manager: Node = game.get("dialogue_manager")
 	var mk_sequence: Node = game.get("mk_sequence")
 	var environment_effects: Node = game.get("environment_effects")
+	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	_check(intro != null, "intro sequence is initialized")
 	_check(room_manager != null, "room manager is initialized")
 	_check(quest_manager != null, "quest manager is initialized")
 	_check(dialogue_manager != null, "dialogue manager is initialized")
 	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
+	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
+	if bezos_drone_encounter:
+		_check(bezos_drone_encounter.get("bezos_drone_root") != null, "Bezos drone world node is created")
 
 	if intro:
 		intro.call("_finish")
@@ -65,6 +69,12 @@ func _run() -> void:
 	_check(str(game.get("active_room_id")) == "", "room manager returns to the world")
 	var entities: Node = game.get("entities_layer")
 	_check(player.get_parent() == entities, "player is reparented into the world")
+
+	game.call("_start_bezos_escalation")
+	await process_frame
+	_check(bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude starts")
+	bezos_drone_encounter.call("prepare_cinematic")
+	_check(not bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude hands off cleanly")
 
 	_finish()
 
