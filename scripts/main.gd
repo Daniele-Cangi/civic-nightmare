@@ -13,6 +13,7 @@ const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
 const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_drone_encounter.gd")
 const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
+const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -254,14 +255,8 @@ var _pack_sources: Dictionary = {
 var _pack_ready: bool = false
 var _path_cells: Dictionary = {}
 var _solid_positions: Dictionary = {}
-var ufo_root: Node2D
-var ufo_beam: Polygon2D
-var ufo_sprite: Sprite2D
-var ufo_clouds: Sprite2D
-var ufo_quantum_nodes: Array[Sprite2D] = []
-var ufo_base_position: Vector2 = Vector2.ZERO
+var ufo_encounter: Node
 var ufo_abduction_active: bool = false
-var ufo_hover_time: float = 0.0
 var bezos_drone_encounter: Node
 
 # --- Hidden bunker cutscene ---
@@ -549,7 +544,7 @@ func _ready() -> void:
 	_setup_world_landmark_builder()
 	world_landmark_builder.create_great_wall(GREAT_WALL_TILE)
 	world_landmark_builder.create_nuclear_plant(NUCLEAR_PLANT_TILE)
-	_create_ufo_easter_egg()
+	_setup_ufo_encounter()
 	_setup_bezos_drone_encounter()
 	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
 	world_landmark_builder.create_pyongyang(PYONGYANG_TILE)
@@ -580,80 +575,14 @@ func _setup_world_landmark_builder() -> void:
 	world_landmark_builder.setup(entities_layer, ground_map)
 
 
-func _create_ufo_easter_egg() -> void:
+func _setup_ufo_encounter() -> void:
 	_clear_decor_patch(UFO_TILE, 3, 2)
-
-	ufo_root = Node2D.new()
-	ufo_root.name = "UfoEasterEgg"
-	ufo_base_position = _tile_to_body_position(UFO_TILE) + UFO_FLOAT_OFFSET
-	ufo_root.position = ufo_base_position
-	ufo_root.z_index = 4
-	entities_layer.add_child(ufo_root)
-
-	# 1. Shadow (remain procedural as it fits perfectly)
-	var shadow = Polygon2D.new()
-	shadow.color = Color(0, 0, 0, 0.18)
-	shadow.polygon = _ellipse_points(Vector2(0, 28), Vector2(54, 14), 18)
-	ufo_root.add_child(shadow)
-
-	# 2. Black Clouds above
-	ufo_clouds = Sprite2D.new()
-	ufo_clouds.texture = load("res://assets/mockups/ufo_clouds.png")
-	ufo_clouds.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ufo_clouds.scale = Vector2(0.4, 0.4)
-	ufo_clouds.position = Vector2(0, -120)
-	ufo_clouds.modulate.a = 0.8
-	ufo_root.add_child(ufo_clouds)
-
-	# 3. Beam (remain procedural translucent)
-	ufo_beam = Polygon2D.new()
-	ufo_beam.color = Color(0.72, 1.0, 0.82, 0.18)
-	ufo_beam.polygon = PackedVector2Array([
-		Vector2(-24, 10),
-		Vector2(24, 10),
-		Vector2(68, 106),
-		Vector2(-68, 106)
-	])
-	ufo_root.add_child(ufo_beam)
-
-	# 4. Advanced UFO Sprite
-	ufo_sprite = Sprite2D.new()
-	ufo_sprite.texture = load("res://assets/mockups/ufo_advanced.png")
-	ufo_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ufo_sprite.scale = Vector2(0.22, 0.22) # Scale down 640px to ~140px
-	ufo_root.add_child(ufo_sprite)
-
-	# 5. Quantum Lightning (Symbol Flicker)
-	var sym_tex = load("res://assets/mockups/quantum_symbols.png")
-	for i in range(8):
-		var sym = Sprite2D.new()
-		sym.texture = sym_tex
-		sym.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		sym.region_enabled = true
-		# Pick a random 64x64 region from 640x640 sheet (approx)
-		var rx = (randi() % 10) * 64
-		var ry = (randi() % 10) * 64
-		sym.region_rect = Rect2(rx, ry, 64, 64)
-		sym.scale = Vector2(0.4, 0.4)
-		sym.modulate = Color(0.5, 1.0, 0.6, 0.0) # Start invisible
-		ufo_root.add_child(sym)
-		ufo_quantum_nodes.append(sym)
-
-	# 6. Interaction Trigger
-	var trigger = Area2D.new()
-	trigger.name = "UfoTrigger"
-	trigger.collision_layer = 0
-	trigger.collision_mask = 1
-	trigger.monitoring = true
-	trigger.monitorable = true
-	var trigger_shape = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(148, 112)
-	trigger_shape.shape = shape
-	trigger_shape.position = Vector2(0, 44)
-	trigger.add_child(trigger_shape)
-	trigger.body_entered.connect(_on_ufo_trigger_body_entered)
-	ufo_root.add_child(trigger)
+	ufo_encounter = UFO_ENCOUNTER_SCRIPT.new()
+	ufo_encounter.name = "UfoEncounter"
+	add_child(ufo_encounter)
+	ufo_encounter.triggered.connect(_on_ufo_triggered)
+	var spawn_position := _tile_to_body_position(UFO_TILE) + UFO_FLOAT_OFFSET
+	ufo_encounter.setup(player, entities_layer, spawn_position)
 
 func _setup_bezos_drone_encounter() -> void:
 	_clear_decor_patch(BEZOS_DRONE_TILE, 2, 2)
@@ -689,9 +618,7 @@ func _start_bezos_cinematic() -> void:
 		transition_overlay.modulate.a = 0.0
 	bezos_encounter.start()
 
-func _on_ufo_trigger_body_entered(body: Node) -> void:
-	if body != player:
-		return
+func _on_ufo_triggered() -> void:
 	if ufo_abduction_active or is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	call_deferred("_start_ufo_abduction")
@@ -911,13 +838,6 @@ func _pascal_case(value: String) -> String:
 		result += part.substr(0, 1).to_upper() + part.substr(1).to_lower()
 	return result if not result.is_empty() else "Room"
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int = 16) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for i in range(segments):
-		var angle := TAU * float(i) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
-
 func _character_display_name(character_id: String) -> String:
 	if character_data_cache.has(character_id):
 		var entry = character_data_cache[character_id]
@@ -945,7 +865,8 @@ func _process(delta: float) -> void:
 	if bezos_cinematic_active:
 		bezos_encounter.process_frame(delta)
 		return
-	_process_ufo_easter_egg(delta)
+	if ufo_encounter:
+		ufo_encounter.process_frame(delta)
 	if bezos_drone_encounter:
 		bezos_drone_encounter.process_frame(delta)
 	_process_ai_terminal(delta)
@@ -958,38 +879,6 @@ func _process(delta: float) -> void:
 	if dialogue_manager:
 		dialogue_manager.process_frame(delta)
 
-
-func _process_ufo_easter_egg(delta: float) -> void:
-	if not ufo_root:
-		return
-
-	ufo_hover_time += delta * 1.8
-	# Left-right swaying + vertical hover
-	var sway = sin(ufo_hover_time * 0.5) * 24.0
-	var hover = sin(ufo_hover_time) * 6.0
-	ufo_root.position = ufo_base_position + Vector2(sway, hover)
-	
-	if ufo_beam:
-		ufo_beam.modulate.a = 0.14 + (sin(ufo_hover_time * 2.4) * 0.08 + 0.08)
-
-	# Animate Quantum Lightning
-	for sym in ufo_quantum_nodes:
-		if randf() < delta * 4.0: # Rare flicker trigger
-			var angle = randf() * TAU
-			var dist = randf_range(40, 90)
-			sym.position = Vector2(cos(angle) * dist, sin(angle) * dist - 40.0)
-			sym.modulate.a = 0.8
-			sym.scale = Vector2(randf_range(0.3, 0.5), randf_range(0.3, 0.5))
-			# Random symbol region
-			var rx = (randi() % 8) * 80
-			var ry = (randi() % 8) * 80
-			sym.region_rect = Rect2(rx, ry, 80, 80)
-		else:
-			sym.modulate.a = max(0.0, sym.modulate.a - delta * 4.0)
-
-	# Slow cloud movement
-	if ufo_clouds:
-		ufo_clouds.position.x = -sway * 0.5 # Parallax feel
 
 func _is_in_building_zone(x: int, y: int) -> bool:
 	for spec in building_specs:

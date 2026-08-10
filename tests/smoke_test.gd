@@ -30,6 +30,7 @@ func _run() -> void:
 	var mk_sequence: Node = game.get("mk_sequence")
 	var environment_effects: Node = game.get("environment_effects")
 	var world_landmark_builder: Node = game.get("world_landmark_builder")
+	var ufo_encounter: Node = game.get("ufo_encounter")
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	_check(intro != null, "intro sequence is initialized")
 	_check(room_manager != null, "room manager is initialized")
@@ -38,11 +39,14 @@ func _run() -> void:
 	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
+	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(game.get_node_or_null("Entities/GreatWallEntrance") != null, "Great Wall landmark is created")
 	_check(game.get_node_or_null("Entities/NuclearPlantEntrance") != null, "nuclear plant landmark is created")
 	_check(game.get_node_or_null("Entities/HiddenBunkerEntrance") != null, "hidden bunker landmark is created")
 	_check(game.get_node_or_null("Entities/PyongyangEntrance") != null, "Pyongyang landmark is created")
+	if ufo_encounter:
+		_check(ufo_encounter.get("ufo_root") != null, "UFO world node is created")
 	if bezos_drone_encounter:
 		_check(bezos_drone_encounter.get("bezos_drone_root") != null, "Bezos drone world node is created")
 
