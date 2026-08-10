@@ -28,11 +28,13 @@ func _run() -> void:
 	var quest_manager: Node = game.get("quest_manager")
 	var dialogue_manager: Node = game.get("dialogue_manager")
 	var mk_sequence: Node = game.get("mk_sequence")
+	var environment_effects: Node = game.get("environment_effects")
 	_check(intro != null, "intro sequence is initialized")
 	_check(room_manager != null, "room manager is initialized")
 	_check(quest_manager != null, "quest manager is initialized")
 	_check(dialogue_manager != null, "dialogue manager is initialized")
 	_check(mk_sequence != null, "MK sequence is initialized")
+	_check(environment_effects != null, "environment effects are initialized")
 
 	if intro:
 		intro.call("_finish")
