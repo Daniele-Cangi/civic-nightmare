@@ -1,6 +1,5 @@
 extends Node2D
 
-const NPC_SCENE = preload("res://scenes/npc.tscn")
 const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
 const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
 const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
@@ -233,8 +232,6 @@ const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
 const GREAT_WALL_TILE := Vector2i(0, -24)
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -20)
-const XI_WORLD_PIXEL_OFFSET := Vector2(54, -42)
-const SAM_ALTMAN_TILE := Vector2i(0, 24)
 const NUCLEAR_PLANT_TILE := Vector2i(0, 28)
 const UFO_TILE := Vector2i(30, -6)
 const UFO_FLOAT_OFFSET := Vector2(0, -24)
@@ -259,17 +256,10 @@ var ufo_encounter: Node
 var ufo_abduction_active: bool = false
 var bezos_drone_encounter: Node
 
-# --- Hidden bunker cutscene ---
-var bunker_caption_anchor: Control
-var bunker_caption_panel: PanelContainer
-var bunker_caption_speaker: Label
-var bunker_caption_text: RichTextLabel
-
 # --- Procedural atlas tiles (source 0 — fallback & buildings) ---
 const TILE_GRASS = Vector2i(0, 0)
 const TILE_WOOD = Vector2i(1, 0)
 const TILE_PATH = Vector2i(2, 0)
-const TILE_WATER = Vector2i(3, 0)
 
 const TILE_BRICK = Vector2i(0, 1)
 const TILE_METAL_FLOOR = Vector2i(1, 1)
@@ -283,21 +273,12 @@ const TILE_MARBLE_WALL = Vector2i(2, 2)
 const TILE_TREE_TOP = Vector2i(0, 3)
 const TILE_TREE_TRUNK = Vector2i(1, 3)
 const TILE_BUSH = Vector2i(2, 3)
-const TILE_DESK_WOOD = Vector2i(3, 3)
 
-const TILE_DESK_METAL = Vector2i(0, 4)
-const TILE_SERVER = Vector2i(1, 4)
-const TILE_BOOKSHELF = Vector2i(2, 4)
 const TILE_GOLD = Vector2i(3, 4)
 const TILE_FLAG = Vector2i(4, 4)
 const TILE_DOOR = Vector2i(7, 2)
-const TILE_FILE_CABINET_WIDE = Vector2i(0, 4)
-const TILE_FILE_CABINET = Vector2i(5, 4)
-const TILE_PLANT = Vector2i(6, 4)
-const TILE_CLOCK = Vector2i(7, 4)
 const TILE_WINDOW = Vector2i(6, 2)
 const TILE_COLUMN = Vector2i(6, 6)
-const TILE_GLOBE = Vector2i(7, 6)
 
 # --- Pack tile coordinates (when _pack_ready) ---
 const NT_BUSH := Vector2i(8, 5)
@@ -312,7 +293,6 @@ const FD_PINK := Vector2i(1, 6)
 const FD_PINK2 := Vector2i(3, 6)
 const FD_SNOW := Vector2i(1, 8)
 const FD_SNOW2 := Vector2i(3, 8)
-const WT_WATER := Vector2i(3, 2)
 
 # --- Floor/path autotile (first set in floor_32.png, sandy path) ---
 const FL_EDGE_T := Vector2i(3, 0)
@@ -359,10 +339,7 @@ var rock_tiles: Array = [
 	Vector2i(4, 12), Vector2i(6, 12), Vector2i(7, 12), Vector2i(9, 12),
 	Vector2i(11, 12), Vector2i(12, 12)
 ]
-# Small plants, stumps, cacti from nature_32
-var stump_tiles: Array = [
-	Vector2i(0, 7), Vector2i(1, 7), Vector2i(2, 7)
-]
+# Cacti from nature_32
 var cactus_tiles: Array = [
 	Vector2i(8, 7), Vector2i(9, 7)
 ]
@@ -506,16 +483,6 @@ var landmark_sprite_paths: Dictionary = {
 	"sam_altman": "res://assets/mockups/landmark_nuclear_plant.png",
 	"pyongyang": "res://assets/mockups/landmark_pyongyang.png"
 }
-
-# --- Meter visual config ---
-var meter_config: Dictionary = {
-	"TIME":   {"color": Color(0.3, 0.72, 0.72), "initial": 100},
-	"ACCESS": {"color": Color(0.3, 0.72, 0.3),  "initial": 100},
-	"TRUST":  {"color": Color(0.72, 0.65, 0.3), "initial": 100},
-	"RENT":   {"color": Color(0.72, 0.45, 0.3), "initial": 0},
-	"STRESS": {"color": Color(0.72, 0.3, 0.3),  "initial": 0},
-}
-
 
 # ============================================================
 #  SETUP
