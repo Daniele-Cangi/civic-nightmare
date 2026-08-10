@@ -1,10 +1,10 @@
 # 📺 Civic Nightmare: The Bureaucracy RPG
 
-**Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.3** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, navigating a world where reality is filtered through 16-bit aesthetics and 90s television glitches.
+**Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.6** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, navigating a world where reality is filtered through 16-bit aesthetics and 90s television glitches.
 
 ![Style](https://img.shields.io/badge/Aesthetic-16--bit_Satire-orange?style=for-the-badge)
 ![AI](https://img.shields.io/badge/Assets-AI_Generated_%26_ML_Cleaned-green?style=for-the-badge)
-![Engine](https://img.shields.io/badge/Godot-4.3-blue?style=for-the-badge&logo=godot-engine)
+![Engine](https://img.shields.io/badge/Godot-4.6-blue?style=for-the-badge&logo=godot-engine)
 
 ## 🕹️ Game Features
 
@@ -39,12 +39,35 @@ Your central hub is a satirical 90s digital mascot—a parody of modern AI assis
 
 ## 🛠️ Performance & Installation
 
-1. **Prerequisites**: Godot Engine 4.3 (Standard).
+1. **Prerequisites**: Godot Engine 4.6 (Standard).
 2. **Setup**:
    - Clone the repository.
    - Open `project.godot` in the engine.
    - Run the `main.tscn` scene.
 3. **Web Support**: Optimized for GLES3, with a custom CI/CD pipeline for GitHub Pages deployment.
+
+## 🧩 Project Structure
+
+`scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
+
+- `scripts/managers/`: dialogue, quest progression, and room transitions.
+- `scripts/sequences/`: intro and ending presentation timelines.
+- `scripts/encounters/`: self-contained Xi, Kim, and Bezos presentation logic.
+- `data/characters.json`: character dialogue, choices, and presentation metadata.
+- `scenes/interiors/`: reusable interior scenes and room-local behavior.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for ownership boundaries, runtime flow, and contributor guidance.
+
+## ✅ Verification
+
+From the repository root, run:
+
+```bash
+godot --headless --path . --editor --quit
+godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
+```
+
+The smoke test loads the main scene and covers manager initialization, AI dialogue, and an interior round trip.
 
 ---
 

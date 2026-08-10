@@ -1,8 +1,15 @@
 extends Node2D
 
-const OVAL_OFFICE_ROOM_SCENE = preload("res://scenes/interiors/oval_office.tscn")
 const NPC_SCENE = preload("res://scenes/npc.tscn")
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
+const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
+const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
+const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
+const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
+const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager.gd")
+const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
+const BEZOS_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_encounter.gd")
+const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -10,10 +17,15 @@ const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 @onready var ui_layer: CanvasLayer = $UI
 
 var character_data_cache: Dictionary = {}
-var is_dialogue_open: bool = false
-var interiors_layer: Node2D
+var dialogue_manager: Node
+var is_dialogue_open: bool:
+	get:
+		return bool(dialogue_manager.get("is_dialogue_open")) if dialogue_manager else false
+	set(value):
+		if dialogue_manager:
+			dialogue_manager.set("is_dialogue_open", value)
+var room_manager: Node
 var room_registry: Dictionary = {}
-var world_spawn_points: Dictionary = {}
 var active_room_id: String = ""
 var door_cooldown_until_ms: int = 0
 var is_room_transition: bool = false
@@ -26,43 +38,75 @@ var room_title_label: Label
 var room_title_subtitle: Label
 
 # --- Dialogue UI (created in code) ---
-var dialogue_anchor: Control
-var dialogue_panel: PanelContainer
-var dialogue_style: StyleBox
-var portrait_rect: TextureRect
-var name_label: Label
-var text_label: RichTextLabel
-var continue_label: Label
-var typewriter_timer: Timer
-var typewriter_text: String = ""
-var typewriter_index: int = 0
-var continue_blink: float = 0.0
-var dialogue_rest_top: float = -210.0
-var current_character_id: String = ""
-var dialogue_lines: Array = []
-var dialogue_line_index: int = 0
-var dialogue_choices: Array = []
-var dialogue_choice_prompt: String = ""
-var dialogue_farewell: String = ""
-var is_choosing: bool = false
-var choice_index: int = 0
-var choice_container: VBoxContainer
-var choice_labels: Array = []
-var typewriter_bip: AudioStreamPlayer
+var dialogue_anchor: Control:
+	get: return dialogue_manager.get("dialogue_anchor") as Control if dialogue_manager else null
+var dialogue_style: StyleBox:
+	get: return dialogue_manager.get("dialogue_style") as StyleBox if dialogue_manager else null
+var portrait_rect: TextureRect:
+	get: return dialogue_manager.get("portrait_rect") as TextureRect if dialogue_manager else null
+var name_label: Label:
+	get: return dialogue_manager.get("name_label") as Label if dialogue_manager else null
+var text_label: RichTextLabel:
+	get: return dialogue_manager.get("text_label") as RichTextLabel if dialogue_manager else null
+var continue_label: Label:
+	get: return dialogue_manager.get("continue_label") as Label if dialogue_manager else null
+var typewriter_timer: Timer:
+	get: return dialogue_manager.get("typewriter_timer") as Timer if dialogue_manager else null
+var typewriter_bip: AudioStreamPlayer:
+	get: return dialogue_manager.get("typewriter_bip") as AudioStreamPlayer if dialogue_manager else null
+var choice_container: VBoxContainer:
+	get: return dialogue_manager.get("choice_container") as VBoxContainer if dialogue_manager else null
+var typewriter_text: String:
+	get: return str(dialogue_manager.get("typewriter_text")) if dialogue_manager else ""
+var typewriter_index: int:
+	get: return int(dialogue_manager.get("typewriter_index")) if dialogue_manager else 0
+	set(value): dialogue_manager.set("typewriter_index", value)
+var continue_blink: float:
+	get: return float(dialogue_manager.get("continue_blink")) if dialogue_manager else 0.0
+	set(value): dialogue_manager.set("continue_blink", value)
+var dialogue_rest_top: float:
+	get: return float(dialogue_manager.get("dialogue_rest_top")) if dialogue_manager else -210.0
+var current_character_id: String:
+	get: return str(dialogue_manager.get("current_character_id")) if dialogue_manager else ""
+	set(value): dialogue_manager.set("current_character_id", value)
+var dialogue_lines: Array:
+	get: return dialogue_manager.get("dialogue_lines") as Array
+	set(value): dialogue_manager.set("dialogue_lines", value)
+var dialogue_line_index: int:
+	get: return int(dialogue_manager.get("dialogue_line_index"))
+	set(value): dialogue_manager.set("dialogue_line_index", value)
+var dialogue_choices: Array:
+	get: return dialogue_manager.get("dialogue_choices") as Array
+	set(value): dialogue_manager.set("dialogue_choices", value)
+var dialogue_choice_prompt: String:
+	get: return str(dialogue_manager.get("dialogue_choice_prompt"))
+	set(value): dialogue_manager.set("dialogue_choice_prompt", value)
+var dialogue_farewell: String:
+	get: return str(dialogue_manager.get("dialogue_farewell"))
+	set(value): dialogue_manager.set("dialogue_farewell", value)
+var is_choosing: bool:
+	get: return bool(dialogue_manager.get("is_choosing"))
+	set(value): dialogue_manager.set("is_choosing", value)
+var choice_index: int:
+	get: return int(dialogue_manager.get("choice_index"))
+	set(value): dialogue_manager.set("choice_index", value)
 
 # --- Quest state ---
-var quest_order: Array = [
-	"donald_trump", "elon_musk", "ursula_von_der_leyen",
-	"vladimir_putin", "christine_lagarde", "emmanuel_macron"
-]
-var quest_completed: Dictionary = {}
-var quest_index: int = -1
-var quest_finished: bool = false
+var quest_manager: Node
+var quest_index: int:
+	get:
+		return int(quest_manager.get("quest_index")) if quest_manager else -1
+	set(value):
+		if quest_manager:
+			quest_manager.set("quest_index", value)
+var quest_finished: bool:
+	get:
+		return bool(quest_manager.get("quest_finished")) if quest_manager else false
+	set(value):
+		if quest_manager:
+			quest_manager.set("quest_finished", value)
 var ai_terminal_data: Dictionary = {}
 var hidden_bunker_data: Dictionary = {}
-var encounter_residues: Dictionary = {}
-var encounter_marks: Dictionary = {}
-var optional_dialogue_seen: Dictionary = {}
 var ai_override_lines: Array = []
 var optional_ai_followup_lines: Array = []
 var ufo_ai_followup_pending: bool = false
@@ -81,167 +125,65 @@ var contamination_terminal_departed: bool = false
 var contamination_terminal_afterglow_pending: bool = false
 var contamination_root: Node2D
 
-# --- Kim phone overlay ---
-var kim_phone_layer: CanvasLayer = null
-var kim_phone_panel: Control = null
-var kim_phone_dot1: ColorRect = null
-var kim_phone_dot2: ColorRect = null
-var kim_phone_dot3: ColorRect = null
-var kim_phone_row2: Control = null
-var kim_phone_row3: Control = null
-var kim_phone_base_pos: Vector2 = Vector2.ZERO
-var kim_phone_active: bool = false
-var kim_phone_blink_t: float = 0.0
-var kim_phone_intensity: float = 0.0
-var kim_phone_ringing: bool = false
-
-# --- Xi pre-scene ---
-var xi_pre_scene_seen: bool = false
-var xi_pre_scene_active: bool = false
-var xi_pre_skip_requested: bool = false
-var xi_scene_layer: CanvasLayer = null
-var xi_scene_root: Control = null
-var xi_scene_frame: Control = null
-var xi_scene_left_vbox: VBoxContainer = null
-var xi_scene_right_vbox: VBoxContainer = null
+# --- Encounter modules ---
+var kim_phone_encounter: Node
+var xi_pre_scene_encounter: Node
+var xi_pre_scene_seen: bool:
+	get:
+		return bool(xi_pre_scene_encounter.get("xi_pre_scene_seen")) if xi_pre_scene_encounter else false
+var xi_pre_scene_active: bool:
+	get:
+		return bool(xi_pre_scene_encounter.get("xi_pre_scene_active")) if xi_pre_scene_encounter else false
 
 const CONTAMINATION_MAX_APPEARANCES := 3
-const KIM_PHONE_LINE_SHOW  := 4
-const KIM_PHONE_LINE_LINE2 := 13
-const KIM_PHONE_LINE_LINE3 := 21
-const KIM_PHONE_LINE_SETTLE := 29
 const CONTAMINATION_SOURCE_OFFSETS := {
 	"oval_office": Vector2(-116, -24),
 	"kremlin": Vector2(122, -24),
 	"mountain_bunker": Vector2(112, -18)
 }
 const CONTAMINATION_TERMINAL_OFFSET := Vector2(-140, -8)
-const XI_SCENE_FRAME_SIZE := Vector2(1280.0, 720.0)
 
 # --- Intro sequence ---
-var intro_active: bool = true
-var intro_layer: CanvasLayer
-var intro_bg: ColorRect
-var intro_text: Label
-var intro_scanlines: ColorRect
-var intro_static_rect: ColorRect
-var intro_timer: float = 0.0
-var intro_phase: int = 0
-var intro_char_index: int = 0
-var intro_current_text: String = ""
-var intro_full_text: String = ""
-var intro_fade_alpha: float = 1.0
-var intro_static_timer: float = 0.0
-var intro_skip_held: float = 0.0
-var intro_breaking_bar: ColorRect
-var intro_breaking_label: Label
-var intro_ticker_bar: ColorRect
-var intro_ticker_label: Label
-var intro_channel_label: Label
-var intro_datetime_label: Label
-var intro_vhs_overlay: ColorRect
-var intro_live_dot: ColorRect
-var intro_live_label: Label
-var intro_ch_label: Label
-var intro_crt_line: ColorRect
-var intro_crt_dot: ColorRect
-var intro_boot_done: bool = false
-var intro_shutdown: bool = false
-var intro_shutdown_timer: float = 0.0
-
-var intro_headlines: Array = [
-	"Seven wars. Zero ceasefires.\nThree arms manufacturers\npost record quarterly profits.",
-	"Billionaire buys historic bridge.\nThen removes it. For a yacht.\nRotterdam declines to comment.",
-	"AI replaces 800,000 jobs.\nCEO calls it 'exciting opportunity'.\nExciting for whom: unspecified.",
-	"Oligarch purchases social media platform.\nFires half the staff.\nCalls remaining employees 'warriors'.",
-	"Democracy index: historic low.\nTurnout: 38%.\nApathy index: not measured. Why bother.",
-	"The system is not broken.\nIt is working exactly as designed.\n\n...for someone.",
-]
-
-var intro_breaking_titles: Array = [
-	"BREAKING NEWS",
-	"MARKETS UPDATE",
-	"WORLD REPORT",
-	"SPECIAL ALERT",
-	"LIVE COVERAGE",
-	"EMERGENCY BROADCAST",
-]
-
-var intro_ticker_texts: Array = [
-	"WAREHOUSE WORKER FIRED FOR 11-SEC TOILET BREAK ... AMAZON Q3: RECORD PROFITS ... PISS BOTTLES FOUND IN VAN: NO COMMENT ... ",
-	"MUSK BUYS TWITTER ... FIRES 75% ... REINSTATES NAZIS ... RENAMES IT X ... LOSES $20B ... CALLS IT WIN ... ",
-	"TRUMP INDICTED ... TRUMP ACQUITTED ... TRUMP ELECTED ... TRUMP INDICTED AGAIN ... MARKETS UNAFFECTED ... ",
-	"ZUCKERBERG BUILDS BUNKER IN HAWAII ... META LAYS OFF 11,000 ... METAVERSE: 38 DAILY USERS ... ",
-	"PUTIN INVADES UKRAINE ... UN CONDEMNS ... NOTHING HAPPENS ... REPEAT FOR 3RD YEAR ... ARMS SALES UP 400% ... ",
-	"SIGNAL LOST ... SIGNAL LOST ... PLEASE STAND BY ... CIVIC NIGHTMARE LOADING ... THIS IS FINE ... ",
-]
+var intro_sequence: Node
+var intro_active: bool:
+	get:
+		return intro_sequence == null or bool(intro_sequence.get("active"))
 
 # --- Ending sequence ---
 var ending_triggered: bool = false
-var ending_active: bool = false
-var ending_layer: CanvasLayer
-var ending_bg: ColorRect
-var ending_text: Label
-var ending_timer: float = 0.0
-var ending_phase: int = 0
-var ending_char_index: int = 0
-var ending_current_text: String = ""
-var ending_full_text: String = ""
+var ending_sequence: Node
+var ending_active: bool:
+	get:
+		return bool(ending_sequence.get("ending_active")) if ending_sequence else false
+	set(value):
+		if ending_sequence:
+			ending_sequence.set("ending_active", value)
+var ending_layer: CanvasLayer:
+	get:
+		return ending_sequence.get("ending_layer") as CanvasLayer if ending_sequence else null
+var ending_scenes: Array:
+	get:
+		return ending_sequence.get("ending_scenes") as Array if ending_sequence else []
+	set(value):
+		if ending_sequence:
+			ending_sequence.set("ending_scenes", value)
+var ending_phase: int:
+	get:
+		return int(ending_sequence.get("ending_phase")) if ending_sequence else 0
+	set(value):
+		if ending_sequence:
+			ending_sequence.set("ending_phase", value)
 
-# --- Bezos cinematic easter egg (SF2 style, 1280x720) ---
-var bezos_cinematic_active: bool = false
-var bezos_cinematic_seen: bool = false
-var bezos_cinematic_layer: CanvasLayer
-var bezos_cinematic_root: Control
-var bezos_cinematic_frame: Control
-var bezos_cinematic_bg: ColorRect
-var bezos_cinematic_scanlines: ColorRect
-var bezos_cinematic_stage: Label
-var bezos_cinematic_vs: Label
-var bezos_cinematic_fight: Label
-var bezos_cinematic_round: Label
-var bezos_cinematic_ko: Label
-var bezos_cinematic_perfect: Label
-var bezos_cinematic_denial: Label
-var bezos_cinematic_subtitle: Label
-var bezos_cinematic_speaker: Label
-var bezos_cinematic_dialogue: Label
-var bezos_cinematic_timer_label: Label
-var bezos_cinematic_left_card: PanelContainer
-var bezos_cinematic_right_card: PanelContainer
-var bezos_cinematic_left_bar: ColorRect
-var bezos_cinematic_right_bar: ColorRect
-var bezos_cinematic_left_hp: ColorRect
-var bezos_cinematic_right_hp: ColorRect
-var bezos_cinematic_flash: ColorRect
-var bezos_cinematic_state: int = 0
-var bezos_cinematic_timer: float = 0.0
-var bezos_cinematic_frame_base_position: Vector2 = Vector2.ZERO
 
-enum BezosCinematicState { STAGE, SLIDE_IN, VS_SLAM, FIGHT, COMBAT, DENIED, OUTRO }
+# --- Bezos cinematic encounter ---
+var bezos_encounter: Node
+var bezos_cinematic_active: bool:
+	get:
+		return bool(bezos_encounter.get("bezos_cinematic_active")) if bezos_encounter else false
+var bezos_cinematic_seen: bool:
+	get:
+		return bool(bezos_encounter.get("bezos_cinematic_seen")) if bezos_encounter else false
 
-const BEZOS_CINEMATIC_FRAME_SIZE := Vector2(1280, 720)
-const BEZOS_ERROR_POPUPS := [
-	["PRIME AUTO-RENEWAL NOTICE",
-	 "Your card has been charged $14.99.\nYour refusal to consent has been noted.\nThis incident has been flagged."],
-	["TERMS OF SERVICE §47 — EXISTENCE CLAUSE",
-	 "By breathing within 8m of this drone\nyou agree to Clauses 47–891 incl.\n[  OK  ]   [  OK IN YELLOW  ]"],
-	["WORKER EFFICIENCY ALERT™",
-	 "A nearby human scored 0.3% below quota.\nAutomated reprimand issued (4th this week).\nHave a productive and Prime day!"],
-	["DISPUTE RESOLUTION COMPLETE",
-	 "Your complaint has been auto-dismissed.\nCase ID: 00000000000. Review: NEVER.\nThank you for choosing Amazon."],
-]
-const BEZOS_STAGE_DURATION := 2.0
-const BEZOS_SLIDE_IN_DURATION := 2.1
-const BEZOS_VS_DURATION := 2.0
-const BEZOS_FIGHT_DURATION := 4.2
-const BEZOS_COMBAT_DURATION := 10.0
-const BEZOS_DENIED_DURATION := 13.2
-const BEZOS_ROUND_HOLD := 1.9
-const BEZOS_KO_DELAY := 0.9
-const BEZOS_PERFECT_DELAY := 1.6
-const BEZOS_DENIAL_REVEAL_DELAY := 1.9
-const BEZOS_SUBTITLE_REVEAL_DELAY := 1.6
 
 # --- Final Mission ---
 var final_mission_active: bool = false
@@ -275,17 +217,8 @@ var mk_flash_index: int = 0
 enum MKState { ENTER, COUNTDOWN, EXECUTE, FREEZE, CLAUDIA_LINE, FADE_OUT }
 var mk_state: int = MKState.ENTER
 
-var ending_scenes: Array = [
-	"[CLASSIFIED — FILE #0000]\n\nYou collected all six signatures.\nThe document is complete.",
-	"Six of the most powerful people\non Earth signed a piece of paper\nbecause a stranger asked nicely.",
-	"Trump signed it to prove\nhe signs the best documents.\n\nMusk signed it because\nhe thought it was an NDA.",
-	"Von der Leyen added\n47 amendments first.\n\nPutin signed it\n\"under protest.\"\n(He wasn't protesting.)",
-	"Lagarde charged you\na processing fee.\n\nMacron wrote a poem\nin the margin.",
-	"C.L.A.U.D.I.A. filed the document\nin a folder labeled:\n\n\"PROOF THAT HUMANS\nARE WONDERFULLY STUPID\"",
-	"The world didn't change.\nThe wars didn't stop.\nThe billionaires stayed rich.\n\nBut for one brief moment...",
-	"...six world leaders agreed\non exactly one thing:\n\n\nYou were really, really annoying.",
-	"[CIVIC NIGHTMARE]\n\nwritten, directed, and\nendured by you.\n\n— FIN —",
-]
+# --- HUD ---
+
 
 # --- HUD ---
 var hud_panel: PanelContainer
@@ -642,7 +575,13 @@ var meter_config: Dictionary = {
 #  SETUP
 # ============================================================
 
+func _setup_quest_manager() -> void:
+	quest_manager = QUEST_MANAGER_SCRIPT.new()
+	quest_manager.name = "QuestManager"
+	add_child(quest_manager)
+
 func _ready() -> void:
+	_setup_quest_manager()
 	# Remove old dialogue box from scene (if present)
 	var old_box = get_node_or_null("UI/DialogueBox")
 	if old_box:
@@ -671,7 +610,7 @@ func _ready() -> void:
 	_create_typewriter_bip()
 	_setup_ambient_audio()
 	_create_atmosphere_particles()
-	_create_intro_overlay()
+	_setup_intro_sequence()
 	_create_ending_overlay()
 	_create_bezos_cinematic_overlay()
 	_create_mk_overlay()
@@ -1012,25 +951,19 @@ func _play_bezos_escalation_bips(text: String, speaker: String) -> void:
 			bezos_escalation_bip_tween.tween_interval(0.045)
 
 func _start_bezos_cinematic() -> void:
-	bezos_cinematic_seen = true
-	bezos_cinematic_active = true
 	bezos_escalation_active = false
 	if bezos_escalation_bip_tween and bezos_escalation_bip_tween.is_valid():
 		bezos_escalation_bip_tween.kill()
-	# Clean up world bubble
 	if bezos_escalation_bubble:
 		bezos_escalation_bubble.queue_free()
 		bezos_escalation_bubble = null
 
 	await _fade_transition(1.0, 0.15)
-	if bezos_cinematic_layer:
-		bezos_cinematic_layer.visible = true
-		if bezos_cinematic_root:
-			bezos_cinematic_root.modulate.a = 1.0
-		_layout_bezos_cinematic_frame()
+	if transition_overlay:
 		transition_overlay.visible = false
 		transition_overlay.modulate.a = 0.0
-		_begin_bezos_cinematic_state(BezosCinematicState.STAGE)
+	bezos_encounter.start()
+
 
 func _create_hidden_bunker_entrance() -> void:
 	_clear_decor_patch(HIDDEN_BUNKER_TILE, 3, 2)
@@ -1204,109 +1137,61 @@ func _setup_tileset_sources() -> void:
 		and tileset.has_source(SRC_FLOOR)
 	)
 
-func _setup_interiors() -> void:
-	if interiors_layer:
+func _ensure_room_manager() -> void:
+	if room_manager:
 		return
+	room_manager = ROOM_MANAGER_SCRIPT.new()
+	room_manager.name = "RoomManager"
+	add_child(room_manager)
+	room_manager.setup(self, entities_layer, player)
 
-	interiors_layer = Node2D.new()
-	interiors_layer.name = "Interiors"
-	add_child(interiors_layer)
+func _setup_interiors() -> void:
+	_ensure_room_manager()
+	var special_specs: Array = [
+		{
+			"key": "ufo_lab",
+			"node_name": "UfoLabInterior",
+			"character_id": "ufo_easter_egg",
+			"character_name": "Albert Einstein",
+			"spawn_marker": "ufo_lab_exterior",
+			"world_position": _tile_to_actor_position(UFO_TILE + Vector2i(0, 3))
+		},
+		{
+			"key": "mountain_bunker",
+			"node_name": "HiddenBunkerInterior",
+			"character_id": "hidden_bunker_scene",
+			"character_name": "Hidden Bunker",
+			"spawn_marker": "mountain_bunker_exterior",
+			"world_position": _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2)) + HIDDEN_BUNKER_WORLD_OFFSET
+		},
+		{
+			"key": "red_command",
+			"node_name": "RedCommandInterior",
+			"character_id": "xi_jinping",
+			"character_name": "Xi Jinping",
+			"spawn_marker": "red_command_exterior",
+			"world_position": _tile_to_actor_position(GREAT_WALL_TILE + Vector2i(0, 3))
+		},
+		{
+			"key": "pyongyang_command",
+			"node_name": "PyongyangCommandInterior",
+			"character_id": "kim_jong_un",
+			"character_name": "Kim Jong-un",
+			"spawn_marker": "pyongyang_command_exterior",
+			"world_position": _tile_to_actor_position(PYONGYANG_TILE + Vector2i(0, 3))
+		},
+		{
+			"key": "neural_core",
+			"node_name": "NeuralCoreInterior",
+			"character_id": "sam_altman",
+			"character_name": "Sam Altman",
+			"spawn_marker": "neural_core_exterior",
+			"world_position": _tile_to_actor_position(NUCLEAR_PLANT_TILE + Vector2i(0, -3))
+		}
+	]
+	room_manager.setup_interiors(building_specs, special_specs, Callable(self, "_character_display_name"))
+	room_registry = room_manager.room_registry
 
-	for index in range(building_specs.size()):
-		var spec: Dictionary = building_specs[index]
-		var room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-		room.name = "%sInterior" % _pascal_case(str(spec["key"]))
-		room.position = Vector2(0, 3200 + index * 960)
-		room.set("room_key", spec["key"])
-		room.set("character_id", spec["npc"])
-		room.set("character_name", _character_display_name(str(spec["npc"])))
-		interiors_layer.add_child(room)
-		room_registry[spec["key"]] = room
-		if room.has_method("set_room_active"):
-			room.set_room_active(false)
-
-		var entrance: Vector2i = spec["entrance"]
-		world_spawn_points["%s_exterior" % spec["key"]] = _tile_to_actor_position(entrance + Vector2i(0, 2))
-		_create_world_doorway("%sDoor" % _pascal_case(str(spec["key"])), entrance, spec["key"], "EntryMarker")
-
-	var ufo_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	ufo_room.name = "UfoLabInterior"
-	ufo_room.position = Vector2(0, 3200 + building_specs.size() * 960)
-	ufo_room.set("room_key", "ufo_lab")
-	ufo_room.set("character_id", "ufo_easter_egg")
-	ufo_room.set("character_name", "Albert Einstein")
-	interiors_layer.add_child(ufo_room)
-	room_registry["ufo_lab"] = ufo_room
-	if ufo_room.has_method("set_room_active"):
-		ufo_room.set_room_active(false)
-	world_spawn_points["ufo_lab_exterior"] = _tile_to_actor_position(UFO_TILE + Vector2i(0, 3))
-
-	var bunker_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	bunker_room.name = "HiddenBunkerInterior"
-	bunker_room.position = Vector2(0, 3200 + (building_specs.size() + 1) * 960)
-	bunker_room.set("room_key", "mountain_bunker")
-	bunker_room.set("character_id", "hidden_bunker_scene")
-	bunker_room.set("character_name", "Hidden Bunker")
-	interiors_layer.add_child(bunker_room)
-	room_registry["mountain_bunker"] = bunker_room
-	if bunker_room.has_method("set_room_active"):
-		bunker_room.set_room_active(false)
-	world_spawn_points["mountain_bunker_exterior"] = _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2)) + HIDDEN_BUNKER_WORLD_OFFSET
-
-	var xi_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	xi_room.name = "RedCommandInterior"
-	xi_room.position = Vector2(0, 3200 + (building_specs.size() + 2) * 960)
-	xi_room.set("room_key", "red_command")
-	xi_room.set("character_id", "xi_jinping")
-	xi_room.set("character_name", "Xi Jinping")
-	interiors_layer.add_child(xi_room)
-	room_registry["red_command"] = xi_room
-	if xi_room.has_method("set_room_active"):
-		xi_room.set_room_active(false)
-	world_spawn_points["red_command_exterior"] = _tile_to_actor_position(GREAT_WALL_TILE + Vector2i(0, 3))
-
-	var pyongyang_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	pyongyang_room.name = "PyongyangCommandInterior"
-	pyongyang_room.position = Vector2(0, 3200 + (building_specs.size() + 3) * 960)
-	pyongyang_room.set("room_key", "pyongyang_command")
-	pyongyang_room.set("character_id", "kim_jong_un")
-	pyongyang_room.set("character_name", "Kim Jong-un")
-	interiors_layer.add_child(pyongyang_room)
-	room_registry["pyongyang_command"] = pyongyang_room
-	if pyongyang_room.has_method("set_room_active"):
-		pyongyang_room.set_room_active(false)
-	world_spawn_points["pyongyang_command_exterior"] = _tile_to_actor_position(PYONGYANG_TILE + Vector2i(0, 3))
-
-	var neural_room = OVAL_OFFICE_ROOM_SCENE.instantiate()
-	neural_room.name = "NeuralCoreInterior"
-	neural_room.position = Vector2(0, 3200 + (building_specs.size() + 4) * 960)
-	neural_room.set("room_key", "neural_core")
-	neural_room.set("character_id", "sam_altman")
-	neural_room.set("character_name", "Sam Altman")
-	interiors_layer.add_child(neural_room)
-	room_registry["neural_core"] = neural_room
-	if neural_room.has_method("set_room_active"):
-		neural_room.set_room_active(false)
-	world_spawn_points["neural_core_exterior"] = _tile_to_actor_position(NUCLEAR_PLANT_TILE + Vector2i(0, -3))
-
-func _create_world_doorway(door_name: String, tile_pos: Vector2i, destination: String, spawn_marker: String) -> void:
-	var door := Area2D.new()
-	door.name = door_name
-	door.collision_layer = 0
-	door.collision_mask = 1
-	door.monitoring = true
-	door.monitorable = true
-	door.position = _tile_to_body_position(tile_pos)
-	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", destination)
-	door.set("spawn_marker", spawn_marker)
-
-	var col = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(76, 42)
-	col.shape = shape
-	door.add_child(col)
-	entities_layer.add_child(door)
 
 func use_door(destination: String, spawn_marker: String) -> void:
 	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
@@ -1358,103 +1243,28 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		call_deferred("_maybe_queue_contamination_event", contamination_source)
 
 func _enter_room(room_id: String, spawn_marker: String) -> void:
-	var room = room_registry.get(room_id)
-	if room == null:
+	if not room_manager.enter_room(room_id, active_room_id, spawn_marker):
 		return
-	if active_room_id != "" and room_registry.has(active_room_id):
-		var current_room = room_registry[active_room_id]
-		if current_room and current_room != room and current_room.has_method("set_room_active"):
-			current_room.set_room_active(false)
-
 	active_room_id = room_id
-	if room.has_method("set_room_active"):
-		room.set_room_active(true)
-	if room.has_method("get_entity_container"):
-		var room_entities = room.get_entity_container()
-		if room_entities and player.get_parent() != room_entities:
-			player.reparent(room_entities, true)
-	if room.has_method("get_spawn_position"):
-		player.velocity = Vector2.ZERO
-		player.global_position = room.get_spawn_position(spawn_marker)
+	var room = room_registry.get(room_id)
 	if room_id == "red_command" and not xi_pre_scene_seen and not xi_pre_scene_active:
 		if room.has_method("set_npc_interaction_enabled"):
 			room.set_npc_interaction_enabled(false)
 		call_deferred("_start_xi_pre_scene")
 
 func _exit_room(spawn_marker: String) -> void:
-	var room = room_registry.get(active_room_id)
-	if player.get_parent() != entities_layer:
-		player.reparent(entities_layer, true)
-
-	player.velocity = Vector2.ZERO
-	if active_room_id != "" and room_registry.has(active_room_id):
-		if room and room.has_method("set_room_active"):
-			room.set_room_active(false)
+	room_manager.exit_room(active_room_id, spawn_marker)
 	active_room_id = ""
 
-	if world_spawn_points.has(spawn_marker):
-		player.global_position = world_spawn_points[spawn_marker]
-
 func _fade_transition(target_alpha: float, duration: float) -> void:
-	transition_overlay.visible = true
-	var tw = create_tween()
-	tw.tween_property(transition_overlay, "modulate:a", target_alpha, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await tw.finished
-	if is_zero_approx(target_alpha):
-		transition_overlay.visible = false
+	await room_manager.fade_transition(target_alpha, duration)
 
 func _set_room_presentation(indoor: bool) -> void:
-	if player.has_method("set_traversal_context"):
-		player.set_traversal_context(indoor)
-
-	if world_canvas_modulate:
-		world_canvas_modulate.color = Color(0.88, 0.9, 0.94) if indoor else Color(0.95, 0.96, 0.98)
-
-	if interior_overlay:
-		interior_overlay.visible = true
-		var overlay_alpha := 0.52 if indoor else 0.0
-		var overlay_tw = create_tween()
-		overlay_tw.tween_property(interior_overlay, "modulate:a", overlay_alpha, 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		if not indoor:
-			overlay_tw.finished.connect(func() -> void:
-				if interior_overlay:
-					interior_overlay.visible = false
-			)
-
-	if screen_fx_material:
-		if indoor:
-			screen_fx_material.set_shader_parameter("effect_strength", 0.12)
-			screen_fx_material.set_shader_parameter("color_levels", 9.0)
-			screen_fx_material.set_shader_parameter("scanline_strength", 0.05)
-			screen_fx_material.set_shader_parameter("vignette_strength", 0.18)
-			screen_fx_material.set_shader_parameter("overlay_strength", 0.24)
-			screen_fx_material.set_shader_parameter("tint_color", Color(0.9, 0.91, 0.95, 1.0))
-		else:
-			screen_fx_material.set_shader_parameter("effect_strength", 0.08)
-			screen_fx_material.set_shader_parameter("color_levels", 10.0)
-			screen_fx_material.set_shader_parameter("scanline_strength", 0.04)
-			screen_fx_material.set_shader_parameter("vignette_strength", 0.1)
-			screen_fx_material.set_shader_parameter("overlay_strength", 0.2)
-			screen_fx_material.set_shader_parameter("tint_color", Color(0.96, 0.97, 0.98, 1.0))
-
-	if hud_panel:
-		hud_panel.modulate = Color(0.9, 0.93, 0.98, 0.92) if indoor else Color(1, 1, 1, 1)
+	room_manager.set_room_presentation(indoor, world_canvas_modulate, screen_fx_material, hud_panel)
 
 func _show_room_title(title: String, subtitle: String = "") -> void:
-	if not room_title_card:
-		return
-	room_title_label.text = title
-	room_title_subtitle.text = subtitle
-	room_title_card.visible = true
-	room_title_card.modulate.a = 0.0
-	var tw = create_tween()
-	tw.tween_property(room_title_card, "modulate:a", 1.0, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(0.55)
-	tw.tween_property(room_title_card, "modulate:a", 0.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	tw.tween_callback(func() -> void:
-		if room_title_card:
-			room_title_card.visible = false
-	)
+	room_manager.show_room_title(title, subtitle)
+
 
 func _tile_to_actor_position(tile_pos: Vector2i) -> Vector2:
 	return Vector2(tile_pos.x * 32 + 16, tile_pos.y * 32)
@@ -1500,47 +1310,25 @@ func _character_display_name(character_id: String) -> String:
 
 func _process(delta: float) -> void:
 	if intro_active:
-		_process_intro(delta)
+		intro_sequence.process_frame(delta)
 		return
 	if ending_active:
-		_process_ending(delta)
+		ending_sequence.process_frame(delta)
 		return
 	if bezos_cinematic_active:
-		_process_bezos_cinematic(delta)
+		bezos_encounter.process_frame(delta)
 		return
 	_process_ufo_easter_egg(delta)
 	_process_bezos_drone(delta)
 	_process_ai_terminal(delta)
 	_process_mk_sequence(delta)
-	if kim_phone_active:
-		_tick_kim_phone(delta)
+	if kim_phone_encounter and bool(kim_phone_encounter.get("active")):
+		kim_phone_encounter.process_frame(delta)
 	if xi_pre_scene_active and Input.is_action_just_pressed("ui_accept"):
-		xi_pre_skip_requested = true
-	if is_dialogue_open:
-		# Blink continue indicator
-		if continue_label.visible:
-			continue_blink += delta * 3.0
-			continue_label.modulate.a = 0.4 + sin(continue_blink) * 0.4
+		xi_pre_scene_encounter.request_skip()
+	if dialogue_manager:
+		dialogue_manager.process_frame(delta)
 
-		if is_choosing:
-			# Navigate choices with up/down
-			if Input.is_action_just_pressed("ui_up"):
-				choice_index = max(0, choice_index - 1)
-				_update_choice_highlight()
-			elif Input.is_action_just_pressed("ui_down"):
-				choice_index = min(choice_labels.size() - 1, choice_index + 1)
-				_update_choice_highlight()
-			elif Input.is_action_just_pressed("ui_accept"):
-				_select_choice()
-		elif Input.is_action_just_pressed("ui_accept"):
-			if typewriter_index < typewriter_text.length():
-				# Skip to full text
-				typewriter_timer.stop()
-				text_label.text = typewriter_text
-				typewriter_index = typewriter_text.length()
-				continue_label.visible = true
-			else:
-				_advance_dialogue()
 
 func _process_ufo_easter_egg(delta: float) -> void:
 	if not ufo_root:
@@ -2598,31 +2386,8 @@ func _process_ai_terminal(_delta: float) -> void:
 		indicator.modulate.a = 0.6 + sin(t * 2.0) * 0.4
 
 func _create_typewriter_bip() -> void:
-	typewriter_bip = AudioStreamPlayer.new()
-	typewriter_bip.name = "TypewriterBip"
-	typewriter_bip.volume_db = -28.0
-	var rate := 22050
-	var dur := 0.025
-	var samples := int(rate * dur)
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_8_BITS
-	stream.mix_rate = rate
-	stream.stereo = false
-	var data := PackedByteArray()
-	data.resize(samples)
-	for i in range(samples):
-		var t := float(i) / rate
-		var env := 1.0 - t / dur
-		var wave := sin(t * 1200.0 * TAU) * env * env
-		data[i] = int(clampf(wave * 30.0 + 128.0, 0.0, 255.0))
-	stream.data = data
-	typewriter_bip.stream = stream
-	add_child(typewriter_bip)
+	dialogue_manager.create_typewriter_bip()
 
-
-# ============================================================
-#  DATA & TEXTURES
-# ============================================================
 
 func _load_character_data() -> void:
 	var path := "res://data/characters.json"
@@ -2687,74 +2452,14 @@ func _create_screen_fx() -> void:
 	ui_layer.move_child(fx_rect, 0)
 
 func _create_transition_fx() -> void:
-	interior_overlay = ColorRect.new()
-	interior_overlay.name = "InteriorOverlay"
-	interior_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	interior_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	interior_overlay.color = Color(0.03, 0.04, 0.06, 0.42)
-	interior_overlay.modulate.a = 0.0
-	interior_overlay.visible = false
-	ui_layer.add_child(interior_overlay)
-	ui_layer.move_child(interior_overlay, 1)
+	_ensure_room_manager()
+	room_manager.create_transition_ui(ui_layer)
+	interior_overlay = room_manager.interior_overlay
+	transition_overlay = room_manager.transition_overlay
+	room_title_card = room_manager.room_title_card
+	room_title_label = room_manager.room_title_label
+	room_title_subtitle = room_manager.room_title_subtitle
 
-	room_title_card = PanelContainer.new()
-	room_title_card.name = "RoomTitle"
-	room_title_card.visible = false
-	room_title_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	room_title_card.anchor_left = 0.5
-	room_title_card.anchor_top = 0.0
-	room_title_card.anchor_right = 0.5
-	room_title_card.anchor_bottom = 0.0
-	room_title_card.offset_left = -170.0
-	room_title_card.offset_top = 26.0
-	room_title_card.offset_right = 170.0
-	room_title_card.offset_bottom = 92.0
-
-	var title_style = StyleBoxFlat.new()
-	title_style.bg_color = Color(0.03, 0.03, 0.05, 0.9)
-	title_style.border_width_left = 2
-	title_style.border_width_right = 2
-	title_style.border_width_bottom = 2
-	title_style.border_color = Color(0.76, 0.63, 0.38, 0.95)
-	title_style.corner_radius_top_left = 6
-	title_style.corner_radius_top_right = 6
-	title_style.corner_radius_bottom_left = 6
-	title_style.corner_radius_bottom_right = 6
-	title_style.content_margin_top = 8
-	title_style.content_margin_bottom = 8
-	room_title_card.add_theme_stylebox_override("panel", title_style)
-
-	var title_box = VBoxContainer.new()
-	title_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_box.add_theme_constant_override("separation", 1)
-	room_title_card.add_child(title_box)
-
-	room_title_label = Label.new()
-	room_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	room_title_label.add_theme_font_size_override("font_size", 22)
-	room_title_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.74))
-	title_box.add_child(room_title_label)
-
-	room_title_subtitle = Label.new()
-	room_title_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	room_title_subtitle.add_theme_font_size_override("font_size", 12)
-	room_title_subtitle.add_theme_color_override("font_color", Color(0.72, 0.75, 0.82))
-	title_box.add_child(room_title_subtitle)
-	ui_layer.add_child(room_title_card)
-
-	transition_overlay = ColorRect.new()
-	transition_overlay.name = "TransitionOverlay"
-	transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	transition_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	transition_overlay.color = Color.BLACK
-	transition_overlay.modulate.a = 0.0
-	transition_overlay.visible = false
-	ui_layer.add_child(transition_overlay)
-
-
-# ============================================================
-#  HUD
-# ============================================================
 
 func _create_hud() -> void:
 	meter_bars.clear()
@@ -2773,108 +2478,32 @@ func update_meter(meter_name: String, value: int) -> void:
 # ============================================================
 
 func _create_dialogue_ui() -> void:
-	# Typewriter timer
-	typewriter_timer = Timer.new()
-	typewriter_timer.one_shot = false
-	typewriter_timer.wait_time = 0.018
-	typewriter_timer.timeout.connect(_on_typewriter_tick)
-	add_child(typewriter_timer)
+	dialogue_manager = DIALOGUE_MANAGER_SCRIPT.new()
+	dialogue_manager.name = "DialogueManager"
+	add_child(dialogue_manager)
+	dialogue_manager.setup(
+		ui_layer,
+		player,
+		character_data_cache,
+		character_colors,
+		portrait_paths
+	)
+	dialogue_manager.line_changed.connect(_on_dialogue_line_changed)
+	dialogue_manager.choice_selected.connect(_on_dialogue_choice_selected)
+	dialogue_manager.finish_requested.connect(_finish_dialogue)
+	dialogue_manager.create_ui()
 
-	# Anchor control (holds panel + continue indicator)
-	dialogue_anchor = Control.new()
-	dialogue_anchor.name = "DialogueAnchor"
-	dialogue_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dialogue_anchor.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	dialogue_anchor.offset_left = -340.0
-	dialogue_anchor.offset_right = 340.0
-	dialogue_anchor.offset_top = -232.0
-	dialogue_anchor.offset_bottom = -10.0
-	dialogue_anchor.visible = false
+func _on_dialogue_line_changed(character_id: String, line_index: int) -> void:
+	if character_id == "kim_jong_un" and kim_phone_encounter and bool(kim_phone_encounter.get("active")):
+		kim_phone_encounter.update_for_line(line_index)
 
-	# Single flat panel background to avoid nested boxes fighting for space
-	dialogue_panel = PanelContainer.new()
-	dialogue_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dialogue_style = StyleBoxFlat.new()
-	dialogue_style.bg_color = Color(0.05, 0.05, 0.08, 0.96)
-	dialogue_style.border_width_top = 2
-	dialogue_style.border_width_bottom = 2
-	dialogue_style.border_width_left = 2
-	dialogue_style.border_width_right = 2
-	dialogue_style.border_color = Color(0.3, 0.3, 0.4)
-	dialogue_style.corner_radius_top_left = 8
-	dialogue_style.corner_radius_top_right = 8
-	dialogue_style.corner_radius_bottom_left = 8
-	dialogue_style.corner_radius_bottom_right = 8
-	dialogue_style.shadow_color = Color(0, 0, 0, 0.35)
-	dialogue_style.shadow_size = 6
-	dialogue_style.shadow_offset = Vector2(2, 4)
-	dialogue_style.content_margin_left = 14
-	dialogue_style.content_margin_right = 14
-	dialogue_style.content_margin_top = 12
-	dialogue_style.content_margin_bottom = 12
-	dialogue_panel.add_theme_stylebox_override("panel", dialogue_style)
+func _on_dialogue_choice_selected(character_id: String, choice: Dictionary) -> void:
+	_record_choice_mark(character_id, choice)
+	if active_room_id != "" and room_registry.has(active_room_id):
+		var active_room = room_registry[active_room_id]
+		if active_room and active_room.has_method("handle_dialogue_choice"):
+			active_room.handle_dialogue_choice(character_id, choice)
 
-	# Horizontal layout: portrait | text
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12)
-
-	# Portrait without a second framed panel
-	portrait_rect = TextureRect.new()
-	portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait_rect.custom_minimum_size = Vector2(96, 96)
-	hbox.add_child(portrait_rect)
-
-	# Text column
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	name_label = Label.new()
-	name_label.add_theme_font_size_override("font_size", 19)
-	name_label.add_theme_color_override("font_color", Color(0.92, 0.82, 0.4))
-	vbox.add_child(name_label)
-
-	text_label = RichTextLabel.new()
-	text_label.add_theme_font_size_override("normal_font_size", 15)
-	text_label.add_theme_color_override("default_color", Color(0.88, 0.88, 0.92))
-	text_label.bbcode_enabled = false
-	text_label.fit_content = false
-	text_label.scroll_active = false
-	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	text_label.custom_minimum_size = Vector2(0, 96)
-	text_label.clip_contents = true
-	vbox.add_child(text_label)
-
-	# Choice panel (JRPG style selection)
-	choice_container = VBoxContainer.new()
-	choice_container.name = "ChoiceContainer"
-	choice_container.add_theme_constant_override("separation", 6)
-	choice_container.visible = false
-	vbox.add_child(choice_container)
-
-	hbox.add_child(vbox)
-	dialogue_panel.add_child(hbox)
-	dialogue_anchor.add_child(dialogue_panel)
-
-	# Continue indicator
-	continue_label = Label.new()
-	continue_label.text = "▼ SPACE"
-	continue_label.add_theme_font_size_override("font_size", 12)
-	continue_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
-	continue_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	continue_label.offset_left = -80.0
-	continue_label.offset_top = -24.0
-	continue_label.visible = false
-	dialogue_anchor.add_child(continue_label)
-
-	ui_layer.add_child(dialogue_anchor)
-
-
-# ============================================================
-#  DIALOGUE SYSTEM
-# ============================================================
 
 func open_dialogue(character_id: String) -> void:
 	if is_dialogue_open or contamination_active:
@@ -2901,7 +2530,8 @@ func open_dialogue(character_id: String) -> void:
 
 	# Kim Jong-un: spawn red phone overlay if it's a full quest dialogue (not repeat)
 	if character_id == "kim_jong_un" and dialogue_lines.size() > 10:
-		_init_kim_phone_overlay()
+		_ensure_kim_phone_encounter()
+		kim_phone_encounter.start(self)
 
 	# Set border color
 	_apply_dialogue_identity(character_id)
@@ -2952,175 +2582,23 @@ func _setup_ai_dialogue() -> void:
 		return
 
 	ai_dialogue_override_active = false
-
-	if ai_terminal_data.is_empty():
-		dialogue_lines = ["System offline. Try again later."]
-		return
-
-	var phases: Dictionary = ai_terminal_data.get("phases", {})
-	var phase_key := ""
-	var last_done := ""
-
-	if quest_finished:
-		dialogue_lines = ["You already have all signatures. The file still has you."]
-		var completed_summary := _build_file_summary_line()
-		if completed_summary != "":
-			dialogue_lines.append(completed_summary)
-		var bunker_penalty := _build_hidden_bunker_final_line()
-		if bunker_penalty != "":
-			dialogue_lines.append(bunker_penalty)
-		return
-
-	if quest_index < 0:
-		phase_key = "intro"
-		quest_index = 0
-	elif quest_index < quest_order.size():
-		last_done = quest_order[quest_index - 1] if quest_index > 0 else ""
-		if last_done != "" and quest_completed.has(last_done):
-			phase_key = "after_%s" % last_done
-		else:
-			# Player hasn't visited the current target yet
-			var target_name: String = quest_order[quest_index]
-			var display := _character_display_name(target_name)
-			dialogue_lines = ["You haven't talked to %s yet. Go on, I'll wait. It's not like I have feelings." % display]
-			return
-
-	if quest_index >= quest_order.size() and not quest_finished:
-		phase_key = "after_%s" % quest_order[quest_order.size() - 1]
-		last_done = quest_order[quest_order.size() - 1]
-		quest_finished = true
-
-	if phases.has(phase_key):
-		var phase: Dictionary = phases[phase_key]
-		dialogue_lines = Array(phase.get("lines", ["..."])).duplicate()
-	else:
-		dialogue_lines = ["..."]
-
-	if last_done != "":
-		var ai_mark_line := _build_ai_mark_line(last_done)
-		if ai_mark_line != "":
-			dialogue_lines.append(ai_mark_line)
-
-	if quest_finished:
-		var final_summary := _build_file_summary_line()
-		if final_summary != "":
-			dialogue_lines.append(final_summary)
-		var bunker_penalty := _build_hidden_bunker_final_line()
-		if bunker_penalty != "":
-			dialogue_lines.append(bunker_penalty)
+	dialogue_lines = quest_manager.build_ai_dialogue(
+		ai_terminal_data,
+		Callable(self, "_character_display_name"),
+		seen_hidden_bunker_scene
+	)
 
 func _setup_politician_dialogue(character_id: String) -> void:
-	var c_data: Dictionary = character_data_cache.get(character_id, {})
-	var qd: Dictionary = c_data.get("quest_dialogue", {})
-	var is_optional := bool(c_data.get("optional", false))
-	var optional_repeat_lines: Array = c_data.get("optional_repeat_lines", [])
+	var content: Dictionary = quest_manager.build_politician_dialogue(
+		character_id,
+		character_data_cache.get(character_id, {}),
+		Callable(self, "_character_display_name")
+	)
+	dialogue_lines = Array(content.get("lines", ["..."])).duplicate()
+	dialogue_choices = Array(content.get("choices", [])).duplicate()
+	dialogue_choice_prompt = str(content.get("choice_prompt", ""))
 
-	if not is_optional and quest_completed.has(character_id):
-		dialogue_lines = ["You already have my signature. What more do you want?"]
-		return
 
-	if is_optional and optional_dialogue_seen.has(character_id) and not optional_repeat_lines.is_empty():
-		dialogue_lines = optional_repeat_lines.duplicate()
-		dialogue_choices = []
-		dialogue_choice_prompt = ""
-		return
-
-	if not is_optional and quest_index < 0:
-		dialogue_lines = ["Protocol says you talk to C.L.A.U.D.I.A. first. Start with the kiosk, not me."]
-		return
-
-	# Check if this is the correct target
-	if not is_optional and quest_index >= 0 and quest_index < quest_order.size():
-		if quest_order[quest_index] != character_id:
-			var correct_name: String = _character_display_name(quest_order[quest_index])
-			dialogue_lines = ["I wasn't expecting visitors. Try %s first." % correct_name]
-			return
-
-	if qd.is_empty():
-		dialogue_lines = ["..."]
-		return
-
-	dialogue_lines = qd.get("lines", ["..."])
-	dialogue_choices = qd.get("choices", [])
-	dialogue_choice_prompt = str(qd.get("choice_prompt", ""))
-
-func _advance_dialogue() -> void:
-	dialogue_line_index += 1
-	if current_character_id == "kim_jong_un" and kim_phone_active:
-		_update_kim_phone_overlay(dialogue_line_index)
-
-	if dialogue_line_index < dialogue_lines.size():
-		# Show next line
-		continue_label.visible = false
-		_start_typewriter(_prepare_dialogue_line(str(dialogue_lines[dialogue_line_index])))
-	elif dialogue_choices.size() > 0 and not is_choosing:
-		# Show choices
-		_show_choices()
-	else:
-		# Done — mark quest and close
-		_finish_dialogue()
-
-func _show_choices() -> void:
-	is_choosing = true
-	choice_index = 0
-	continue_label.visible = false
-	text_label.text = dialogue_choice_prompt
-
-	# Expand dialogue box if many choices (prevent overflow)
-	var extra_height := maxf(0.0, (dialogue_choices.size() - 2) * 28.0)
-	dialogue_anchor.offset_top = -232.0 - extra_height
-
-	# Clear old labels
-	for child in choice_container.get_children():
-		child.queue_free()
-	choice_labels.clear()
-
-	for i in range(dialogue_choices.size()):
-		var choice: Dictionary = dialogue_choices[i]
-		var lbl := Label.new()
-		lbl.text = "  %s" % str(choice.get("label", "..."))
-		lbl.add_theme_font_size_override("font_size", 15)
-		lbl.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
-		choice_container.add_child(lbl)
-		choice_labels.append(lbl)
-
-	choice_container.visible = true
-	_update_choice_highlight()
-
-func _update_choice_highlight() -> void:
-	for i in range(choice_labels.size()):
-		var lbl: Label = choice_labels[i]
-		if i == choice_index:
-			lbl.text = "> %s" % str(dialogue_choices[i].get("label", "..."))
-			lbl.add_theme_color_override("font_color", Color(0.95, 0.88, 0.4))
-		else:
-			lbl.text = "  %s" % str(dialogue_choices[i].get("label", "..."))
-			lbl.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
-
-func _select_choice() -> void:
-	if choice_index < 0 or choice_index >= dialogue_choices.size():
-		return
-
-	var choice: Dictionary = dialogue_choices[choice_index]
-	is_choosing = false
-	choice_container.visible = false
-	dialogue_choices.clear()
-	_record_choice_mark(current_character_id, choice)
-
-	if active_room_id != "" and room_registry.has(active_room_id):
-		var active_room = room_registry[active_room_id]
-		if active_room and active_room.has_method("handle_dialogue_choice"):
-			active_room.handle_dialogue_choice(current_character_id, choice)
-
-	# Show response lines
-	var response: Array = choice.get("response", [])
-	if response.size() > 0:
-		dialogue_lines = response
-		dialogue_line_index = 0
-		continue_label.visible = false
-		_start_typewriter(_prepare_dialogue_line(str(response[0])))
-	else:
-		_finish_dialogue()
 
 func _finish_dialogue() -> void:
 	# Final mission: after the self-NPC response, open text input instead of closing normally
@@ -3132,16 +2610,13 @@ func _finish_dialogue() -> void:
 		get_tree().create_timer(0.5).timeout.connect(_open_text_input_field)
 		return
 
-	# Mark quest completion for politicians
-	if current_character_id != "ai_terminal" and not quest_completed.has(current_character_id):
-		if quest_index >= 0 and quest_index < quest_order.size() and quest_order[quest_index] == current_character_id:
-			quest_completed[current_character_id] = true
-			quest_index += 1
+	# Mark quest completion for politicians.
+	quest_manager.complete_dialogue(current_character_id)
 
 	var current_data: Dictionary = character_data_cache.get(current_character_id, {})
-	var was_optional_seen := optional_dialogue_seen.has(current_character_id)
+	var was_optional_seen: bool = bool(quest_manager.is_optional_seen(current_character_id))
 	if bool(current_data.get("optional", false)):
-		optional_dialogue_seen[current_character_id] = true
+		quest_manager.mark_optional_seen(current_character_id)
 		if not was_optional_seen:
 			_queue_optional_ai_followup(current_character_id)
 			if current_character_id == "sam_altman":
@@ -3200,201 +2675,28 @@ func _try_open_optional_ai_followup() -> void:
 	open_dialogue("ai_terminal")
 
 func _record_choice_mark(character_id: String, choice: Dictionary) -> void:
-	if character_id == "ai_terminal":
-		return
+	quest_manager.record_choice_mark(character_id, choice)
 
-	var file_tag := str(choice.get("file_tag", "")).strip_edges()
-	var file_note := str(choice.get("file_note", "")).strip_edges()
-	var ai_comment := str(choice.get("ai_comment", "")).strip_edges()
-	if file_tag == "" and file_note == "" and ai_comment == "":
-		return
-
-	encounter_marks[character_id] = {
-		"file_tag": file_tag,
-		"file_note": file_note,
-		"ai_comment": ai_comment
-	}
-
-func _build_ai_mark_line(character_id: String) -> String:
-	if not encounter_marks.has(character_id):
-		return ""
-
-	var mark: Dictionary = encounter_marks[character_id]
-	var ai_comment := str(mark.get("ai_comment", "")).strip_edges()
-	if ai_comment != "":
-		return "File note: %s" % ai_comment
-
-	var file_note := str(mark.get("file_note", "")).strip_edges()
-	if file_note != "":
-		return "File note: %s" % file_note
-
-	return ""
-
-func _build_file_summary_line() -> String:
-	var tags: Array = []
-	for character_id in quest_order:
-		if not encounter_marks.has(character_id):
-			continue
-		var mark: Dictionary = encounter_marks[character_id]
-		var file_tag := str(mark.get("file_tag", "")).strip_edges()
-		if file_tag != "":
-			tags.append(file_tag)
-
-	if tags.is_empty():
-		return ""
-
-	var preview: Array = []
-	var preview_limit: int = mini(tags.size(), 4)
-	for i in range(preview_limit):
-		preview.append(tags[i])
-
-	if tags.size() > 4:
-		return "File profile: %s, plus %d more marks." % [_join_readable_list(preview), tags.size() - 4]
-	return "File profile: %s." % _join_readable_list(tags)
-
-func _build_hidden_bunker_final_line() -> String:
-	if not seen_hidden_bunker_scene:
-		return ""
-	return "Administrative correction: because you visited the man in the bunker asking death for one more delivery, all obtained documents are withdrawn until further notice. In bureaucratic terms, that means until death."
-
-func _dialogue_display_name(character_id: String) -> String:
-	match character_id:
-		"ufo_easter_egg":
-			return "Albert Einstein"
-		"mark_zuckerberg_ufo":
-			return "Mark Zuckerberg"
-		"self":
-			return "YOU"
-		_:
-			var c_data: Dictionary = character_data_cache.get(character_id, {})
-			return str(c_data.get("name", "C.L.A.U.D.I.A." if character_id == "ai_terminal" else "Unknown"))
 
 func _apply_dialogue_identity(character_id: String) -> void:
-	var border_color: Color = character_colors.get(character_id, Color(0.2, 0.7, 0.9))
-	if dialogue_style is StyleBoxFlat:
-		dialogue_style.border_color = border_color
-	elif dialogue_style is StyleBoxTexture:
-		dialogue_style.modulate_color = border_color.lightened(0.5)
-
-	portrait_rect.visible = true
-	if portrait_paths.has(character_id) and ResourceLoader.exists(portrait_paths[character_id]):
-		portrait_rect.texture = load(portrait_paths[character_id])
-	else:
-		portrait_rect.texture = null
-
-	name_label.text = _dialogue_display_name(character_id)
+	dialogue_manager.apply_dialogue_identity(character_id)
 
 func _prepare_dialogue_line(raw_text: String) -> String:
-	var stripped := raw_text.strip_edges()
+	return str(dialogue_manager.prepare_dialogue_line(raw_text))
 
-	if current_character_id == "ufo_easter_egg":
-		if stripped.begins_with("ZUCKERBERG:"):
-			_apply_dialogue_identity("mark_zuckerberg_ufo")
-			return stripped.trim_prefix("ZUCKERBERG:").strip_edges()
-		if stripped.begins_with("EINSTEIN:"):
-			_apply_dialogue_identity("ufo_easter_egg")
-			return stripped.trim_prefix("EINSTEIN:").strip_edges()
-		_apply_dialogue_identity("ufo_easter_egg")
-		return raw_text
 
-	if current_character_id == "ai_terminal":
-		if stripped.begins_with("CONTAMINATION:"):
-			_apply_dialogue_identity("historical_contamination")
-			return stripped.trim_prefix("CONTAMINATION:").strip_edges()
-		if stripped.begins_with("CLAUDIA:"):
-			_apply_dialogue_identity("ai_terminal")
-			return stripped.trim_prefix("CLAUDIA:").strip_edges()
-		_apply_dialogue_identity("ai_terminal")
-		return raw_text
-
-	if current_character_id == "kim_jong_un":
-		if stripped.begins_with("KIM:"):
-			_apply_dialogue_identity("kim_jong_un")
-			return stripped.trim_prefix("KIM:").strip_edges()
-		if stripped.begins_with("PUTIN:"):
-			_apply_dialogue_identity("vladimir_putin")
-			name_label.text = "VLADIMIR PUTIN (TELEPHONE)"
-			return stripped.trim_prefix("PUTIN:").strip_edges()
-		if stripped.begins_with("MOJTABA:"):
-			_apply_dialogue_identity("mojtaba_khamenei")
-			name_label.text = "MOJTABA KHAMENEI (TELEPHONE)"
-			return stripped.trim_prefix("MOJTABA:").strip_edges()
-		if stripped.begins_with("SWEDEN:"):
-			_apply_dialogue_identity("swedish_pm")
-			name_label.text = "ULF KRISTERSSON (TELEPHONE)"
-			return stripped.trim_prefix("SWEDEN:").strip_edges()
-		_apply_dialogue_identity("kim_jong_un")
-		return raw_text
-
-	_apply_dialogue_identity(current_character_id)
-	return raw_text
-
-func _join_readable_list(items: Array) -> String:
-	if items.is_empty():
-		return ""
-	if items.size() == 1:
-		return str(items[0])
-	if items.size() == 2:
-		return "%s and %s" % [items[0], items[1]]
-
-	var result := ""
-	for i in range(items.size()):
-		var item := str(items[i])
-		if i == items.size() - 1:
-			result += "and %s" % item
-		else:
-			if i > 0:
-				result += ", "
-			result += item
-	return result
 
 func _start_typewriter(text: String) -> void:
-	typewriter_text = text
-	typewriter_index = 0
-	text_label.text = ""
-	typewriter_timer.start()
-
-func _on_typewriter_tick() -> void:
-	if typewriter_index < typewriter_text.length():
-		var ch: String = typewriter_text[typewriter_index]
-		text_label.text += ch
-		typewriter_index += 1
-		# Play bip on visible characters (not spaces)
-		if ch != " " and ch != "." and typewriter_bip and typewriter_index % 2 == 0:
-			typewriter_bip.pitch_scale = randf_range(0.9, 1.2)
-			typewriter_bip.play()
-	else:
-		typewriter_timer.stop()
-		continue_label.visible = true
+	dialogue_manager.start_typewriter(text)
 
 func _animate_dialogue_in() -> void:
-	dialogue_anchor.visible = true
-	dialogue_anchor.modulate.a = 0.0
-	dialogue_anchor.offset_top = dialogue_rest_top + 40.0
-
-	var tw = create_tween().set_parallel(true)
-	tw.tween_property(dialogue_anchor, "modulate:a", 1.0, 0.3)
-	tw.tween_property(dialogue_anchor, "offset_top", dialogue_rest_top, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	dialogue_manager.animate_dialogue_in()
 
 func _close_dialogue() -> void:
-	typewriter_timer.stop()
-	continue_label.visible = false
-	choice_container.visible = false
-	is_choosing = false
-	dialogue_anchor.offset_top = dialogue_rest_top  # reset expanded height
-	if kim_phone_active:
-		_destroy_kim_phone_overlay()
+	if kim_phone_encounter and bool(kim_phone_encounter.get("active")):
+		kim_phone_encounter.stop()
+	dialogue_manager.close_dialogue()
 
-	var start_top = dialogue_anchor.offset_top
-	var tw = create_tween().set_parallel(true)
-	tw.tween_property(dialogue_anchor, "modulate:a", 0.0, 0.2)
-	tw.tween_property(dialogue_anchor, "offset_top", start_top + 30.0, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.chain().tween_callback(func():
-		dialogue_anchor.visible = false
-		dialogue_anchor.offset_top = dialogue_rest_top
-		is_dialogue_open = false
-		player.set_physics_process(true)
-	)
 
 func _create_bunker_caption_ui() -> void:
 	return
@@ -3635,408 +2937,27 @@ func _load_contamination_texture() -> Texture2D:
 	push_error("Failed to load contamination sprite at %s" % tex_path)
 	return null
 
-func _init_kim_phone_overlay() -> void:
-	if kim_phone_layer and is_instance_valid(kim_phone_layer):
+func _ensure_kim_phone_encounter() -> void:
+	if kim_phone_encounter:
 		return
-	kim_phone_layer = CanvasLayer.new()
-	kim_phone_layer.layer = 8
-	kim_phone_layer.name = "KimPhoneLayer"
-	add_child(kim_phone_layer)
+	kim_phone_encounter = KIM_PHONE_ENCOUNTER_SCRIPT.new()
+	kim_phone_encounter.name = "KimPhoneEncounter"
+	add_child(kim_phone_encounter)
 
-	var panel := Control.new()
-	panel.name = "KimPhonePanel"
-	panel.custom_minimum_size = Vector2(236, 122)
-	panel.position = Vector2(1040, 345)
-	kim_phone_base_pos = panel.position
-	kim_phone_panel = panel
 
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.07, 0.09, 0.96)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.add_child(bg)
 
-	var title_bar := ColorRect.new()
-	title_bar.color = Color(0.72, 0.0, 0.0)
-	title_bar.position = Vector2(0, 0)
-	title_bar.size = Vector2(236, 28)
-	panel.add_child(title_bar)
-
-	var title_lbl := Label.new()
-	title_lbl.text = "  RED PHONE — INCOMING"
-	title_lbl.add_theme_font_size_override("font_size", 11)
-	title_lbl.add_theme_color_override("font_color", Color.WHITE)
-	title_lbl.position = Vector2(0, 5)
-	title_lbl.size = Vector2(236, 22)
-	panel.add_child(title_lbl)
-
-	kim_phone_dot1 = _make_kim_phone_row(panel, 36.0, "LINE 1  —  MOSCOW")
-	var row2 := _make_kim_phone_row_container(panel, 62.0)
-	kim_phone_row2 = row2
-	kim_phone_dot2 = _fill_kim_phone_row(row2, "LINE 2  —  TEHRAN")
-	var row3 := _make_kim_phone_row_container(panel, 88.0)
-	kim_phone_row3 = row3
-	kim_phone_dot3 = _fill_kim_phone_row(row3, "LINE 3  —  STOCKHOLM")
-
-	panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	kim_phone_layer.add_child(panel)
-	kim_phone_active = true
-	kim_phone_blink_t = 0.0
-	kim_phone_intensity = 0.0
-	kim_phone_ringing = false
-
-func _make_kim_phone_row(parent: Control, y: float, text: String) -> ColorRect:
-	var row := _make_kim_phone_row_container(parent, y)
-	return _fill_kim_phone_row(row, text)
-
-func _make_kim_phone_row_container(parent: Control, y: float) -> Control:
-	var row := Control.new()
-	row.position = Vector2(0.0, y)
-	row.size = Vector2(236.0, 26.0)
-	row.visible = false
-	parent.add_child(row)
-	return row
-
-func _fill_kim_phone_row(row: Control, text: String) -> ColorRect:
-	var dot := ColorRect.new()
-	dot.color = Color(1.0, 0.1, 0.1)
-	dot.position = Vector2(10.0, 9.0)
-	dot.size = Vector2(8.0, 8.0)
-	row.add_child(dot)
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.position = Vector2(26.0, 3.0)
-	lbl.size = Vector2(206.0, 20.0)
-	lbl.add_theme_font_size_override("font_size", 12)
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	row.add_child(lbl)
-	return dot
-
-func _update_kim_phone_overlay(idx: int) -> void:
-	if not kim_phone_active or not kim_phone_panel or not is_instance_valid(kim_phone_panel):
+func _ensure_xi_pre_scene_encounter() -> void:
+	if xi_pre_scene_encounter:
 		return
-	if idx == KIM_PHONE_LINE_SHOW:
-		# Slide in from right
-		kim_phone_panel.position = kim_phone_base_pos + Vector2(240.0, 0.0)
-		if kim_phone_row2:
-			kim_phone_row2.visible = false
-		if kim_phone_row3:
-			kim_phone_row3.visible = false
-		if kim_phone_dot1:
-			kim_phone_dot1.modulate.a = 1.0
-		var tw := create_tween().set_parallel(true)
-		tw.tween_property(kim_phone_panel, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-		tw.tween_property(kim_phone_panel, "position:x", kim_phone_base_pos.x, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		kim_phone_ringing = true
-		kim_phone_intensity = 1.0
-	elif idx == KIM_PHONE_LINE_LINE2:
-		if kim_phone_row2:
-			kim_phone_row2.visible = true
-		kim_phone_intensity = 2.0
-	elif idx == KIM_PHONE_LINE_LINE3:
-		if kim_phone_row3:
-			kim_phone_row3.visible = true
-		kim_phone_intensity = 3.2
-	elif idx == KIM_PHONE_LINE_SETTLE:
-		kim_phone_ringing = false
-		kim_phone_intensity = 0.0
-		kim_phone_panel.position = kim_phone_base_pos
-		var settled_color := Color(0.1, 0.55, 0.1)
-		if kim_phone_dot1:
-			kim_phone_dot1.color = settled_color
-		if kim_phone_dot2:
-			kim_phone_dot2.color = settled_color
-		if kim_phone_dot3:
-			kim_phone_dot3.color = settled_color
-
-func _destroy_kim_phone_overlay() -> void:
-	if not kim_phone_layer or not is_instance_valid(kim_phone_layer):
-		kim_phone_active = false
-		return
-	var tw := create_tween()
-	tw.tween_property(kim_phone_panel, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
-	tw.tween_callback(func() -> void:
-		if kim_phone_layer and is_instance_valid(kim_phone_layer):
-			kim_phone_layer.queue_free()
-		kim_phone_layer = null
-		kim_phone_panel = null
-		kim_phone_dot1 = null
-		kim_phone_dot2 = null
-		kim_phone_dot3 = null
-		kim_phone_row2 = null
-		kim_phone_row3 = null
-		kim_phone_active = false
-	)
-
-func _tick_kim_phone(delta: float) -> void:
-	if not kim_phone_panel or not is_instance_valid(kim_phone_panel):
-		return
-	kim_phone_blink_t += delta
-	var blink_speed := 6.0 + kim_phone_intensity * 2.5
-	var b1 := fmod(kim_phone_blink_t * blink_speed, 1.0) < 0.5
-	var b2 := fmod((kim_phone_blink_t + 0.18) * blink_speed, 1.0) < 0.5
-	var b3 := fmod((kim_phone_blink_t + 0.36) * blink_speed, 1.0) < 0.5
-	var red_on  := Color(1.0, 0.1, 0.1)
-	var red_off := Color(0.22, 0.0, 0.0)
-	if kim_phone_ringing:
-		if kim_phone_dot1:
-			kim_phone_dot1.color = red_on if b1 else red_off
-		if kim_phone_dot2 and kim_phone_row2 and kim_phone_row2.visible:
-			kim_phone_dot2.color = red_on if b2 else red_off
-		if kim_phone_dot3 and kim_phone_row3 and kim_phone_row3.visible:
-			kim_phone_dot3.color = red_on if b3 else red_off
-		if kim_phone_intensity > 0.0:
-			var sx := sin(kim_phone_blink_t * 24.0) * kim_phone_intensity * 1.1
-			var sy := cos(kim_phone_blink_t * 19.0) * kim_phone_intensity * 0.55
-			kim_phone_panel.position = kim_phone_base_pos + Vector2(sx, sy)
+	xi_pre_scene_encounter = XI_PRE_SCENE_SCRIPT.new()
+	xi_pre_scene_encounter.name = "XiPreScene"
+	add_child(xi_pre_scene_encounter)
+	xi_pre_scene_encounter.setup(self, player, character_data_cache)
 
 func _start_xi_pre_scene() -> void:
-	if xi_pre_scene_seen or xi_pre_scene_active or active_room_id != "red_command":
-		return
-	xi_pre_scene_active = true
-	player.velocity = Vector2.ZERO
-	player.set_physics_process(false)
+	_ensure_xi_pre_scene_encounter()
+	xi_pre_scene_encounter.start(active_room_id, room_registry.get("red_command"))
 
-	var xi_data: Dictionary = character_data_cache.get("xi_jinping", {})
-	var beats: Array = xi_data.get("xi_pre_scene", [])
-	if beats.is_empty():
-		xi_pre_scene_active = false
-		player.set_physics_process(true)
-		return
-
-	xi_pre_skip_requested = false
-	var intro_tween := _build_xi_scene_overlay()
-	if intro_tween:
-		await intro_tween.finished
-	if xi_pre_skip_requested:
-		xi_pre_skip_requested = false
-		xi_pre_scene_seen = true
-		_destroy_xi_scene_overlay(func() -> void:
-			xi_pre_scene_active = false
-			player.set_physics_process(true)
-			var xi_room = room_registry.get("red_command")
-			if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
-				xi_room.set_npc_interaction_enabled(true)
-			if xi_room and xi_room.has_method("require_npc_reapproach"):
-				xi_room.require_npc_reapproach()
-		)
-		return
-	await get_tree().create_timer(0.18).timeout
-
-	for beat in beats:
-		if xi_pre_skip_requested:
-			break
-		var channel: String = str(beat.get("channel", "deepsick"))
-		var from_sender: String = str(beat.get("from", "xi"))
-		var text: String = str(beat.get("text", ""))
-		var hold: float = float(beat.get("hold", 2.0))
-		var reveal_tween = await _xi_scene_add_message(channel, from_sender, text)
-		if reveal_tween:
-			await reveal_tween.finished
-		var elapsed: float = 0.0
-		while elapsed < hold:
-			await get_tree().process_frame
-			elapsed += get_process_delta_time()
-			if xi_pre_skip_requested:
-				break
-
-	xi_pre_skip_requested = false
-
-	# Show "press space" hint and wait for player input
-	if xi_scene_frame and is_instance_valid(xi_scene_frame):
-		var close_lbl := Label.new()
-		close_lbl.name = "XiCloseHint"
-		close_lbl.text = "[ SPACE — close transmission ]"
-		close_lbl.add_theme_font_size_override("font_size", 14)
-		close_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
-		close_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		close_lbl.position = Vector2(0.0, 690.0)
-		close_lbl.size = Vector2(1280.0, 24.0)
-		xi_scene_frame.add_child(close_lbl)
-		var blink_t: float = 0.0
-		while true:
-			await get_tree().process_frame
-			blink_t += get_process_delta_time() * 3.0
-			close_lbl.modulate.a = 0.45 + sin(blink_t) * 0.45
-			if Input.is_action_just_pressed("ui_accept"):
-				break
-
-	xi_pre_scene_seen = true
-	_destroy_xi_scene_overlay(func() -> void:
-		xi_pre_scene_active = false
-		player.set_physics_process(true)
-		var xi_room = room_registry.get("red_command")
-		if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
-			xi_room.set_npc_interaction_enabled(true)
-		if xi_room and xi_room.has_method("require_npc_reapproach"):
-			xi_room.require_npc_reapproach()
-	)
-
-func _layout_xi_scene_frame() -> void:
-	if not xi_scene_root or not xi_scene_frame:
-		return
-	xi_scene_frame.size = XI_SCENE_FRAME_SIZE
-	xi_scene_frame.position = (xi_scene_root.size - XI_SCENE_FRAME_SIZE) * 0.5
-
-func _build_xi_scene_overlay() -> Tween:
-	xi_scene_layer = CanvasLayer.new()
-	xi_scene_layer.layer = 7
-	xi_scene_layer.name = "XiSceneLayer"
-	add_child(xi_scene_layer)
-
-	xi_scene_root = Control.new()
-	xi_scene_root.name = "XiSceneRoot"
-	xi_scene_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	xi_scene_root.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	xi_scene_layer.add_child(xi_scene_root)
-	xi_scene_root.resized.connect(_layout_xi_scene_frame)
-
-	var bg := ColorRect.new()
-	bg.color = Color(0.0, 0.0, 0.03, 0.93)
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	xi_scene_root.add_child(bg)
-
-	xi_scene_frame = Control.new()
-	xi_scene_frame.name = "XiSceneFrame"
-	xi_scene_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	xi_scene_frame.size = XI_SCENE_FRAME_SIZE
-	xi_scene_root.add_child(xi_scene_frame)
-	_layout_xi_scene_frame()
-
-	var intercept_lbl := Label.new()
-	intercept_lbl.text = "[ INTERCEPTED COMMUNICATIONS — CLASSIFIED ]"
-	intercept_lbl.add_theme_font_size_override("font_size", 15)
-	intercept_lbl.add_theme_color_override("font_color", Color(0.38, 0.38, 0.38))
-	intercept_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intercept_lbl.position = Vector2(0.0, 20.0)
-	intercept_lbl.size = Vector2(1280.0, 24.0)
-	xi_scene_frame.add_child(intercept_lbl)
-
-	var skip_lbl := Label.new()
-	skip_lbl.text = "[ SPACE — skip ]"
-	skip_lbl.add_theme_font_size_override("font_size", 13)
-	skip_lbl.add_theme_color_override("font_color", Color(0.28, 0.28, 0.28))
-	skip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	skip_lbl.position = Vector2(0.0, 700.0)
-	skip_lbl.size = Vector2(1270.0, 20.0)
-	xi_scene_frame.add_child(skip_lbl)
-
-	var left_panel := _xi_make_panel(
-		Vector2(40.0, 58.0), Vector2(570.0, 630.0),
-		Color(0.02, 0.04, 0.12), "DEEPSICK  v3.1  [ 国内版 ]",
-		Color(0.05, 0.22, 0.72))
-	xi_scene_frame.add_child(left_panel)
-	xi_scene_left_vbox = left_panel.get_node_or_null("Scroll") as VBoxContainer
-
-	var right_panel := _xi_make_panel(
-		Vector2(670.0, 58.0), Vector2(570.0, 630.0),
-		Color(0.10, 0.05, 0.01), "C.L.A.U.D.I.A.  EXTERNAL  RELAY",
-		Color(0.80, 0.38, 0.02))
-	xi_scene_frame.add_child(right_panel)
-	xi_scene_right_vbox = right_panel.get_node_or_null("Scroll") as VBoxContainer
-
-	var tw := create_tween()
-	tw.tween_property(xi_scene_root, "modulate:a", 1.0, 0.55).set_trans(Tween.TRANS_SINE)
-	return tw
-
-func _xi_make_panel(pos: Vector2, sz: Vector2, bg_col: Color, header_text: String, header_col: Color) -> Control:
-	var panel := Control.new()
-	panel.position = pos
-	panel.size = sz
-
-	var bg := ColorRect.new()
-	bg.color = bg_col
-	bg.size = sz
-	panel.add_child(bg)
-
-	var hdr := ColorRect.new()
-	hdr.color = header_col
-	hdr.size = Vector2(sz.x, 30.0)
-	panel.add_child(hdr)
-
-	var hdr_lbl := Label.new()
-	hdr_lbl.text = "  " + header_text
-	hdr_lbl.add_theme_font_size_override("font_size", 14)
-	hdr_lbl.add_theme_color_override("font_color", Color.WHITE)
-	hdr_lbl.position = Vector2(0.0, 6.0)
-	hdr_lbl.size = Vector2(sz.x, 22.0)
-	panel.add_child(hdr_lbl)
-
-	var vbox := VBoxContainer.new()
-	vbox.name = "Scroll"
-	vbox.position = Vector2(8.0, 38.0)
-	vbox.size = Vector2(sz.x - 16.0, 10.0)
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", 8)
-	panel.add_child(vbox)
-
-	return panel
-
-func _xi_scene_add_message(channel: String, from_sender: String, text: String) -> Tween:
-	var vbox: VBoxContainer = xi_scene_left_vbox if channel == "deepsick" else xi_scene_right_vbox
-	if not vbox or not is_instance_valid(vbox):
-		return null
-
-	var is_xi := from_sender == "xi"
-	var prefix: String
-	var col: Color
-	if is_xi:
-		prefix = "[XI]:"
-		col = Color(0.92, 0.88, 0.55)
-	elif channel == "deepsick":
-		prefix = "[DEEPSICK]:"
-		col = Color(0.38, 0.72, 1.00)
-	else:
-		prefix = "[C.L.A.U.D.I.A.]:"
-		col = Color(1.00, 0.55, 0.12)
-
-	var lbl := Label.new()
-	lbl.text = prefix + " " + text
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.custom_minimum_size = Vector2(vbox.size.x, 0.0)
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl.add_theme_font_size_override("font_size", 15)
-	lbl.add_theme_color_override("font_color", col)
-	lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	vbox.add_child(lbl)
-
-	# Expand panel bg to match growing vbox
-	var panel := vbox.get_parent() as Control
-	if panel:
-		var bg := panel.get_child(0) as ColorRect
-		if bg:
-			await get_tree().process_frame
-			var new_h := maxf(vbox.position.y + vbox.size.y + 10.0, panel.size.y)
-			bg.size.y = new_h
-
-	var tw := create_tween()
-	tw.tween_property(lbl, "modulate:a", 1.0, 0.28)
-	return tw
-
-func _destroy_xi_scene_overlay(on_done: Callable = Callable()) -> void:
-	if not xi_scene_root or not is_instance_valid(xi_scene_root):
-		if xi_scene_layer and is_instance_valid(xi_scene_layer):
-			xi_scene_layer.queue_free()
-		xi_scene_layer = null
-		xi_scene_root = null
-		xi_scene_frame = null
-		xi_scene_left_vbox = null
-		xi_scene_right_vbox = null
-		if on_done.is_valid():
-			on_done.call()
-		return
-	var tw := create_tween()
-	tw.tween_property(xi_scene_root, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
-	tw.tween_callback(func() -> void:
-		if xi_scene_layer and is_instance_valid(xi_scene_layer):
-			xi_scene_layer.queue_free()
-		xi_scene_layer = null
-		xi_scene_root = null
-		xi_scene_frame = null
-		xi_scene_left_vbox = null
-		xi_scene_right_vbox = null
-		if on_done.is_valid():
-			on_done.call()
-	)
 
 func _ensure_contamination_figure() -> void:
 	var tex := _load_contamination_texture()
@@ -4258,532 +3179,19 @@ func _create_standalone_npc(sprite_id: String, character_id: String) -> StaticBo
 	return npc
 
 func register_encounter_residue(character_id: String, residue_id: String, residue_note: String = "") -> void:
-	encounter_residues[character_id] = {
-		"id": residue_id,
-		"note": residue_note
-	}
+	quest_manager.register_encounter_residue(character_id, residue_id, residue_note)
 
 
 # ============================================================
 #  90s CRT TV INTRO SEQUENCE
 # ============================================================
 
-func _create_intro_overlay() -> void:
-	player.set_physics_process(false)
+func _setup_intro_sequence() -> void:
+	intro_sequence = INTRO_SEQUENCE_SCRIPT.new()
+	intro_sequence.name = "IntroSequence"
+	add_child(intro_sequence)
+	intro_sequence.setup(self, player)
 
-	intro_layer = CanvasLayer.new()
-	intro_layer.layer = 100
-
-	# Dark blue TV background
-	intro_bg = ColorRect.new()
-	intro_bg.color = Color(0.04, 0.04, 0.12, 1.0)
-	intro_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_layer.add_child(intro_bg)
-
-	# VHS distortion + CRT curvature + scanlines — all in one shader
-	intro_vhs_overlay = ColorRect.new()
-	intro_vhs_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_vhs_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var vhs_mat := ShaderMaterial.new()
-	var vhs_shader := Shader.new()
-	vhs_shader.code = """
-shader_type canvas_item;
-void fragment() {
-	vec2 uv = SCREEN_UV;
-	// CRT curvature
-	vec2 curved = uv * 2.0 - 1.0;
-	curved *= 1.0 + pow(abs(curved.yx), vec2(2.0)) * 0.04;
-	curved = curved * 0.5 + 0.5;
-	// Vignette (dark edges like old TV)
-	float vignette = 1.0 - length((uv - 0.5) * 1.6);
-	vignette = clamp(vignette, 0.0, 1.0);
-	vignette = pow(vignette, 0.8);
-	// Scanlines
-	float scanline = sin(FRAGCOORD.y * 1.5) * 0.12 + 0.88;
-	// Flicker
-	float flicker = 0.97 + sin(TIME * 12.0) * 0.015 + sin(TIME * 7.3) * 0.01;
-	// VHS tracking line
-	float track_y = fract(TIME * 0.08);
-	float track = 1.0 - smoothstep(0.0, 0.015, abs(uv.y - track_y)) * 0.25;
-	// Combine
-	float alpha = (1.0 - vignette) * 0.5 + (1.0 - scanline) * 0.5;
-	alpha += (1.0 - flicker) * 0.5;
-	alpha += (1.0 - track) * 0.3;
-	COLOR = vec4(0.0, 0.0, 0.0, clamp(alpha, 0.0, 0.65));
-}
-"""
-	vhs_mat.shader = vhs_shader
-	intro_vhs_overlay.material = vhs_mat
-	intro_layer.add_child(intro_vhs_overlay)
-
-	# === TOP: Red "BREAKING NEWS" bar ===
-	intro_breaking_bar = ColorRect.new()
-	intro_breaking_bar.color = Color(0.75, 0.08, 0.08, 0.95)
-	intro_breaking_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	intro_breaking_bar.offset_bottom = 38.0
-	intro_layer.add_child(intro_breaking_bar)
-
-	intro_breaking_label = Label.new()
-	intro_breaking_label.text = "BREAKING NEWS"
-	intro_breaking_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_breaking_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_breaking_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	intro_breaking_label.offset_bottom = 38.0
-	intro_breaking_label.add_theme_font_size_override("font_size", 20)
-	intro_breaking_label.add_theme_color_override("font_color", Color.WHITE)
-	intro_breaking_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
-	intro_breaking_label.add_theme_constant_override("shadow_offset_x", 1)
-	intro_breaking_label.add_theme_constant_override("shadow_offset_y", 1)
-	intro_layer.add_child(intro_breaking_label)
-
-	# White separator line under red bar
-	var sep_top := ColorRect.new()
-	sep_top.color = Color(1.0, 1.0, 1.0, 0.6)
-	sep_top.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	sep_top.offset_top = 38.0
-	sep_top.offset_bottom = 40.0
-	intro_layer.add_child(sep_top)
-
-	# === BOTTOM: White ticker bar (CNN-style) ===
-	intro_ticker_bar = ColorRect.new()
-	intro_ticker_bar.name = "TickerBar"
-	intro_ticker_bar.color = Color(1.0, 1.0, 1.0, 0.97)
-	intro_ticker_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	intro_ticker_bar.offset_top = -42.0
-	intro_layer.add_child(intro_ticker_bar)
-
-	# Red "BREAKING" badge on left of ticker
-	var ticker_badge := ColorRect.new()
-	ticker_badge.name = "TickerBadge"
-	ticker_badge.color = Color(0.80, 0.04, 0.04, 1.0)
-	ticker_badge.position = Vector2(0, 0)
-	ticker_badge.size = Vector2(138, 42)
-	intro_ticker_bar.add_child(ticker_badge)
-
-	var ticker_badge_label := Label.new()
-	ticker_badge_label.text = "BREAKING"
-	ticker_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ticker_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ticker_badge_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ticker_badge_label.add_theme_font_size_override("font_size", 15)
-	ticker_badge_label.add_theme_color_override("font_color", Color.WHITE)
-	ticker_badge_label.add_theme_color_override("font_outline_color", Color(0.4, 0.0, 0.0))
-	ticker_badge_label.add_theme_constant_override("outline_size", 2)
-	ticker_badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ticker_badge.add_child(ticker_badge_label)
-
-	# Scrolling ticker text — dark red on white, bigger font
-	intro_ticker_label = Label.new()
-	intro_ticker_label.text = intro_ticker_texts[0]
-	intro_ticker_label.add_theme_font_size_override("font_size", 16)
-	intro_ticker_label.add_theme_color_override("font_color", Color(0.60, 0.0, 0.0))
-	intro_ticker_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.25))
-	intro_ticker_label.add_theme_constant_override("shadow_offset_x", 1)
-	intro_ticker_label.add_theme_constant_override("shadow_offset_y", 1)
-	intro_ticker_label.position = Vector2(148, 4)
-	intro_ticker_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_ticker_bar.add_child(intro_ticker_label)
-
-	# Blue strip above ticker (CNN lower-third style)
-	var blue_strip := ColorRect.new()
-	blue_strip.name = "BlueStrip"
-	blue_strip.color = Color(0.04, 0.18, 0.58, 0.95)
-	blue_strip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	blue_strip.offset_top = -72.0
-	blue_strip.offset_bottom = -42.0
-	intro_layer.add_child(blue_strip)
-
-	# White 1px separator between blue strip and ticker
-	var sep_mid := ColorRect.new()
-	sep_mid.name = "SepMid"
-	sep_mid.color = Color(1.0, 1.0, 1.0, 0.7)
-	sep_mid.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	sep_mid.offset_top = -43.0
-	sep_mid.offset_bottom = -42.0
-	intro_layer.add_child(sep_mid)
-
-	# Network name inside blue strip (left)
-	var blue_network := Label.new()
-	blue_network.name = "BlueNetwork"
-	blue_network.text = "CIVIC NIGHTMARE NEWS NETWORK"
-	blue_network.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	blue_network.set_anchors_preset(Control.PRESET_FULL_RECT)
-	blue_network.offset_left = 12.0
-	blue_network.add_theme_font_size_override("font_size", 14)
-	blue_network.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
-	blue_network.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	blue_strip.add_child(blue_network)
-
-	# === TOP-RIGHT: Channel logo (CNN-style red block) ===
-	var logo_bg := ColorRect.new()
-	logo_bg.name = "LogoBg"
-	logo_bg.color = Color(0.82, 0.05, 0.05, 0.95)
-	logo_bg.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	logo_bg.offset_left = -88.0
-	logo_bg.offset_top = 44.0
-	logo_bg.offset_right = -8.0
-	logo_bg.offset_bottom = 90.0
-	intro_layer.add_child(logo_bg)
-
-	# "CN" white text centered in red box
-	intro_channel_label = Label.new()
-	intro_channel_label.text = "CN"
-	intro_channel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_channel_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_channel_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_channel_label.add_theme_font_size_override("font_size", 30)
-	intro_channel_label.add_theme_color_override("font_color", Color.WHITE)
-	intro_channel_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.5))
-	intro_channel_label.add_theme_constant_override("shadow_offset_x", 2)
-	intro_channel_label.add_theme_constant_override("shadow_offset_y", 2)
-	intro_channel_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	logo_bg.add_child(intro_channel_label)
-
-	# "CIVIC NIGHTMARE" small subtitle under logo box
-	var logo_sub := Label.new()
-	logo_sub.name = "LogoSub"
-	logo_sub.text = "CIVIC NIGHTMARE"
-	logo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo_sub.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	logo_sub.offset_left = -88.0
-	logo_sub.offset_top = 92.0
-	logo_sub.offset_right = -8.0
-	logo_sub.offset_bottom = 106.0
-	logo_sub.add_theme_font_size_override("font_size", 9)
-	logo_sub.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.55))
-	logo_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(logo_sub)
-
-	# === TOP-LEFT: Date / time ===
-	intro_datetime_label = Label.new()
-	intro_datetime_label.text = "03.27.1989  22:41"
-	intro_datetime_label.add_theme_font_size_override("font_size", 11)
-	intro_datetime_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85, 0.5))
-	intro_datetime_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	intro_datetime_label.offset_left = 12.0
-	intro_datetime_label.offset_top = 46.0
-	intro_datetime_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(intro_datetime_label)
-
-	# === CENTER: Main news text ===
-	intro_text = Label.new()
-	intro_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_text.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_text.offset_top = 50.0
-	intro_text.offset_bottom = -60.0
-	intro_text.add_theme_font_size_override("font_size", 24)
-	intro_text.add_theme_color_override("font_color", Color(0.95, 0.95, 0.98))
-	intro_text.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))
-	intro_text.add_theme_constant_override("shadow_offset_x", 2)
-	intro_text.add_theme_constant_override("shadow_offset_y", 2)
-	intro_text.autowrap_mode = TextServer.AUTOWRAP_OFF
-	intro_text.text = ""
-	intro_layer.add_child(intro_text)
-
-	# Static noise overlay (channel transitions)
-	intro_static_rect = ColorRect.new()
-	intro_static_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_static_rect.visible = false
-	intro_static_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var static_mat := ShaderMaterial.new()
-	var static_shader := Shader.new()
-	static_shader.code = """
-shader_type canvas_item;
-float rand(vec2 co) {
-	return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-}
-void fragment() {
-	float n = rand(FRAGCOORD.xy * 0.01 + vec2(TIME * 100.0, TIME * 73.0));
-	float colored = rand(FRAGCOORD.xy * 0.005 + vec2(TIME * 50.0, 0.0));
-	vec3 col = mix(vec3(n), vec3(n * 0.8, n * 0.9, n), colored * 0.3);
-	COLOR = vec4(col, 0.9);
-}
-"""
-	static_mat.shader = static_shader
-	intro_static_rect.material = static_mat
-	intro_layer.add_child(intro_static_rect)
-
-	# CRT scanlines on top of everything (including static)
-	intro_scanlines = ColorRect.new()
-	intro_scanlines.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var scanline_mat := ShaderMaterial.new()
-	var scanline_shader := Shader.new()
-	scanline_shader.code = """
-shader_type canvas_item;
-void fragment() {
-	float line = mod(FRAGCOORD.y, 3.0);
-	float scanline = step(1.5, line) * 0.18;
-	COLOR = vec4(0.0, 0.0, 0.0, scanline);
-}
-"""
-	scanline_mat.shader = scanline_shader
-	intro_scanlines.material = scanline_mat
-	intro_layer.add_child(intro_scanlines)
-
-	# "Press SPACE to skip" hint (subtle, bottom-right)
-	var skip_hint := Label.new()
-	skip_hint.name = "SkipHint"
-	skip_hint.text = "SPACE to skip"
-	skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	skip_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	skip_hint.offset_left = -140.0
-	skip_hint.offset_top = -18.0
-	skip_hint.add_theme_font_size_override("font_size", 10)
-	skip_hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.35))
-	skip_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(skip_hint)
-
-	# === LIVE indicator (blinking red dot + text) ===
-	intro_live_dot = ColorRect.new()
-	intro_live_dot.color = Color(0.9, 0.1, 0.1)
-	intro_live_dot.custom_minimum_size = Vector2(8, 8)
-	intro_live_dot.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	intro_live_dot.offset_left = 14.0
-	intro_live_dot.offset_top = 60.0
-	intro_live_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(intro_live_dot)
-
-	intro_live_label = Label.new()
-	intro_live_label.text = "LIVE"
-	intro_live_label.add_theme_font_size_override("font_size", 10)
-	intro_live_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2, 0.9))
-	intro_live_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	intro_live_label.offset_left = 26.0
-	intro_live_label.offset_top = 57.0
-	intro_live_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(intro_live_label)
-
-	# === Channel number (top-right, under CN logo) ===
-	intro_ch_label = Label.new()
-	intro_ch_label.text = "CH 01"
-	intro_ch_label.add_theme_font_size_override("font_size", 10)
-	intro_ch_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.2))
-	intro_ch_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	intro_ch_label.offset_left = -56.0
-	intro_ch_label.offset_top = 72.0
-	intro_ch_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_layer.add_child(intro_ch_label)
-
-	# === CRT boot-up line (white horizontal line, centered) ===
-	intro_crt_line = ColorRect.new()
-	intro_crt_line.color = Color(0.9, 0.92, 1.0, 0.95)
-	intro_crt_line.set_anchors_preset(Control.PRESET_CENTER)
-	intro_crt_line.offset_left = -400.0
-	intro_crt_line.offset_right = 400.0
-	intro_crt_line.offset_top = -1.0
-	intro_crt_line.offset_bottom = 1.0
-	intro_crt_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_crt_line.visible = true
-	intro_layer.add_child(intro_crt_line)
-
-	# === CRT shutdown dot (white circle in center, hidden until shutdown) ===
-	intro_crt_dot = ColorRect.new()
-	intro_crt_dot.color = Color(0.95, 0.95, 1.0)
-	intro_crt_dot.set_anchors_preset(Control.PRESET_CENTER)
-	intro_crt_dot.offset_left = -3.0
-	intro_crt_dot.offset_right = 3.0
-	intro_crt_dot.offset_top = -3.0
-	intro_crt_dot.offset_bottom = 3.0
-	intro_crt_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_crt_dot.visible = false
-	intro_layer.add_child(intro_crt_dot)
-
-	add_child(intro_layer)
-
-	# Hide all UI elements during boot — only the line shows
-	intro_boot_done = false
-	intro_shutdown = false
-	_set_intro_ui_visible(false)
-	intro_crt_line.visible = true
-	intro_bg.visible = true
-
-	# Start boot-up sequence
-	intro_phase = 0
-	intro_timer = 0.0
-	intro_state = -1  # BOOT state
-
-func _set_intro_ui_visible(vis: bool) -> void:
-	intro_breaking_bar.visible = vis
-	intro_breaking_label.visible = vis
-	intro_ticker_bar.visible = vis
-	intro_ticker_label.visible = vis
-	intro_channel_label.visible = vis
-	intro_datetime_label.visible = vis
-	intro_text.visible = vis
-	intro_vhs_overlay.visible = vis
-	intro_scanlines.visible = vis
-	# New CNN-style elements
-	for n in ["BlueStrip", "SepMid", "LogoBg", "LogoSub"]:
-		var nd := intro_layer.get_node_or_null(n)
-		if nd: nd.visible = vis
-	intro_live_dot.visible = vis
-	intro_live_label.visible = vis
-	intro_ch_label.visible = vis
-
-func _intro_start_headline(index: int) -> void:
-	if index >= intro_headlines.size():
-		return
-	intro_full_text = intro_headlines[index]
-	intro_current_text = ""
-	intro_char_index = 0
-	intro_text.text = ""
-	intro_text.modulate.a = 1.0
-
-	# Update breaking news bar title
-	if index < intro_breaking_titles.size():
-		intro_breaking_label.text = intro_breaking_titles[index]
-	# Update ticker
-	if index < intro_ticker_texts.size():
-		intro_ticker_label.text = intro_ticker_texts[index]
-		intro_ticker_label.position.x = 800.0
-
-	# Color scheme per channel
-	var bar_colors: Array = [
-		Color(0.75, 0.08, 0.08),  # red — breaking
-		Color(0.12, 0.45, 0.12),  # green — markets
-		Color(0.15, 0.2, 0.55),   # navy — world
-		Color(0.6, 0.35, 0.08),   # amber — special
-		Color(0.4, 0.08, 0.08),   # dark red — live
-		Color(0.08, 0.08, 0.08),  # black — emergency
-	]
-	if index < bar_colors.size():
-		intro_breaking_bar.color = Color(bar_colors[index], 0.95)
-
-	# Channel number
-	intro_ch_label.text = "CH %02d" % (index + 1)
-
-	# Fake clock advance
-	var fake_minutes: int = 41 + index * 7
-	@warning_ignore("integer_division")
-	var fake_hours: int = 22 + fake_minutes / 60
-	fake_minutes = fake_minutes % 60
-	intro_datetime_label.text = "03.27.1989  %02d:%02d" % [fake_hours % 24, fake_minutes]
-
-const INTRO_CHAR_SPEED := 0.045
-const INTRO_HOLD_TIME := 2.2
-const INTRO_STATIC_TIME := 0.5
-
-enum IntroState { TYPING, HOLDING, STATIC_OUT, DONE }
-var intro_state: int = 0  # IntroState
-
-func _process_intro(delta: float) -> void:
-	# Skip on Space/Enter (but not during boot or shutdown)
-	if intro_state >= 0 and intro_state < 3:
-		if Input.is_action_just_pressed("ui_accept"):
-			intro_skip_held += 1.0
-		if intro_skip_held > 0.0:
-			_end_intro()
-			return
-
-	# Animate ticker scroll
-	if intro_ticker_label and intro_boot_done and intro_state >= 0 and intro_state < 3:
-		intro_ticker_label.position.x -= delta * 80.0
-		if intro_ticker_label.position.x < -600.0:
-			intro_ticker_label.position.x = 800.0
-
-	# LIVE dot blink
-	if intro_boot_done and intro_live_dot and intro_state >= 0 and intro_state < 3:
-		intro_live_dot.modulate.a = 0.5 + sin(intro_timer * 4.0) * 0.5
-
-	match intro_state:
-		-1:  # BOOT — CRT line expands vertically, then reveals UI
-			intro_timer += delta
-			if intro_timer < 0.3:
-				# Thin white line flickers on
-				intro_crt_line.modulate.a = 0.5 + sin(intro_timer * 40.0) * 0.5
-			elif intro_timer < 1.0:
-				# Line expands vertically to fill screen
-				intro_crt_line.modulate.a = 1.0
-				var expand := (intro_timer - 0.3) / 0.7  # 0→1
-				var half_h: float = expand * 300.0
-				intro_crt_line.offset_top = -half_h
-				intro_crt_line.offset_bottom = half_h
-			else:
-				# Boot done — show everything, start first headline
-				intro_crt_line.visible = false
-				intro_boot_done = true
-				_set_intro_ui_visible(true)
-				intro_static_rect.visible = false
-				intro_state = 0  # TYPING
-				intro_timer = 0.0
-				intro_phase = 0
-				_intro_start_headline(0)
-
-		0:  # TYPING
-			intro_timer += delta
-			while intro_timer >= INTRO_CHAR_SPEED and intro_char_index < intro_full_text.length():
-				intro_current_text += intro_full_text[intro_char_index]
-				intro_char_index += 1
-				intro_timer -= INTRO_CHAR_SPEED
-				intro_text.text = intro_current_text
-			if intro_char_index >= intro_full_text.length():
-				intro_state = 1  # HOLDING
-				intro_timer = 0.0
-
-		1:  # HOLDING
-			intro_timer += delta
-			if intro_timer >= INTRO_HOLD_TIME:
-				intro_state = 2  # STATIC_OUT
-				intro_timer = 0.0
-				intro_static_rect.visible = true
-
-		2:  # STATIC_OUT
-			intro_timer += delta
-			if intro_timer >= INTRO_STATIC_TIME:
-				intro_static_rect.visible = false
-				intro_phase += 1
-				if intro_phase >= intro_headlines.size():
-					# Start CRT shutdown instead of fade
-					intro_state = 3  # SHUTDOWN
-					intro_timer = 0.0
-					_set_intro_ui_visible(false)
-				else:
-					intro_state = 0  # TYPING
-					intro_timer = 0.0
-					_intro_start_headline(intro_phase)
-
-		3:  # SHUTDOWN — screen collapses to horizontal line, then dot, then black
-			intro_timer += delta
-			if intro_timer < 0.4:
-				# Screen crushes vertically to a line
-				var crush := intro_timer / 0.4  # 0→1
-				intro_bg.visible = true
-				intro_bg.color = Color(0.04, 0.04, 0.12, 1.0)
-				# Simulate vertical crush via white flash then line
-				if crush > 0.1:
-					intro_crt_line.visible = true
-					var line_h: float = lerpf(300.0, 1.0, (crush - 0.1) / 0.9)
-					intro_crt_line.offset_top = -line_h
-					intro_crt_line.offset_bottom = line_h
-					intro_crt_line.modulate.a = 1.0
-			elif intro_timer < 0.7:
-				# Line shrinks to a dot
-				intro_crt_line.visible = false
-				intro_crt_dot.visible = true
-				var dot_t := (intro_timer - 0.4) / 0.3  # 0→1
-				var dot_size: float = lerpf(3.0, 2.0, dot_t)
-				intro_crt_dot.offset_left = -dot_size
-				intro_crt_dot.offset_right = dot_size
-				intro_crt_dot.offset_top = -dot_size
-				intro_crt_dot.offset_bottom = dot_size
-				intro_crt_dot.modulate.a = 1.0
-			elif intro_timer < 1.5:
-				# Dot fades out with phosphor glow
-				intro_crt_dot.visible = true
-				var fade_t := (intro_timer - 0.7) / 0.8
-				intro_crt_dot.modulate.a = 1.0 - fade_t
-			else:
-				# Done
-				_end_intro()
-
-func _end_intro() -> void:
-	intro_active = false
-	if intro_layer:
-		intro_layer.queue_free()
-		intro_layer = null
-	player.set_physics_process(true)
 
 
 # ============================================================
@@ -4791,176 +3199,21 @@ func _end_intro() -> void:
 # ============================================================
 
 func _create_ending_overlay() -> void:
-	ending_layer = CanvasLayer.new()
-	ending_layer.layer = 100
-	ending_layer.visible = false
-
-	ending_bg = ColorRect.new()
-	ending_bg.color = Color(0.0, 0.0, 0.0, 1.0)
-	ending_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ending_layer.add_child(ending_bg)
-
-	# Scanlines for ending too
-	var end_scanlines := ColorRect.new()
-	end_scanlines.set_anchors_preset(Control.PRESET_FULL_RECT)
-	end_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var scanline_mat := ShaderMaterial.new()
-	var scanline_shader := Shader.new()
-	scanline_shader.code = """
-shader_type canvas_item;
-void fragment() {
-	float line = mod(FRAGCOORD.y, 3.0);
-	float scanline = step(1.5, line) * 0.2;
-	COLOR = vec4(0.0, 0.0, 0.0, scanline);
-}
-"""
-	scanline_mat.shader = scanline_shader
-	end_scanlines.material = scanline_mat
-	ending_layer.add_child(end_scanlines)
-
-	ending_text = Label.new()
-	ending_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ending_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ending_text.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ending_text.add_theme_font_size_override("font_size", 24)
-	ending_text.add_theme_color_override("font_color", Color(0.95, 0.85, 0.4))
-	ending_text.add_theme_color_override("font_shadow_color", Color(0.2, 0.1, 0.0, 0.7))
-	ending_text.add_theme_constant_override("shadow_offset_x", 2)
-	ending_text.add_theme_constant_override("shadow_offset_y", 2)
-	ending_text.autowrap_mode = TextServer.AUTOWRAP_OFF
-	ending_text.text = ""
-	ending_layer.add_child(ending_text)
-
-	add_child(ending_layer)
+	ending_sequence = ENDING_SEQUENCE_SCRIPT.new()
+	ending_sequence.name = "EndingSequence"
+	add_child(ending_sequence)
+	ending_sequence.final_mission_requested.connect(_trigger_final_mission)
+	ending_sequence.postgame_requested.connect(_start_postgame_free_roam)
+	ending_sequence.setup(self)
 
 func start_ending_sequence() -> void:
 	if ending_active:
 		return
-	ending_active = true
-	ending_phase = 0
-	ending_timer = 0.0
-	ending_char_index = 0
 	player.set_physics_process(false)
 	is_dialogue_open = false
 	dialogue_anchor.visible = false
+	ending_sequence.start(final_mission_done)
 
-	ending_layer.visible = true
-	ending_bg.color.a = 0.0
-
-	# Fade to black first
-	var tw := create_tween()
-	tw.tween_property(ending_bg, "color:a", 1.0, 1.5)
-	tw.tween_callback(_ending_begin_text)
-
-const ENDING_CHAR_SPEED := 0.05
-const ENDING_HOLD_TIME := 3.0
-
-enum EndingState { FADE_IN, TYPING, HOLDING, FADE_BETWEEN, DONE }
-var ending_state: int = 0
-
-func _ending_begin_text() -> void:
-	ending_state = 1  # TYPING
-	ending_timer = 0.0
-	_ending_start_scene(0)
-
-func _ending_start_scene(index: int) -> void:
-	if index >= ending_scenes.size():
-		return
-	ending_full_text = ending_scenes[index]
-	ending_current_text = ""
-	ending_char_index = 0
-	ending_text.text = ""
-	ending_text.modulate.a = 1.0
-	# Alternate warm/cool colors Tarantino-style
-	var colors: Array = [
-		Color(0.95, 0.85, 0.4),   # gold
-		Color(0.9, 0.9, 0.85),    # white
-		Color(0.82, 0.22, 0.18),  # red (Trump)
-		Color(0.28, 0.48, 0.72),  # blue (Musk)
-		Color(0.72, 0.65, 0.3),   # amber
-		Color(0.2, 0.7, 0.9),     # cyan (CLAUDIA)
-		Color(0.85, 0.85, 0.85),  # silver
-		Color(0.95, 0.6, 0.3),    # orange
-		Color(0.95, 0.85, 0.4),   # gold again for FIN
-	]
-	if index < colors.size():
-		ending_text.add_theme_color_override("font_color", colors[index])
-
-func _process_ending(delta: float) -> void:
-	# Allow skip with Enter after first scene
-	if ending_phase > 0 and Input.is_action_just_pressed("ui_accept"):
-		if ending_state == 1 and ending_char_index < ending_full_text.length():
-			# Skip typing — show full text
-			ending_text.text = ending_full_text
-			ending_char_index = ending_full_text.length()
-			ending_state = 2  # HOLDING
-			ending_timer = 0.0
-			return
-		elif ending_state == 2:
-			# Skip hold — advance
-			ending_timer = ENDING_HOLD_TIME * (1.8 if final_mission_done else 1.0)
-		elif ending_state == 4:
-			# Final — just quit faster
-			ending_timer = 10.0
-
-	match ending_state:
-		1:  # TYPING
-			ending_timer += delta
-			while ending_timer >= ENDING_CHAR_SPEED and ending_char_index < ending_full_text.length():
-				ending_current_text += ending_full_text[ending_char_index]
-				ending_char_index += 1
-				ending_timer -= ENDING_CHAR_SPEED
-				ending_text.text = ending_current_text
-			if ending_char_index >= ending_full_text.length():
-				ending_state = 2  # HOLDING
-				ending_timer = 0.0
-
-		2:  # HOLDING
-			ending_timer += delta
-			var hold_time := ENDING_HOLD_TIME * (1.8 if final_mission_done else 1.0)
-			if ending_timer >= hold_time:
-				ending_phase += 1
-				if ending_phase >= ending_scenes.size():
-					ending_state = 4  # DONE
-					ending_timer = 0.0
-				else:
-					ending_state = 3  # FADE_BETWEEN
-					ending_timer = 0.0
-
-		3:  # FADE_BETWEEN
-			ending_timer += delta
-			var fade_dur := 0.8
-			if ending_timer < fade_dur * 0.5:
-				ending_text.modulate.a = 1.0 - (ending_timer / (fade_dur * 0.5))
-			elif ending_timer < fade_dur:
-				if ending_text.text != "":
-					_ending_start_scene(ending_phase)
-				ending_text.modulate.a = (ending_timer - fade_dur * 0.5) / (fade_dur * 0.5)
-			else:
-				ending_text.modulate.a = 1.0
-				ending_state = 1  # TYPING
-				ending_timer = 0.0
-
-		4:  # DONE — hold final screen then either trigger final mission or wait for quit
-			ending_timer += delta
-			if final_mission_done:
-				# True ending — dissolve back into free roam with one last AI line.
-				if ending_timer >= 4.0:
-					ending_text.modulate.a = max(0.0, 1.0 - (ending_timer - 4.0) / 1.6)
-				if ending_timer >= 5.8 and not postgame_free_roam_started:
-					_start_postgame_free_roam()
-			else:
-				# First ending — fade then trigger final mission
-				if ending_timer >= 4.0:
-					ending_text.modulate.a = max(0.0, 1.0 - (ending_timer - 4.0) / 2.0)
-				if ending_timer >= 6.0:
-					ending_active = false
-					ending_layer.visible = false
-					_trigger_final_mission()
-
-# ============================================================
-#  FINAL MISSION — "The 7th Signature"
-# ============================================================
 
 func _trigger_final_mission() -> void:
 	if final_mission_active or final_mission_done:
@@ -4999,7 +3252,7 @@ func _start_postgame_free_roam() -> void:
 	ending_active = false
 	if ending_layer:
 		ending_layer.visible = false
-	var quit_hint := ending_layer.get_node_or_null("EndingQuitHint") if ending_layer else null
+	var quit_hint: Node = ending_layer.get_node_or_null("EndingQuitHint") if ending_layer else null
 	if quit_hint:
 		quit_hint.queue_free()
 	is_room_transition = false
@@ -5749,843 +4002,15 @@ func _start_final_credits() -> void:
 #   Barra sotto: "PRIME MEMBERSHIP" che si svuota = la battuta
 
 func _create_bezos_cinematic_overlay() -> void:
-	bezos_cinematic_layer = CanvasLayer.new()
-	bezos_cinematic_layer.layer = 105
-	bezos_cinematic_layer.visible = false
-
-	bezos_cinematic_root = Control.new()
-	bezos_cinematic_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bezos_cinematic_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bezos_cinematic_layer.add_child(bezos_cinematic_root)
-
-	# Pure black bg
-	bezos_cinematic_bg = ColorRect.new()
-	bezos_cinematic_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bezos_cinematic_bg.color = Color.BLACK
-	bezos_cinematic_root.add_child(bezos_cinematic_bg)
-
-	# Scanlines
-	bezos_cinematic_scanlines = ColorRect.new()
-	bezos_cinematic_scanlines.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bezos_cinematic_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sl_mat := ShaderMaterial.new()
-	var sl_sh := Shader.new()
-	sl_sh.code = "shader_type canvas_item;\nvoid fragment() { COLOR = vec4(0,0,0, step(1.4, mod(FRAGCOORD.y, 3.0)) * 0.15); }\n"
-	sl_mat.shader = sl_sh
-	bezos_cinematic_scanlines.material = sl_mat
-	bezos_cinematic_root.add_child(bezos_cinematic_scanlines)
-
-	bezos_cinematic_frame = Control.new()
-	bezos_cinematic_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bezos_cinematic_frame.size = BEZOS_CINEMATIC_FRAME_SIZE
-	bezos_cinematic_root.add_child(bezos_cinematic_frame)
-	bezos_cinematic_root.resized.connect(_layout_bezos_cinematic_frame)
-
-	# ═══ TOP HUD: HP bars + names + timer (SF2 style) ═══
-	# Symmetric: bars 480px each, 80px center gap for timer
-	# Left bar x=120→600, Right bar x=680→1160
-	# HP fill inside: 2px inset each side
-
-	# P1 name (above bar, white like SF2)
-	var p1_name := Label.new()
-	p1_name.name = "P1Name"
-	p1_name.text = "BEZOS"
-	p1_name.position = Vector2(120, 8)
-	p1_name.add_theme_font_size_override("font_size", 22)
-	p1_name.add_theme_color_override("font_color", Color.WHITE)
-	p1_name.add_theme_color_override("font_shadow_color", Color.BLACK)
-	p1_name.add_theme_constant_override("shadow_offset_x", 2)
-	p1_name.add_theme_constant_override("shadow_offset_y", 2)
-	p1_name.visible = false
-	bezos_cinematic_frame.add_child(p1_name)
-
-	# P2 name (above bar, right-aligned, white)
-	var p2_name := Label.new()
-	p2_name.name = "P2Name"
-	p2_name.text = "CITIZEN"
-	p2_name.position = Vector2(680, 8)
-	p2_name.size = Vector2(480, 28)
-	p2_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	p2_name.add_theme_font_size_override("font_size", 22)
-	p2_name.add_theme_color_override("font_color", Color.WHITE)
-	p2_name.add_theme_color_override("font_shadow_color", Color.BLACK)
-	p2_name.add_theme_constant_override("shadow_offset_x", 2)
-	p2_name.add_theme_constant_override("shadow_offset_y", 2)
-	p2_name.visible = false
-	bezos_cinematic_frame.add_child(p2_name)
-
-	# P1 HP bar bg (Dark Red)
-	bezos_cinematic_left_bar = ColorRect.new()
-	bezos_cinematic_left_bar.position = Vector2(120, 36)
-	bezos_cinematic_left_bar.size = Vector2(480, 26)
-	bezos_cinematic_left_bar.color = Color("#880000")
-	bezos_cinematic_left_bar.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_left_bar)
-
-	# P1 HP fill (SF2 Yellow)
-	bezos_cinematic_left_hp = ColorRect.new()
-	bezos_cinematic_left_hp.position = Vector2(122, 38)
-	bezos_cinematic_left_hp.size = Vector2(476, 22)
-	bezos_cinematic_left_hp.color = Color("#ffff29")
-	bezos_cinematic_left_hp.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_left_hp)
-
-	# Timer "99" (center)
-	bezos_cinematic_timer_label = Label.new()
-	bezos_cinematic_timer_label.name = "Timer"
-	bezos_cinematic_timer_label.text = "99"
-	bezos_cinematic_timer_label.position = Vector2(604, 26)
-	bezos_cinematic_timer_label.size = Vector2(72, 44)
-	bezos_cinematic_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_timer_label.add_theme_font_size_override("font_size", 38)
-	bezos_cinematic_timer_label.add_theme_color_override("font_color", Color.WHITE)
-	bezos_cinematic_timer_label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	bezos_cinematic_timer_label.add_theme_constant_override("shadow_offset_x", 3)
-	bezos_cinematic_timer_label.add_theme_constant_override("shadow_offset_y", 3)
-	bezos_cinematic_timer_label.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_timer_label)
-
-	# P2 HP bar bg (Dark Red)
-	bezos_cinematic_right_bar = ColorRect.new()
-	bezos_cinematic_right_bar.position = Vector2(680, 36)
-	bezos_cinematic_right_bar.size = Vector2(480, 26)
-	bezos_cinematic_right_bar.color = Color("#880000")
-	bezos_cinematic_right_bar.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_right_bar)
-
-	# P2 HP fill (SF2 Yellow)
-	bezos_cinematic_right_hp = ColorRect.new()
-	bezos_cinematic_right_hp.position = Vector2(682, 38)
-	bezos_cinematic_right_hp.size = Vector2(476, 22)
-	bezos_cinematic_right_hp.color = Color("#ffff29")
-	bezos_cinematic_right_hp.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_right_hp)
-
-	# ═══ BOTTOM: "PRIME MEMBERSHIP" energy bar (humor) ═══
-	# Bottom bar: Bezos's CORP. LEGAL SHIELD — aligned under his HP bar (left side only)
-	var bottom_label := Label.new()
-	bottom_label.name = "BottomLabel"
-	bottom_label.text = "BEZOS CORP. LEGAL SHIELD™"
-	bottom_label.position = Vector2(120, 668)
-	bottom_label.size = Vector2(480, 24)
-	bottom_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	bottom_label.add_theme_font_size_override("font_size", 13)
-	bottom_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16, 0.85))
-	bottom_label.visible = false
-	bezos_cinematic_frame.add_child(bottom_label)
-
-	var bottom_bar_bg := ColorRect.new()
-	bottom_bar_bg.name = "BottomBarBg"
-	bottom_bar_bg.position = Vector2(120, 692)
-	bottom_bar_bg.size = Vector2(480, 16)
-	bottom_bar_bg.color = Color(0.25, 0.0, 0.0)
-	bottom_bar_bg.visible = false
-	bezos_cinematic_frame.add_child(bottom_bar_bg)
-
-	var bottom_bar_hp := ColorRect.new()
-	bottom_bar_hp.name = "BottomBarHP"
-	bottom_bar_hp.position = Vector2(122, 694)
-	bottom_bar_hp.size = Vector2(476, 12)
-	bottom_bar_hp.color = Color(1.0, 0.92, 0.16)
-	bottom_bar_hp.visible = false
-	bezos_cinematic_frame.add_child(bottom_bar_hp)
-
-	# ═══ Stage name (centered, big) ═══
-	bezos_cinematic_stage = Label.new()
-	bezos_cinematic_stage.text = "FULFILLMENT CATHEDRAL"
-	bezos_cinematic_stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_stage.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_stage.position = Vector2(240, 330)
-	bezos_cinematic_stage.size = Vector2(800, 60)
-	bezos_cinematic_stage.add_theme_font_size_override("font_size", 38)
-	bezos_cinematic_stage.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16))
-	bezos_cinematic_stage.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
-	bezos_cinematic_stage.add_theme_constant_override("shadow_offset_x", 3)
-	bezos_cinematic_stage.add_theme_constant_override("shadow_offset_y", 3)
-	bezos_cinematic_stage.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_stage)
-
-	# ═══ Fighter cards — centered: each 360×480, 100px gap ═══
-	# Left: x=(1280-360-100-360)/2 = 230   Right: x=230+360+100 = 690
-	# Left Card: Bezos (Default Boss)
-	bezos_cinematic_left_card = _create_sf2_fighter_card(
-		"JEFF BEZOS", "B", Color(1.0, 1.0, 1.0), "FULFILLMENT PRIME",
-		"res://assets/mockups/bezos_combat_portrait.png")
-	bezos_cinematic_left_card.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_left_card)
-
-	# Right Card: The Player (Default Citizen) 
-	# Note: In a future expansion, this could be the leader we are facing!
-	bezos_cinematic_right_card = _create_sf2_fighter_card(
-		"CITIZEN", "?", Color(1.0, 1.0, 1.0), "MANUAL PROCESSING",
-		"res://assets/mockups/player_combat_portrait.png")
-	bezos_cinematic_right_card.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_right_card)
-
-	# ═══ VS (giant, perfectly centered) ═══
-	bezos_cinematic_vs = Label.new()
-	bezos_cinematic_vs.text = "VS"
-	bezos_cinematic_vs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_vs.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_vs.position = Vector2(490, 260)
-	bezos_cinematic_vs.size = Vector2(300, 120)
-	bezos_cinematic_vs.add_theme_font_size_override("font_size", 110)
-	bezos_cinematic_vs.add_theme_color_override("font_color", Color(1.0, 0.75, 0.1))
-	bezos_cinematic_vs.add_theme_color_override("font_shadow_color", Color(0.3, 0.15, 0.0, 1.0))
-	bezos_cinematic_vs.add_theme_constant_override("shadow_offset_x", 5)
-	bezos_cinematic_vs.add_theme_constant_override("shadow_offset_y", 5)
-	bezos_cinematic_vs.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_vs)
-
-	# ═══ ROUND 1 ═══
-	bezos_cinematic_round = Label.new()
-	bezos_cinematic_round.text = "ROUND 1"
-	bezos_cinematic_round.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_round.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_round.position = Vector2(290, 290)
-	bezos_cinematic_round.size = Vector2(700, 80)
-	bezos_cinematic_round.add_theme_font_size_override("font_size", 82)
-	bezos_cinematic_round.add_theme_color_override("font_color", Color.WHITE)
-	bezos_cinematic_round.add_theme_color_override("font_shadow_color", Color("#b00000"))
-	bezos_cinematic_round.add_theme_constant_override("shadow_offset_x", 4)
-	bezos_cinematic_round.add_theme_constant_override("shadow_offset_y", 4)
-	bezos_cinematic_round.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_round)
-
-	# ═══ FIGHT! ═══
-	bezos_cinematic_fight = Label.new()
-	bezos_cinematic_fight.text = "FIGHT!"
-	bezos_cinematic_fight.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_fight.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_fight.position = Vector2(290, 280)
-	bezos_cinematic_fight.size = Vector2(700, 100)
-	bezos_cinematic_fight.add_theme_font_size_override("font_size", 110)
-	bezos_cinematic_fight.add_theme_color_override("font_color", Color("#ff8800"))
-	bezos_cinematic_fight.add_theme_color_override("font_shadow_color", Color("#ffff29"))
-	bezos_cinematic_fight.add_theme_constant_override("shadow_offset_x", 0)
-	bezos_cinematic_fight.add_theme_constant_override("shadow_offset_y", 4) # Bottom flame shadow
-	bezos_cinematic_fight.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_fight)
-
-	# ═══ K.O. ═══
-	bezos_cinematic_ko = Label.new()
-	bezos_cinematic_ko.text = "K.O."
-	bezos_cinematic_ko.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_ko.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_ko.position = Vector2(390, 260)
-	bezos_cinematic_ko.size = Vector2(500, 120)
-	bezos_cinematic_ko.add_theme_font_size_override("font_size", 120)
-	bezos_cinematic_ko.add_theme_color_override("font_color", Color.WHITE)
-	bezos_cinematic_ko.add_theme_color_override("font_shadow_color", Color("#b00000"))
-	bezos_cinematic_ko.add_theme_constant_override("shadow_offset_x", 6)
-	bezos_cinematic_ko.add_theme_constant_override("shadow_offset_y", 6)
-	bezos_cinematic_ko.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_ko)
-
-	# ═══ PERFECT ═══
-	bezos_cinematic_perfect = Label.new()
-	bezos_cinematic_perfect.text = "PERFECT"
-	bezos_cinematic_perfect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_perfect.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_perfect.position = Vector2(290, 390)
-	bezos_cinematic_perfect.size = Vector2(700, 60)
-	bezos_cinematic_perfect.add_theme_font_size_override("font_size", 54)
-	bezos_cinematic_perfect.add_theme_color_override("font_color", Color("#ffff29"))
-	bezos_cinematic_perfect.add_theme_color_override("font_shadow_color", Color("#b00000"))
-	bezos_cinematic_perfect.add_theme_constant_override("shadow_offset_x", 3)
-	bezos_cinematic_perfect.add_theme_constant_override("shadow_offset_y", 3)
-	bezos_cinematic_perfect.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_perfect)
-
-	# ═══ Flash overlay ═══
-	bezos_cinematic_flash = ColorRect.new()
-	bezos_cinematic_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bezos_cinematic_flash.color = Color(1, 1, 1, 0)
-	bezos_cinematic_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bezos_cinematic_flash.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_flash)
-
-	# ═══ DENIED punchline ═══
-	bezos_cinematic_denial = Label.new()
-	bezos_cinematic_denial.text = "DISPUTE RESOLVED\nBY TERMS OF SERVICE"
-	bezos_cinematic_denial.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_denial.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_denial.position = Vector2(190, 250)
-	bezos_cinematic_denial.size = Vector2(900, 120)
-	bezos_cinematic_denial.add_theme_font_size_override("font_size", 42)
-	bezos_cinematic_denial.add_theme_color_override("font_color", Color(0.98, 0.15, 0.08))
-	bezos_cinematic_denial.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
-	bezos_cinematic_denial.add_theme_constant_override("shadow_offset_x", 3)
-	bezos_cinematic_denial.add_theme_constant_override("shadow_offset_y", 3)
-	bezos_cinematic_denial.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_denial)
-
-	# Queue joke
-	bezos_cinematic_subtitle = Label.new()
-	bezos_cinematic_subtitle.text = "Physical conflict has been replaced by fulfillment arbitration.\nYour complaint has been added to the queue.\nEstimated wait: 4,700 years."
-	bezos_cinematic_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_subtitle.position = Vector2(240, 400)
-	bezos_cinematic_subtitle.size = Vector2(800, 112)
-	bezos_cinematic_subtitle.add_theme_font_size_override("font_size", 18)
-	bezos_cinematic_subtitle.add_theme_color_override("font_color", Color(0.65, 0.65, 0.7, 0.85))
-	bezos_cinematic_subtitle.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_subtitle)
-
-	bezos_cinematic_speaker = Label.new()
-	bezos_cinematic_speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_speaker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_speaker.position = Vector2(220, 494)
-	bezos_cinematic_speaker.size = Vector2(840, 34)
-	bezos_cinematic_speaker.add_theme_font_size_override("font_size", 18)
-	bezos_cinematic_speaker.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
-	bezos_cinematic_speaker.add_theme_constant_override("shadow_offset_x", 2)
-	bezos_cinematic_speaker.add_theme_constant_override("shadow_offset_y", 2)
-	bezos_cinematic_speaker.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_speaker)
-
-	bezos_cinematic_dialogue = Label.new()
-	bezos_cinematic_dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bezos_cinematic_dialogue.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	bezos_cinematic_dialogue.position = Vector2(180, 528)
-	bezos_cinematic_dialogue.size = Vector2(920, 112)
-	bezos_cinematic_dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bezos_cinematic_dialogue.add_theme_font_size_override("font_size", 24)
-	bezos_cinematic_dialogue.add_theme_color_override("font_color", Color(0.92, 0.92, 0.96))
-	bezos_cinematic_dialogue.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
-	bezos_cinematic_dialogue.add_theme_constant_override("shadow_offset_x", 3)
-	bezos_cinematic_dialogue.add_theme_constant_override("shadow_offset_y", 3)
-	bezos_cinematic_dialogue.visible = false
-	bezos_cinematic_frame.add_child(bezos_cinematic_dialogue)
-
-	# ═══ Amazon error popup (shown during combat) ═══
-	var err_popup := Control.new()
-	err_popup.name = "ErrorPopup"
-	err_popup.size = Vector2(360, 156)
-	err_popup.visible = false
-	err_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bezos_cinematic_frame.add_child(err_popup)
-
-	var ep_bg := ColorRect.new()
-	ep_bg.color = Color(0.93, 0.93, 0.91)
-	ep_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ep_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	err_popup.add_child(ep_bg)
-
-	var ep_border := StyleBoxFlat.new()
-	ep_border.border_color = Color(0.55, 0.55, 0.52)
-	ep_border.border_width_left = 2
-	ep_border.border_width_top = 2
-	ep_border.border_width_right = 2
-	ep_border.border_width_bottom = 2
-	ep_border.bg_color = Color(0, 0, 0, 0)
-	var ep_border_rect := PanelContainer.new()
-	ep_border_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ep_border_rect.add_theme_stylebox_override("panel", ep_border)
-	ep_border_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	err_popup.add_child(ep_border_rect)
-
-	var ep_titlebar := ColorRect.new()
-	ep_titlebar.name = "TitleBar"
-	ep_titlebar.color = Color(1.0, 0.60, 0.0)  # Amazon orange
-	ep_titlebar.position = Vector2(2, 2)
-	ep_titlebar.size = Vector2(356, 28)
-	ep_titlebar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	err_popup.add_child(ep_titlebar)
-
-	var ep_icon := Label.new()
-	ep_icon.text = "⚠"
-	ep_icon.position = Vector2(4, 2)
-	ep_icon.add_theme_font_size_override("font_size", 15)
-	ep_icon.add_theme_color_override("font_color", Color.WHITE)
-	ep_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ep_titlebar.add_child(ep_icon)
-
-	var ep_title := Label.new()
-	ep_title.name = "PopupTitle"
-	ep_title.text = "AMAZON ERROR"
-	ep_title.position = Vector2(26, 4)
-	ep_title.add_theme_font_size_override("font_size", 13)
-	ep_title.add_theme_color_override("font_color", Color.WHITE)
-	ep_title.add_theme_color_override("font_shadow_color", Color(0.3, 0.0, 0.0, 0.6))
-	ep_title.add_theme_constant_override("shadow_offset_x", 1)
-	ep_title.add_theme_constant_override("shadow_offset_y", 1)
-	ep_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ep_titlebar.add_child(ep_title)
-
-	var ep_close := Label.new()
-	ep_close.text = "✕"
-	ep_close.position = Vector2(334, 4)
-	ep_close.add_theme_font_size_override("font_size", 13)
-	ep_close.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.7))
-	ep_close.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ep_titlebar.add_child(ep_close)
-
-	var ep_msg := Label.new()
-	ep_msg.name = "PopupMsg"
-	ep_msg.text = ""
-	ep_msg.position = Vector2(14, 38)
-	ep_msg.size = Vector2(332, 88)
-	ep_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ep_msg.add_theme_font_size_override("font_size", 13)
-	ep_msg.add_theme_color_override("font_color", Color(0.12, 0.12, 0.12))
-	ep_msg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	err_popup.add_child(ep_msg)
-
-	var ep_ok_bg := ColorRect.new()
-	ep_ok_bg.name = "OkBg"
-	ep_ok_bg.color = Color(0.80, 0.80, 0.78)
-	ep_ok_bg.position = Vector2(138, 126)
-	ep_ok_bg.size = Vector2(84, 22)
-	ep_ok_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	err_popup.add_child(ep_ok_bg)
-
-	var ep_ok_lbl := Label.new()
-	ep_ok_lbl.text = "    OK    "
-	ep_ok_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ep_ok_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ep_ok_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ep_ok_lbl.add_theme_font_size_override("font_size", 12)
-	ep_ok_lbl.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1))
-	ep_ok_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ep_ok_bg.add_child(ep_ok_lbl)
-
-	add_child(bezos_cinematic_layer)
-	_layout_bezos_cinematic_frame()
-
-func _get_combat_card_for_leader(character_id: String) -> PanelContainer:
-	var path: String = combat_portrait_paths.get(character_id, "res://assets/mockups/player_combat_portrait.png")
-	var c_name: String = "UNKNOWN"
-	var badge: String = "?"
-	var sub: String = "CITIZEN"
-	
-	match character_id:
-		"donald_trump":
-			c_name = "DONALD TRUMP"
-			badge = "T"
-			sub = "MAGA STRIKE"
-		"elon_musk":
-			c_name = "ELON MUSK"
-			badge = "X"
-			sub = "TECHNOKING"
-		"vladimir_putin":
-			c_name = "VLADIMIR PUTIN"
-			badge = "P"
-			sub = "KREMLIN OPS"
-		"ursula_von_der_leyen":
-			c_name = "V. D. LEYEN"
-			badge = "U"
-			sub = "EU OVERLORD"
-		"emmanuel_macron":
-			c_name = "E. MACRON"
-			badge = "M"
-			sub = "JUPITERIAN"
-		"christine_lagarde":
-			c_name = "C. LAGARDE"
-			badge = "L"
-			sub = "ECB LIQUIDITY"
-	
-	return _create_sf2_fighter_card(c_name, badge, character_colors.get(character_id, Color.WHITE), sub, path)
-
-func _layout_bezos_cinematic_frame() -> void:
-	if not bezos_cinematic_root or not bezos_cinematic_frame:
-		return
-	bezos_cinematic_frame.size = BEZOS_CINEMATIC_FRAME_SIZE
-	bezos_cinematic_frame_base_position = (bezos_cinematic_root.size - BEZOS_CINEMATIC_FRAME_SIZE) * 0.5
-	bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-
-func _create_sf2_fighter_card(fighter_name: String, badge_text: String, accent: Color, subtitle_text: String, portrait_path: String = "") -> PanelContainer:
-	var card := PanelContainer.new()
-	card.size = Vector2(360, 480)
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.01, 0.01, 0.02, 1.0)
-	style.border_width_left = 6
-	style.border_width_top = 6
-	style.border_width_right = 6
-	style.border_width_bottom = 6
-	style.border_color = Color("#b00000") # SF2 Red border
-	card.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", -4)
-	card.add_child(vbox)
-
-	# Portrait Area
-	var portrait := Control.new()
-	portrait.custom_minimum_size = Vector2(348, 360)
-	vbox.add_child(portrait)
-
-	if portrait_path != "" and ResourceLoader.exists(portrait_path):
-		var spr := TextureRect.new()
-		spr.texture = load(portrait_path)
-		spr.set_anchors_preset(Control.PRESET_FULL_RECT)
-		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		portrait.add_child(spr)
-
-	# Name Banner (Yellow bar look)
-	var name_bg := ColorRect.new()
-	name_bg.custom_minimum_size = Vector2(0, 48)
-	name_bg.color = Color("#ffff29")
-	vbox.add_child(name_bg)
-
-	var nm := Label.new()
-	nm.text = fighter_name
-	nm.set_anchors_preset(Control.PRESET_FULL_RECT)
-	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	nm.add_theme_font_size_override("font_size", 32)
-	nm.add_theme_color_override("font_color", Color.BLACK) # Black text on yellow bar
-	name_bg.add_child(nm)
-
-	# Territory/Subtitle
-	var sub := Label.new()
-	sub.text = subtitle_text
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 16)
-	sub.add_theme_color_override("font_color", Color.WHITE)
-	vbox.add_child(sub)
-
-	return card
-
-func _bezos_hide_all_ui() -> void:
-	for node in [bezos_cinematic_stage, bezos_cinematic_vs, bezos_cinematic_round,
-			bezos_cinematic_fight, bezos_cinematic_ko, bezos_cinematic_perfect,
-			bezos_cinematic_denial, bezos_cinematic_subtitle, bezos_cinematic_flash,
-			bezos_cinematic_left_bar, bezos_cinematic_right_bar,
-			bezos_cinematic_left_hp, bezos_cinematic_right_hp,
-			bezos_cinematic_left_card, bezos_cinematic_right_card,
-			bezos_cinematic_speaker, bezos_cinematic_dialogue,
-			bezos_cinematic_timer_label]:
-		if node: node.visible = false
-	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP", "ErrorPopup"]:
-		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
-		if nd: nd.visible = false
-
-func _show_bezos_error_popup(popup_index: int, pos: Vector2) -> void:
-	if not bezos_cinematic_frame: return
-	var popup := bezos_cinematic_frame.get_node_or_null("ErrorPopup")
-	if not popup: return
-	var data: Array = BEZOS_ERROR_POPUPS[popup_index % BEZOS_ERROR_POPUPS.size()]
-	var title_lbl := popup.get_node_or_null("TitleBar/PopupTitle") as Label
-	var msg_lbl := popup.get_node_or_null("PopupMsg") as Label
-	if title_lbl: title_lbl.text = data[0]
-	if msg_lbl: msg_lbl.text = data[1]
-	popup.position = pos
-	popup.modulate.a = 0.0
-	popup.scale = Vector2(0.85, 0.85)
-	popup.pivot_offset = Vector2(180, 78)
-	popup.visible = true
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(popup, "modulate:a", 1.0, 0.18)
-	tw.tween_property(popup, "scale", Vector2(1.0, 1.0), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# Auto-dismiss after 2.4s
-	tw.tween_interval(2.4)
-	tw.set_parallel(false)
-	tw.tween_property(popup, "modulate:a", 0.0, 0.25)
-	tw.tween_callback(func(): if popup: popup.visible = false)
-
-func _bezos_show_hud() -> void:
-	for node in [bezos_cinematic_left_bar, bezos_cinematic_right_bar,
-			bezos_cinematic_left_hp, bezos_cinematic_right_hp,
-			bezos_cinematic_timer_label]:
-		if node: node.visible = true
-	for n in ["P1Name", "P2Name", "BottomLabel", "BottomBarBg", "BottomBarHP"]:
-		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
-		if nd: nd.visible = true
-
-func _begin_bezos_cinematic_state(state: int) -> void:
-	bezos_cinematic_state = state
-	bezos_cinematic_timer = 0.0
-
-	# Cards centered: (1280-360-100-360)/2 = 230  |  230+360+100 = 690
-	const CARD_LEFT_X := 230.0
-	const CARD_RIGHT_X := 690.0
-	const CARD_Y := 100.0
-
-	match state:
-		BezosCinematicState.STAGE:
-			_bezos_hide_all_ui()
-			bezos_cinematic_stage.visible = true
-			bezos_cinematic_stage.modulate.a = 0.0
-			# Big centered stage name
-			bezos_cinematic_stage.position = Vector2(240, 310)
-			bezos_cinematic_stage.size = Vector2(800, 80)
-			bezos_cinematic_stage.add_theme_font_size_override("font_size", 38)
-			bezos_cinematic_stage.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16))
-			var tw := create_tween()
-			tw.tween_property(bezos_cinematic_stage, "modulate:a", 1.0, 0.5)
-
-		BezosCinematicState.SLIDE_IN:
-			# The stage title belongs only to the black intro beat.
-			bezos_cinematic_stage.visible = false
-			_bezos_show_hud()
-			bezos_cinematic_timer_label.text = "99"
-			# Cards slam in from sides
-			bezos_cinematic_left_card.visible = true
-			bezos_cinematic_right_card.visible = true
-			bezos_cinematic_left_card.position = Vector2(-400, CARD_Y)
-			bezos_cinematic_right_card.position = Vector2(1400, CARD_Y)
-			var tw2 := create_tween()
-			tw2.set_parallel(true)
-			tw2.tween_property(bezos_cinematic_left_card, "position", Vector2(CARD_LEFT_X, CARD_Y), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tw2.tween_property(bezos_cinematic_right_card, "position", Vector2(CARD_RIGHT_X, CARD_Y), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-		BezosCinematicState.VS_SLAM:
-			bezos_cinematic_stage.visible = false
-			# VS slams center between cards with flash
-			bezos_cinematic_vs.visible = true
-			bezos_cinematic_vs.modulate.a = 0.0
-			bezos_cinematic_vs.scale = Vector2(4.0, 4.0)
-			bezos_cinematic_vs.pivot_offset = Vector2(150, 60)
-			bezos_cinematic_flash.visible = true
-			bezos_cinematic_flash.color = Color(1, 1, 1, 0.9)
-			var tw3 := create_tween()
-			tw3.set_parallel(true)
-			tw3.tween_property(bezos_cinematic_vs, "modulate:a", 1.0, 0.1)
-			tw3.tween_property(bezos_cinematic_vs, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tw3.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.4)
-
-		BezosCinematicState.FIGHT:
-			bezos_cinematic_stage.visible = false
-			bezos_cinematic_vs.visible = false
-			bezos_cinematic_left_card.visible = false
-			bezos_cinematic_right_card.visible = false
-			# ROUND 1
-			bezos_cinematic_round.visible = true
-			bezos_cinematic_round.modulate.a = 0.0
-			bezos_cinematic_round.scale = Vector2(2.0, 2.0)
-			bezos_cinematic_round.pivot_offset = Vector2(350, 40)
-			var tw4 := create_tween()
-			tw4.tween_property(bezos_cinematic_round, "modulate:a", 1.0, 0.15)
-			tw4.parallel().tween_property(bezos_cinematic_round, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			# Hold ROUND 1 long enough to read before the fake start.
-			tw4.tween_interval(BEZOS_ROUND_HOLD)
-			tw4.tween_callback(func():
-				bezos_cinematic_round.visible = false
-				# FIGHT!
-				bezos_cinematic_fight.visible = true
-				bezos_cinematic_fight.modulate.a = 0.0
-				bezos_cinematic_fight.scale = Vector2(3.0, 3.0)
-				bezos_cinematic_fight.pivot_offset = Vector2(350, 50)
-				bezos_cinematic_flash.visible = true
-				bezos_cinematic_flash.color = Color(1, 0.95, 0.85, 0.8)
-				var tw5 := create_tween()
-				tw5.set_parallel(true)
-				tw5.tween_property(bezos_cinematic_fight, "modulate:a", 1.0, 0.08)
-				tw5.tween_property(bezos_cinematic_fight, "scale", Vector2(1.0, 1.0), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-				tw5.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.3)
-			)
-
-		BezosCinematicState.COMBAT:
-			bezos_cinematic_stage.visible = false
-			bezos_cinematic_fight.visible = false
-			bezos_cinematic_flash.visible = true
-			bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.6)
-			var tw_combat := create_tween()
-			tw_combat.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.15)
-			# Popup 1: top-right (doesn't cover HP bars at top, reads clearly)
-			tw_combat.tween_interval(0.5)
-			tw_combat.tween_callback(func(): _show_bezos_error_popup(0, Vector2(890, 80)))
-			# Popup 2: bottom-left, offset to not overlap popup 1
-			tw_combat.tween_interval(1.3)
-			tw_combat.tween_callback(func(): _show_bezos_error_popup(1, Vector2(30, 490)))
-
-		BezosCinematicState.DENIED:
-			bezos_cinematic_fight.visible = false
-			# Flash = instant KO
-			bezos_cinematic_flash.visible = true
-			bezos_cinematic_flash.color = Color(1, 1, 1, 1.0)
-			var tw6 := create_tween()
-			tw6.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.55)
-			# Your HP drains to zero + timer drops to 00
-			# P2 bar: right edge fixed at 1158, left edge sweeps right (SF2 correct)
-			tw6.parallel().tween_property(bezos_cinematic_right_hp, "size:x", 0.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-			tw6.parallel().tween_property(bezos_cinematic_right_hp, "position:x", 1158.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-			tw6.parallel().tween_callback(func(): bezos_cinematic_timer_label.text = "00")
-			# Bottom bar (Prime Membership) drains too
-			var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
-			if bottom_hp:
-				tw6.parallel().tween_property(bottom_hp, "size:x", 0.0, 1.0).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-			# Pause, then K.O.
-			tw6.tween_interval(BEZOS_KO_DELAY)
-			tw6.tween_callback(func():
-				bezos_cinematic_ko.visible = true
-				bezos_cinematic_ko.modulate.a = 0.0
-				bezos_cinematic_ko.scale = Vector2(3.0, 3.0)
-				bezos_cinematic_ko.pivot_offset = Vector2(250, 60)
-				bezos_cinematic_flash.visible = true
-				bezos_cinematic_flash.color = Color(1, 0.3, 0.1, 0.7)
-				var tw7 := create_tween()
-				tw7.set_parallel(true)
-				tw7.tween_property(bezos_cinematic_ko, "modulate:a", 1.0, 0.1)
-				tw7.tween_property(bezos_cinematic_ko, "scale", Vector2(1.0, 1.0), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-				tw7.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.4)
-			)
-			# Pause, then PERFECT
-			tw6.tween_interval(BEZOS_PERFECT_DELAY)
-			tw6.tween_callback(func():
-				bezos_cinematic_perfect.visible = true
-				bezos_cinematic_perfect.modulate.a = 0.0
-				var tw8 := create_tween()
-				tw8.tween_property(bezos_cinematic_perfect, "modulate:a", 1.0, 0.35)
-			)
-			# Popup 3: post-PERFECT, center-ish — "Dispute Resolution Complete"
-			tw6.tween_interval(0.5)
-			tw6.tween_callback(func(): _show_bezos_error_popup(3, Vector2(460, 200)))
-			# Pause, then dim + show denial
-			tw6.tween_interval(BEZOS_DENIAL_REVEAL_DELAY - 0.5)
-			tw6.tween_callback(func():
-				bezos_cinematic_ko.visible = false
-				bezos_cinematic_perfect.visible = false
-				bezos_cinematic_left_bar.modulate.a = 0.15
-				bezos_cinematic_right_bar.modulate.a = 0.15
-				bezos_cinematic_left_hp.modulate.a = 0.15
-				bezos_cinematic_stage.visible = false
-				bezos_cinematic_timer_label.visible = false
-				var bl := bezos_cinematic_frame.get_node_or_null("BottomLabel") if bezos_cinematic_frame else null
-				var bg := bezos_cinematic_frame.get_node_or_null("BottomBarBg") if bezos_cinematic_frame else null
-				var hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
-				if bl: bl.modulate.a = 0.15
-				if bg: bg.modulate.a = 0.15
-				if hp: hp.visible = false
-				# Denial
-				bezos_cinematic_denial.visible = true
-				bezos_cinematic_denial.modulate.a = 0.0
-				var tw9 := create_tween()
-				tw9.tween_property(bezos_cinematic_denial, "modulate:a", 1.0, 0.3)
-				tw9.tween_interval(BEZOS_SUBTITLE_REVEAL_DELAY)
-				tw9.tween_callback(func():
-					bezos_cinematic_subtitle.visible = true
-					bezos_cinematic_subtitle.modulate.a = 0.0
-					var tw10 := create_tween()
-					tw10.tween_property(bezos_cinematic_subtitle, "modulate:a", 1.0, 0.5)
-				)
-			)
-
-		BezosCinematicState.OUTRO:
-			var tw11 := create_tween()
-			tw11.tween_property(bezos_cinematic_root, "modulate:a", 0.0, 0.6)
-			tw11.tween_callback(_finish_bezos_cinematic)
-
-func _process_bezos_cinematic(delta: float) -> void:
-	if not bezos_cinematic_layer or not bezos_cinematic_layer.visible:
-		return
-	bezos_cinematic_timer += delta
-
-	match bezos_cinematic_state:
-		BezosCinematicState.STAGE:
-			# Stage name alone on black — let it breathe
-			if bezos_cinematic_timer >= BEZOS_STAGE_DURATION:
-				_begin_bezos_cinematic_state(BezosCinematicState.SLIDE_IN)
-		BezosCinematicState.SLIDE_IN:
-			# Cards slide in, hold for player to see the matchup
-			if bezos_cinematic_timer >= BEZOS_SLIDE_IN_DURATION:
-				_begin_bezos_cinematic_state(BezosCinematicState.VS_SLAM)
-		BezosCinematicState.VS_SLAM:
-			# VS stays on screen
-			if bezos_cinematic_timer >= BEZOS_VS_DURATION:
-				_begin_bezos_cinematic_state(BezosCinematicState.FIGHT)
-		BezosCinematicState.FIGHT:
-			# ROUND 1 holds longer, then FIGHT! has time to land before combat starts.
-			if bezos_cinematic_timer >= BEZOS_FIGHT_DURATION:
-				_begin_bezos_cinematic_state(BezosCinematicState.COMBAT)
-		BezosCinematicState.COMBAT:
-			# Fake combat: timer counts down, player HP drains with hit jolts
-			var t := bezos_cinematic_timer
-			var progress := clampf(t / BEZOS_COMBAT_DURATION, 0.0, 1.0)
-			# Timer counts 99 → ~70 during combat
-			var timer_val: int = int(lerpf(99.0, 70.0, progress))
-			if bezos_cinematic_timer_label:
-				bezos_cinematic_timer_label.text = "%02d" % timer_val
-			# Player HP drains: 476px → ~120px (takes heavy hits)
-			# P2 bar drains SF2-correct: right edge fixed at x=1158, left edge advances right
-			if bezos_cinematic_right_hp:
-				var base_hp: float = lerpf(476.0, 120.0, progress)
-				var hit_cycle := fmod(t, 0.5)
-				var jitter := 0.0
-				if hit_cycle < 0.08:
-					jitter = -35.0  # sudden drop = "hit landed"
-				var new_w := maxf(base_hp + jitter, 0.0)
-				bezos_cinematic_right_hp.size.x = new_w
-				bezos_cinematic_right_hp.position.x = 1158.0 - new_w
-			# Bezos HP barely moves (he's untouchable)
-			if bezos_cinematic_left_hp:
-				bezos_cinematic_left_hp.size.x = lerpf(476.0, 468.0, progress)
-			# Hit flash every ~0.5s (offset from jitter)
-			var flash_cycle := fmod(t + 0.02, 0.5)
-			if flash_cycle < 0.06 and bezos_cinematic_flash:
-				bezos_cinematic_flash.visible = true
-				# Alternate flash colors: red (player hit) and yellow (blocked)
-				var hit_count := int(t / 0.5)
-				if hit_count % 2 == 0:
-					bezos_cinematic_flash.color = Color(1.0, 0.15, 0.05, 0.45)
-				else:
-					bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.3)
-			elif bezos_cinematic_flash and bezos_cinematic_flash.color.a > 0.0:
-				bezos_cinematic_flash.color.a = maxf(bezos_cinematic_flash.color.a - delta * 6.0, 0.0)
-			# Screen shake: offset only the fixed 1280x720 frame
-			if bezos_cinematic_frame and fmod(t, 0.5) < 0.12:
-				var shake_x := randf_range(-3.0, 3.0)
-				var shake_y := randf_range(-2.0, 2.0)
-				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position + Vector2(shake_x, shake_y)
-			elif bezos_cinematic_frame:
-				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-			# Bottom bar (Prime Membership) also drains slowly
-			if bezos_cinematic_frame:
-				var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP")
-				if bottom_hp:
-					bottom_hp.size.x = lerpf(476.0, 240.0, progress)
-			# Transition to DENIED (the devastating final blow)
-			if bezos_cinematic_timer >= BEZOS_COMBAT_DURATION:
-				if bezos_cinematic_frame:
-					bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-				_begin_bezos_cinematic_state(BezosCinematicState.DENIED)
-		BezosCinematicState.DENIED:
-			# The fake victory and the corporate denial both need a readable pause.
-			if bezos_cinematic_timer >= BEZOS_DENIED_DURATION:
-				_begin_bezos_cinematic_state(BezosCinematicState.OUTRO)
-
-func _finish_bezos_cinematic() -> void:
-	bezos_cinematic_active = false
+	bezos_encounter = BEZOS_ENCOUNTER_SCRIPT.new()
+	bezos_encounter.name = "BezosEncounter"
+	add_child(bezos_encounter)
+	bezos_encounter.finished.connect(_on_bezos_cinematic_finished)
+	bezos_encounter.setup(self, player, combat_portrait_paths, character_colors)
+
+func _on_bezos_cinematic_finished() -> void:
 	bezos_escalation_active = false
 	bezos_escalation_bubble = null
-	if bezos_cinematic_layer:
-		bezos_cinematic_layer.visible = false
-	if bezos_cinematic_root:
-		bezos_cinematic_root.modulate.a = 1.0
-	if bezos_cinematic_frame:
-		bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-	for node in [bezos_cinematic_left_card, bezos_cinematic_right_card,
-			bezos_cinematic_left_bar, bezos_cinematic_right_bar,
-			bezos_cinematic_left_hp]:
-		if node: node.modulate = Color.WHITE
-	if bezos_cinematic_left_hp:
-		bezos_cinematic_left_hp.size.x = 476.0
-	if bezos_cinematic_right_hp:
-		bezos_cinematic_right_hp.modulate = Color.WHITE
-		bezos_cinematic_right_hp.size.x = 476.0
-		bezos_cinematic_right_hp.position.x = 682.0  # reset: right edge back at 1158
-		bezos_cinematic_right_hp.visible = true
-	if bezos_cinematic_timer_label:
-		bezos_cinematic_timer_label.text = "99"
-	if bezos_cinematic_speaker:
-		bezos_cinematic_speaker.modulate = Color.WHITE
-	if bezos_cinematic_dialogue:
-		bezos_cinematic_dialogue.modulate = Color.WHITE
-	var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
-	if bottom_hp:
-		bottom_hp.size.x = 476.0
-		bottom_hp.visible = true
-	for n in ["BottomLabel", "BottomBarBg", "BottomBarHP", "P1Name", "P2Name"]:
-		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
-		if nd: nd.modulate = Color.WHITE
-	player.set_physics_process(true)
 	if bezos_drone_root:
 		bezos_drone_root.queue_free()
 		bezos_drone_root = null
