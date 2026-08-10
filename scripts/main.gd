@@ -217,15 +217,7 @@ var mk_flash_index: int = 0
 enum MKState { ENTER, COUNTDOWN, EXECUTE, FREEZE, CLAUDIA_LINE, FADE_OUT }
 var mk_state: int = MKState.ENTER
 
-# --- HUD ---
-
-
-# --- HUD ---
 var hud_panel: PanelContainer
-var meter_bars: Dictionary = {}
-var meter_values: Dictionary = {
-	"TIME": 100, "ACCESS": 100, "TRUST": 100, "RENT": 0, "STRESS": 0
-}
 
 # --- Tile sources ---
 # Source 0 = procedural world_tiles.png (buildings, furniture, fallback)
@@ -592,9 +584,7 @@ func _ready() -> void:
 	_load_character_data()
 	_setup_world_lighting()
 	_create_screen_fx()
-	_create_hud()
 	_create_dialogue_ui()
-	_create_bunker_caption_ui()
 	_create_transition_fx()
 	_setup_interiors()
 	_remove_world_npcs()
@@ -1088,13 +1078,6 @@ func _start_ufo_abduction() -> void:
 		player.set_physics_process(true)
 	ufo_abduction_active = false
 	is_room_transition = false
-
-func _clear_decor_near_xi(npc: Node2D) -> void:
-	var xi_tile := Vector2i(
-		roundi((npc.position.x - 16.0) / 32.0),
-		roundi((npc.position.y - 16.0) / 32.0)
-	)
-	_clear_decor_patch(xi_tile, 3, 2)
 
 func _clear_decor_patch(center_tile: Vector2i, x_radius: int, y_radius: int) -> void:
 	for x in range(center_tile.x - x_radius, center_tile.x + x_radius + 1):
@@ -1771,35 +1754,6 @@ func _build_world_border() -> void:
 				ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_BUSH)
 			_create_solid_wall(x, y)
 
-func _paint_lake(center: Vector2i, src: int = SRC_PROC, coords: Vector2i = TILE_WATER) -> void:
-	var lake_cells: Array[Vector2i] = []
-	for x in range(center.x - 2, center.x + 3):
-		for y in range(center.y - 1, center.y + 3):
-			if abs(x - center.x) + abs(y - center.y) > 3:
-				continue
-			var pos := Vector2i(x, y)
-			if not _can_use_world_cell(pos):
-				return
-			if ground_map.get_cell_source_id(LAYER_DECOR, pos) != -1:
-				return
-			lake_cells.append(pos)
-
-	var lake_set: Dictionary = {}
-	for pos in lake_cells:
-		lake_set[pos] = true
-
-	for pos in lake_cells:
-		if _pack_ready:
-			var wn := lake_set.has(pos + Vector2i(0, -1))
-			var ws := lake_set.has(pos + Vector2i(0, 1))
-			var ww := lake_set.has(pos + Vector2i(-1, 0))
-			var we := lake_set.has(pos + Vector2i(1, 0))
-			var tile := _water_tile_for_neighbors(wn, ws, ww, we)
-			ground_map.set_cell(LAYER_GROUND, pos, SRC_WATER, tile)
-		else:
-			ground_map.set_cell(LAYER_GROUND, pos, src, coords)
-		_create_solid_wall(pos.x, pos.y)
-
 func _water_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
 	if n and s and w and e: return WT_CENTER
 	if not n and s and w and e: return WT_EDGE_T
@@ -1934,40 +1888,6 @@ func _build_structure(spec: Dictionary) -> void:
 			_build_vault(center)
 		"elysee":
 			_build_elysee(center)
-
-func _set_floor_tile(pos: Vector2i, style: String) -> void:
-	var has_interior_floor := ground_map.tile_set.has_source(SRC_INTERIOR_FLOOR)
-	match style:
-		"wood":
-			if has_interior_floor:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_INTERIOR_FLOOR, IF_OFFICE)
-			elif _pack_ready:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_FLOOR, FL_WOOD)
-			else:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_WOOD)
-		"palace":
-			if has_interior_floor:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_INTERIOR_FLOOR, IF_PALACE)
-			elif _pack_ready:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_FLOOR, FL_WOOD)
-			else:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_MARBLE_FLOOR)
-		"vault":
-			if has_interior_floor:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_INTERIOR_FLOOR, IF_VAULT)
-			elif _pack_ready:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_FLOOR, FL_WOOD)
-			else:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_METAL_FLOOR)
-		"stone":
-			if _pack_ready:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_FLOOR, FL_STONE)
-			else:
-				ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_MARBLE_FLOOR)
-		"metal":
-			ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_METAL_FLOOR)
-		_:
-			ground_map.set_cell(LAYER_GROUND, pos, SRC_PROC, TILE_WOOD)
 
 func _set_structure_tile(pos: Vector2i, coords: Vector2i, solid: bool = false, source_id: int = SRC_PROC) -> void:
 	ground_map.set_cell(LAYER_STRUCT, pos, source_id, coords)
@@ -2461,18 +2381,6 @@ func _create_transition_fx() -> void:
 	room_title_subtitle = room_manager.room_title_subtitle
 
 
-func _create_hud() -> void:
-	meter_bars.clear()
-	hud_panel = null
-
-func update_meter(meter_name: String, value: int) -> void:
-	meter_values[meter_name] = clampi(value, 0, 100)
-	if meter_bars.has(meter_name):
-		var bar: ProgressBar = meter_bars[meter_name]
-		var tw = create_tween()
-		tw.tween_property(bar, "value", float(meter_values[meter_name]), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-
-
 # ============================================================
 #  DIALOGUE UI
 # ============================================================
@@ -2697,9 +2605,6 @@ func _close_dialogue() -> void:
 		kim_phone_encounter.stop()
 	dialogue_manager.close_dialogue()
 
-
-func _create_bunker_caption_ui() -> void:
-	return
 
 func _show_bunker_caption(speaker: String, text: String) -> void:
 	if not dialogue_anchor:
@@ -3051,9 +2956,6 @@ func _get_contamination_line(source: String) -> String:
 		return ""
 	return str(options[randi() % options.size()])
 
-func _contamination_read_duration(text: String) -> float:
-	return clamp(1.9 + float(text.length()) * 0.03, 2.8, 5.2)
-
 func _dissolve_terminal_contamination() -> void:
 	if not contamination_root or not is_instance_valid(contamination_root):
 		contamination_terminal_ready = false
@@ -3168,15 +3070,6 @@ func _start_contamination_event(source: String) -> void:
 				contamination_root.modulate = Color.WHITE
 				contamination_root.visible = true
 				contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
-
-func _create_standalone_npc(sprite_id: String, character_id: String) -> StaticBody2D:
-	var npc = preload("res://scenes/npc.tscn").instantiate()
-	npc.set("character_id", character_id)
-	var tex_path = npc_sprite_paths.get(sprite_id, "")
-	if tex_path != "" and ResourceLoader.exists(tex_path):
-		var spr = npc.get_node_or_null("Sprite2D")
-		if spr: spr.texture = load(tex_path)
-	return npc
 
 func register_encounter_residue(character_id: String, residue_id: String, residue_note: String = "") -> void:
 	quest_manager.register_encounter_residue(character_id, residue_id, residue_note)
