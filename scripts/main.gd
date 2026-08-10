@@ -1,7 +1,6 @@
 extends Node2D
 
 const NPC_SCENE = preload("res://scenes/npc.tscn")
-const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
 const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
 const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
@@ -13,6 +12,7 @@ const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
 const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_drone_encounter.gd")
+const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -33,6 +33,7 @@ var active_room_id: String = ""
 var door_cooldown_until_ms: int = 0
 var is_room_transition: bool = false
 var environment_effects: Node
+var world_landmark_builder: Node
 var world_canvas_modulate: CanvasModulate
 var screen_fx_material: ShaderMaterial
 var interior_overlay: ColorRect
@@ -262,7 +263,6 @@ var ufo_base_position: Vector2 = Vector2.ZERO
 var ufo_abduction_active: bool = false
 var ufo_hover_time: float = 0.0
 var bezos_drone_encounter: Node
-var hidden_bunker_root: Node2D
 
 # --- Hidden bunker cutscene ---
 var bunker_caption_anchor: Control
@@ -546,12 +546,13 @@ func _ready() -> void:
 	_create_transition_fx()
 	_setup_interiors()
 	_remove_world_npcs()
-	_create_great_wall_landmark()
-	_create_sam_altman_encounter()
+	_setup_world_landmark_builder()
+	world_landmark_builder.create_great_wall(GREAT_WALL_TILE)
+	world_landmark_builder.create_nuclear_plant(NUCLEAR_PLANT_TILE)
 	_create_ufo_easter_egg()
 	_setup_bezos_drone_encounter()
-	_create_hidden_bunker_entrance()
-	_create_pyongyang_landmark()
+	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
+	world_landmark_builder.create_pyongyang(PYONGYANG_TILE)
 	_ensure_contamination_figure()
 	_assign_npc_textures()
 	_create_ai_terminal()
@@ -571,58 +572,13 @@ func _remove_world_npcs() -> void:
 			entities_layer.remove_child(child)
 			child.queue_free()
 
-func _create_great_wall_landmark() -> void:
-	_clear_decor_patch(GREAT_WALL_TILE, 4, 3)
 
-	var tex_path = "res://assets/mockups/landmark_great_wall.png"
-	if not ResourceLoader.exists(tex_path):
-		return
+func _setup_world_landmark_builder() -> void:
+	world_landmark_builder = WORLD_LANDMARK_BUILDER_SCRIPT.new()
+	world_landmark_builder.name = "WorldLandmarkBuilder"
+	add_child(world_landmark_builder)
+	world_landmark_builder.setup(entities_layer, ground_map)
 
-	var root := Node2D.new()
-	root.name = "GreatWallEntrance"
-	root.position = _tile_to_body_position(GREAT_WALL_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
-
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
-	sprite.name = "GreatWallLandmark"
-	sprite.texture = tex
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.5)
-	sprite.scale = Vector2(0.38, 0.38)
-	root.add_child(sprite)
-
-	_add_landmark_entry_trigger(root, "GreatWallDoorLeft", Vector2(-82, -40), Vector2(92, 86), "red_command", "EntryMarker", "Wall Gate")
-	_add_landmark_entry_trigger(root, "GreatWallDoorCenter", Vector2(2, -156), Vector2(72, 62), "red_command", "EntryMarker", "Wall Gate")
-	_add_landmark_entry_trigger(root, "GreatWallDoorRight", Vector2(76, -106), Vector2(92, 96), "red_command", "EntryMarker", "Wall Gate")
-
-func _create_sam_altman_encounter() -> void:
-	_clear_decor_patch(NUCLEAR_PLANT_TILE, 4, 3)
-
-	var tex_path = "res://assets/mockups/landmark_nuclear_plant.png"
-	if not ResourceLoader.exists(tex_path):
-		return
-
-	var root := Node2D.new()
-	root.name = "NuclearPlantEntrance"
-	root.position = _tile_to_body_position(NUCLEAR_PLANT_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
-
-	var tex = load(tex_path)
-	var plant = Sprite2D.new()
-	plant.name = "NuclearPlantLandmark"
-	plant.texture = tex
-	plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	plant.offset = Vector2(0, -tex.get_height() * 0.5)
-	plant.scale = Vector2(0.38, 0.38)
-	root.add_child(plant)
-
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorLeft", Vector2(-76, -18), Vector2(92, 88), "neural_core", "EntryMarker", "Containment Door")
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorCenter", Vector2(6, -28), Vector2(94, 102), "neural_core", "EntryMarker", "Containment Door")
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorRight", Vector2(92, 12), Vector2(84, 82), "neural_core", "EntryMarker", "Containment Door")
 
 func _create_ufo_easter_egg() -> void:
 	_clear_decor_patch(UFO_TILE, 3, 2)
@@ -732,96 +688,6 @@ func _start_bezos_cinematic() -> void:
 		transition_overlay.visible = false
 		transition_overlay.modulate.a = 0.0
 	bezos_encounter.start()
-
-func _create_hidden_bunker_entrance() -> void:
-	_clear_decor_patch(HIDDEN_BUNKER_TILE, 3, 2)
-
-	hidden_bunker_root = Node2D.new()
-	hidden_bunker_root.name = "HiddenBunkerEntrance"
-	hidden_bunker_root.position = _tile_to_body_position(HIDDEN_BUNKER_TILE) + HIDDEN_BUNKER_WORLD_OFFSET
-	hidden_bunker_root.z_index = 2
-	entities_layer.add_child(hidden_bunker_root)
-
-	var shadow := Polygon2D.new()
-	shadow.color = Color(0.0, 0.0, 0.0, 0.16)
-	shadow.polygon = PackedVector2Array([
-		Vector2(-116, 54),
-		Vector2(116, 54),
-		Vector2(86, 90),
-		Vector2(-86, 90)
-	])
-	hidden_bunker_root.add_child(shadow)
-
-	var mountain = Sprite2D.new()
-	mountain.texture = load("res://assets/mockups/landmark_bunker.png")
-	mountain.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	mountain.scale = Vector2(0.42, 0.42)
-	mountain.offset = Vector2(0, -10)
-	hidden_bunker_root.add_child(mountain)
-
-	var door := Area2D.new()
-	door.name = "HiddenBunkerDoor"
-	door.position = Vector2(0, 42)
-	door.collision_layer = 0
-	door.collision_mask = 1
-	door.monitoring = true
-	door.monitorable = true
-	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", "mountain_bunker")
-	door.set("spawn_marker", "EntryMarker")
-	door.set("prompt_name", "Bunker Hatch")
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(84, 44)
-	col.shape = shape
-	door.add_child(col)
-	hidden_bunker_root.add_child(door)
-
-func _create_pyongyang_landmark() -> void:
-	_clear_decor_patch(PYONGYANG_TILE, 4, 3)
-
-	var tex_path = "res://assets/mockups/landmark_pyongyang.png"
-	if not ResourceLoader.exists(tex_path):
-		return
-
-	var root := Node2D.new()
-	root.name = "PyongyangEntrance"
-	root.position = _tile_to_body_position(PYONGYANG_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
-
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
-	sprite.name = "PyongyangLandmark"
-	sprite.texture = tex
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.45)
-	sprite.scale = Vector2(0.2, 0.2)
-	root.add_child(sprite)
-
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorLeft", Vector2(-52, -56), Vector2(74, 94), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorCenter", Vector2(2, -96), Vector2(82, 108), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorRight", Vector2(50, -136), Vector2(74, 86), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-
-func _add_landmark_entry_trigger(parent: Node2D, trigger_name: String, local_pos: Vector2, size: Vector2, destination: String, spawn_marker: String, prompt_name: String) -> void:
-	var door := Area2D.new()
-	door.name = trigger_name
-	door.position = local_pos
-	door.collision_layer = 0
-	door.collision_mask = 1
-	door.monitoring = true
-	door.monitorable = true
-	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", destination)
-	door.set("spawn_marker", spawn_marker)
-	door.set("prompt_name", prompt_name)
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = size
-	col.shape = shape
-	door.add_child(col)
-	parent.add_child(door)
 
 func _on_ufo_trigger_body_entered(body: Node) -> void:
 	if body != player:
