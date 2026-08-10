@@ -1,7 +1,6 @@
 extends Node2D
 
 const NPC_SCENE = preload("res://scenes/npc.tscn")
-const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
 const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
 const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
@@ -13,6 +12,8 @@ const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
 const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_drone_encounter.gd")
+const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
+const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -33,6 +34,7 @@ var active_room_id: String = ""
 var door_cooldown_until_ms: int = 0
 var is_room_transition: bool = false
 var environment_effects: Node
+var world_landmark_builder: Node
 var world_canvas_modulate: CanvasModulate
 var screen_fx_material: ShaderMaterial
 var interior_overlay: ColorRect
@@ -253,16 +255,9 @@ var _pack_sources: Dictionary = {
 var _pack_ready: bool = false
 var _path_cells: Dictionary = {}
 var _solid_positions: Dictionary = {}
-var ufo_root: Node2D
-var ufo_beam: Polygon2D
-var ufo_sprite: Sprite2D
-var ufo_clouds: Sprite2D
-var ufo_quantum_nodes: Array[Sprite2D] = []
-var ufo_base_position: Vector2 = Vector2.ZERO
+var ufo_encounter: Node
 var ufo_abduction_active: bool = false
-var ufo_hover_time: float = 0.0
 var bezos_drone_encounter: Node
-var hidden_bunker_root: Node2D
 
 # --- Hidden bunker cutscene ---
 var bunker_caption_anchor: Control
@@ -318,22 +313,6 @@ const FD_PINK2 := Vector2i(3, 6)
 const FD_SNOW := Vector2i(1, 8)
 const FD_SNOW2 := Vector2i(3, 8)
 const WT_WATER := Vector2i(3, 2)
-const FL_STONE := Vector2i(2, 9)
-const FL_WOOD := Vector2i(2, 4)
-const IF_OFFICE := Vector2i(4, 4)
-const IF_PALACE := Vector2i(14, 4)
-const IF_VAULT := Vector2i(15, 13)
-
-# --- Water autotile (first set in water_32.png, sandy shore) ---
-const WT_CENTER := Vector2i(3, 1)
-const WT_EDGE_T := Vector2i(3, 0)
-const WT_EDGE_B := Vector2i(3, 2)
-const WT_EDGE_L := Vector2i(2, 1)
-const WT_EDGE_R := Vector2i(4, 1)
-const WT_CORNER_TL := Vector2i(2, 0)
-const WT_CORNER_TR := Vector2i(4, 0)
-const WT_CORNER_BL := Vector2i(2, 2)
-const WT_CORNER_BR := Vector2i(4, 2)
 
 # --- Floor/path autotile (first set in floor_32.png, sandy path) ---
 const FL_EDGE_T := Vector2i(3, 0)
@@ -562,12 +541,13 @@ func _ready() -> void:
 	_create_transition_fx()
 	_setup_interiors()
 	_remove_world_npcs()
-	_create_great_wall_landmark()
-	_create_sam_altman_encounter()
-	_create_ufo_easter_egg()
+	_setup_world_landmark_builder()
+	world_landmark_builder.create_great_wall(GREAT_WALL_TILE)
+	world_landmark_builder.create_nuclear_plant(NUCLEAR_PLANT_TILE)
+	_setup_ufo_encounter()
 	_setup_bezos_drone_encounter()
-	_create_hidden_bunker_entrance()
-	_create_pyongyang_landmark()
+	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
+	world_landmark_builder.create_pyongyang(PYONGYANG_TILE)
 	_ensure_contamination_figure()
 	_assign_npc_textures()
 	_create_ai_terminal()
@@ -587,133 +567,22 @@ func _remove_world_npcs() -> void:
 			entities_layer.remove_child(child)
 			child.queue_free()
 
-func _create_great_wall_landmark() -> void:
-	_clear_decor_patch(GREAT_WALL_TILE, 4, 3)
 
-	var tex_path = "res://assets/mockups/landmark_great_wall.png"
-	if not ResourceLoader.exists(tex_path):
-		return
+func _setup_world_landmark_builder() -> void:
+	world_landmark_builder = WORLD_LANDMARK_BUILDER_SCRIPT.new()
+	world_landmark_builder.name = "WorldLandmarkBuilder"
+	add_child(world_landmark_builder)
+	world_landmark_builder.setup(entities_layer, ground_map)
 
-	var root := Node2D.new()
-	root.name = "GreatWallEntrance"
-	root.position = _tile_to_body_position(GREAT_WALL_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
 
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
-	sprite.name = "GreatWallLandmark"
-	sprite.texture = tex
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.5)
-	sprite.scale = Vector2(0.38, 0.38)
-	root.add_child(sprite)
-
-	_add_landmark_entry_trigger(root, "GreatWallDoorLeft", Vector2(-82, -40), Vector2(92, 86), "red_command", "EntryMarker", "Wall Gate")
-	_add_landmark_entry_trigger(root, "GreatWallDoorCenter", Vector2(2, -156), Vector2(72, 62), "red_command", "EntryMarker", "Wall Gate")
-	_add_landmark_entry_trigger(root, "GreatWallDoorRight", Vector2(76, -106), Vector2(92, 96), "red_command", "EntryMarker", "Wall Gate")
-
-func _create_sam_altman_encounter() -> void:
-	_clear_decor_patch(NUCLEAR_PLANT_TILE, 4, 3)
-
-	var tex_path = "res://assets/mockups/landmark_nuclear_plant.png"
-	if not ResourceLoader.exists(tex_path):
-		return
-
-	var root := Node2D.new()
-	root.name = "NuclearPlantEntrance"
-	root.position = _tile_to_body_position(NUCLEAR_PLANT_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
-
-	var tex = load(tex_path)
-	var plant = Sprite2D.new()
-	plant.name = "NuclearPlantLandmark"
-	plant.texture = tex
-	plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	plant.offset = Vector2(0, -tex.get_height() * 0.5)
-	plant.scale = Vector2(0.38, 0.38)
-	root.add_child(plant)
-
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorLeft", Vector2(-76, -18), Vector2(92, 88), "neural_core", "EntryMarker", "Containment Door")
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorCenter", Vector2(6, -28), Vector2(94, 102), "neural_core", "EntryMarker", "Containment Door")
-	_add_landmark_entry_trigger(root, "NeuralCoreDoorRight", Vector2(92, 12), Vector2(84, 82), "neural_core", "EntryMarker", "Containment Door")
-
-func _create_ufo_easter_egg() -> void:
+func _setup_ufo_encounter() -> void:
 	_clear_decor_patch(UFO_TILE, 3, 2)
-
-	ufo_root = Node2D.new()
-	ufo_root.name = "UfoEasterEgg"
-	ufo_base_position = _tile_to_body_position(UFO_TILE) + UFO_FLOAT_OFFSET
-	ufo_root.position = ufo_base_position
-	ufo_root.z_index = 4
-	entities_layer.add_child(ufo_root)
-
-	# 1. Shadow (remain procedural as it fits perfectly)
-	var shadow = Polygon2D.new()
-	shadow.color = Color(0, 0, 0, 0.18)
-	shadow.polygon = _ellipse_points(Vector2(0, 28), Vector2(54, 14), 18)
-	ufo_root.add_child(shadow)
-
-	# 2. Black Clouds above
-	ufo_clouds = Sprite2D.new()
-	ufo_clouds.texture = load("res://assets/mockups/ufo_clouds.png")
-	ufo_clouds.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ufo_clouds.scale = Vector2(0.4, 0.4)
-	ufo_clouds.position = Vector2(0, -120)
-	ufo_clouds.modulate.a = 0.8
-	ufo_root.add_child(ufo_clouds)
-
-	# 3. Beam (remain procedural translucent)
-	ufo_beam = Polygon2D.new()
-	ufo_beam.color = Color(0.72, 1.0, 0.82, 0.18)
-	ufo_beam.polygon = PackedVector2Array([
-		Vector2(-24, 10),
-		Vector2(24, 10),
-		Vector2(68, 106),
-		Vector2(-68, 106)
-	])
-	ufo_root.add_child(ufo_beam)
-
-	# 4. Advanced UFO Sprite
-	ufo_sprite = Sprite2D.new()
-	ufo_sprite.texture = load("res://assets/mockups/ufo_advanced.png")
-	ufo_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ufo_sprite.scale = Vector2(0.22, 0.22) # Scale down 640px to ~140px
-	ufo_root.add_child(ufo_sprite)
-
-	# 5. Quantum Lightning (Symbol Flicker)
-	var sym_tex = load("res://assets/mockups/quantum_symbols.png")
-	for i in range(8):
-		var sym = Sprite2D.new()
-		sym.texture = sym_tex
-		sym.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		sym.region_enabled = true
-		# Pick a random 64x64 region from 640x640 sheet (approx)
-		var rx = (randi() % 10) * 64
-		var ry = (randi() % 10) * 64
-		sym.region_rect = Rect2(rx, ry, 64, 64)
-		sym.scale = Vector2(0.4, 0.4)
-		sym.modulate = Color(0.5, 1.0, 0.6, 0.0) # Start invisible
-		ufo_root.add_child(sym)
-		ufo_quantum_nodes.append(sym)
-
-	# 6. Interaction Trigger
-	var trigger = Area2D.new()
-	trigger.name = "UfoTrigger"
-	trigger.collision_layer = 0
-	trigger.collision_mask = 1
-	trigger.monitoring = true
-	trigger.monitorable = true
-	var trigger_shape = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(148, 112)
-	trigger_shape.shape = shape
-	trigger_shape.position = Vector2(0, 44)
-	trigger.add_child(trigger_shape)
-	trigger.body_entered.connect(_on_ufo_trigger_body_entered)
-	ufo_root.add_child(trigger)
+	ufo_encounter = UFO_ENCOUNTER_SCRIPT.new()
+	ufo_encounter.name = "UfoEncounter"
+	add_child(ufo_encounter)
+	ufo_encounter.triggered.connect(_on_ufo_triggered)
+	var spawn_position := _tile_to_body_position(UFO_TILE) + UFO_FLOAT_OFFSET
+	ufo_encounter.setup(player, entities_layer, spawn_position)
 
 func _setup_bezos_drone_encounter() -> void:
 	_clear_decor_patch(BEZOS_DRONE_TILE, 2, 2)
@@ -749,99 +618,7 @@ func _start_bezos_cinematic() -> void:
 		transition_overlay.modulate.a = 0.0
 	bezos_encounter.start()
 
-func _create_hidden_bunker_entrance() -> void:
-	_clear_decor_patch(HIDDEN_BUNKER_TILE, 3, 2)
-
-	hidden_bunker_root = Node2D.new()
-	hidden_bunker_root.name = "HiddenBunkerEntrance"
-	hidden_bunker_root.position = _tile_to_body_position(HIDDEN_BUNKER_TILE) + HIDDEN_BUNKER_WORLD_OFFSET
-	hidden_bunker_root.z_index = 2
-	entities_layer.add_child(hidden_bunker_root)
-
-	var shadow := Polygon2D.new()
-	shadow.color = Color(0.0, 0.0, 0.0, 0.16)
-	shadow.polygon = PackedVector2Array([
-		Vector2(-116, 54),
-		Vector2(116, 54),
-		Vector2(86, 90),
-		Vector2(-86, 90)
-	])
-	hidden_bunker_root.add_child(shadow)
-
-	var mountain = Sprite2D.new()
-	mountain.texture = load("res://assets/mockups/landmark_bunker.png")
-	mountain.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	mountain.scale = Vector2(0.42, 0.42)
-	mountain.offset = Vector2(0, -10)
-	hidden_bunker_root.add_child(mountain)
-
-	var door := Area2D.new()
-	door.name = "HiddenBunkerDoor"
-	door.position = Vector2(0, 42)
-	door.collision_layer = 0
-	door.collision_mask = 1
-	door.monitoring = true
-	door.monitorable = true
-	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", "mountain_bunker")
-	door.set("spawn_marker", "EntryMarker")
-	door.set("prompt_name", "Bunker Hatch")
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(84, 44)
-	col.shape = shape
-	door.add_child(col)
-	hidden_bunker_root.add_child(door)
-
-func _create_pyongyang_landmark() -> void:
-	_clear_decor_patch(PYONGYANG_TILE, 4, 3)
-
-	var tex_path = "res://assets/mockups/landmark_pyongyang.png"
-	if not ResourceLoader.exists(tex_path):
-		return
-
-	var root := Node2D.new()
-	root.name = "PyongyangEntrance"
-	root.position = _tile_to_body_position(PYONGYANG_TILE)
-	root.z_index = 2
-	entities_layer.add_child(root)
-
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
-	sprite.name = "PyongyangLandmark"
-	sprite.texture = tex
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.45)
-	sprite.scale = Vector2(0.2, 0.2)
-	root.add_child(sprite)
-
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorLeft", Vector2(-52, -56), Vector2(74, 94), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorCenter", Vector2(2, -96), Vector2(82, 108), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-	_add_landmark_entry_trigger(root, "PyongyangCannonDoorRight", Vector2(50, -136), Vector2(74, 86), "pyongyang_command", "EntryMarker", "Cannon Hatch")
-
-func _add_landmark_entry_trigger(parent: Node2D, trigger_name: String, local_pos: Vector2, size: Vector2, destination: String, spawn_marker: String, prompt_name: String) -> void:
-	var door := Area2D.new()
-	door.name = trigger_name
-	door.position = local_pos
-	door.collision_layer = 0
-	door.collision_mask = 1
-	door.monitoring = true
-	door.monitorable = true
-	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", destination)
-	door.set("spawn_marker", spawn_marker)
-	door.set("prompt_name", prompt_name)
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = size
-	col.shape = shape
-	door.add_child(col)
-	parent.add_child(door)
-
-func _on_ufo_trigger_body_entered(body: Node) -> void:
-	if body != player:
-		return
+func _on_ufo_triggered() -> void:
 	if ufo_abduction_active or is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	call_deferred("_start_ufo_abduction")
@@ -1061,13 +838,6 @@ func _pascal_case(value: String) -> String:
 		result += part.substr(0, 1).to_upper() + part.substr(1).to_lower()
 	return result if not result.is_empty() else "Room"
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int = 16) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for i in range(segments):
-		var angle := TAU * float(i) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
-
 func _character_display_name(character_id: String) -> String:
 	if character_data_cache.has(character_id):
 		var entry = character_data_cache[character_id]
@@ -1095,7 +865,8 @@ func _process(delta: float) -> void:
 	if bezos_cinematic_active:
 		bezos_encounter.process_frame(delta)
 		return
-	_process_ufo_easter_egg(delta)
+	if ufo_encounter:
+		ufo_encounter.process_frame(delta)
 	if bezos_drone_encounter:
 		bezos_drone_encounter.process_frame(delta)
 	_process_ai_terminal(delta)
@@ -1108,38 +879,6 @@ func _process(delta: float) -> void:
 	if dialogue_manager:
 		dialogue_manager.process_frame(delta)
 
-
-func _process_ufo_easter_egg(delta: float) -> void:
-	if not ufo_root:
-		return
-
-	ufo_hover_time += delta * 1.8
-	# Left-right swaying + vertical hover
-	var sway = sin(ufo_hover_time * 0.5) * 24.0
-	var hover = sin(ufo_hover_time) * 6.0
-	ufo_root.position = ufo_base_position + Vector2(sway, hover)
-	
-	if ufo_beam:
-		ufo_beam.modulate.a = 0.14 + (sin(ufo_hover_time * 2.4) * 0.08 + 0.08)
-
-	# Animate Quantum Lightning
-	for sym in ufo_quantum_nodes:
-		if randf() < delta * 4.0: # Rare flicker trigger
-			var angle = randf() * TAU
-			var dist = randf_range(40, 90)
-			sym.position = Vector2(cos(angle) * dist, sin(angle) * dist - 40.0)
-			sym.modulate.a = 0.8
-			sym.scale = Vector2(randf_range(0.3, 0.5), randf_range(0.3, 0.5))
-			# Random symbol region
-			var rx = (randi() % 8) * 80
-			var ry = (randi() % 8) * 80
-			sym.region_rect = Rect2(rx, ry, 80, 80)
-		else:
-			sym.modulate.a = max(0.0, sym.modulate.a - delta * 4.0)
-
-	# Slow cloud movement
-	if ufo_clouds:
-		ufo_clouds.position.x = -sway * 0.5 # Parallax feel
 
 func _is_in_building_zone(x: int, y: int) -> bool:
 	for spec in building_specs:
@@ -1392,18 +1131,6 @@ func _build_world_border() -> void:
 			else:
 				ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_BUSH)
 			_create_solid_wall(x, y)
-
-func _water_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
-	if n and s and w and e: return WT_CENTER
-	if not n and s and w and e: return WT_EDGE_T
-	if n and not s and w and e: return WT_EDGE_B
-	if n and s and not w and e: return WT_EDGE_L
-	if n and s and w and not e: return WT_EDGE_R
-	if not n and s and not w and e: return WT_CORNER_TL
-	if not n and s and w and not e: return WT_CORNER_TR
-	if n and not s and not w and e: return WT_CORNER_BL
-	if n and not s and w and not e: return WT_CORNER_BR
-	return WT_CENTER
 
 func _trees_for_biome(biome: Biome) -> Array:
 	match biome:
