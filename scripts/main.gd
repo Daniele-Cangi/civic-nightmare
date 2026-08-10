@@ -318,22 +318,6 @@ const FD_PINK2 := Vector2i(3, 6)
 const FD_SNOW := Vector2i(1, 8)
 const FD_SNOW2 := Vector2i(3, 8)
 const WT_WATER := Vector2i(3, 2)
-const FL_STONE := Vector2i(2, 9)
-const FL_WOOD := Vector2i(2, 4)
-const IF_OFFICE := Vector2i(4, 4)
-const IF_PALACE := Vector2i(14, 4)
-const IF_VAULT := Vector2i(15, 13)
-
-# --- Water autotile (first set in water_32.png, sandy shore) ---
-const WT_CENTER := Vector2i(3, 1)
-const WT_EDGE_T := Vector2i(3, 0)
-const WT_EDGE_B := Vector2i(3, 2)
-const WT_EDGE_L := Vector2i(2, 1)
-const WT_EDGE_R := Vector2i(4, 1)
-const WT_CORNER_TL := Vector2i(2, 0)
-const WT_CORNER_TR := Vector2i(4, 0)
-const WT_CORNER_BL := Vector2i(2, 2)
-const WT_CORNER_BR := Vector2i(4, 2)
 
 # --- Floor/path autotile (first set in floor_32.png, sandy path) ---
 const FL_EDGE_T := Vector2i(3, 0)
@@ -1392,18 +1376,6 @@ func _build_world_border() -> void:
 			else:
 				ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_BUSH)
 			_create_solid_wall(x, y)
-
-func _water_tile_for_neighbors(n: bool, s: bool, w: bool, e: bool) -> Vector2i:
-	if n and s and w and e: return WT_CENTER
-	if not n and s and w and e: return WT_EDGE_T
-	if n and not s and w and e: return WT_EDGE_B
-	if n and s and not w and e: return WT_EDGE_L
-	if n and s and w and not e: return WT_EDGE_R
-	if not n and s and not w and e: return WT_CORNER_TL
-	if not n and s and w and not e: return WT_CORNER_TR
-	if n and not s and not w and e: return WT_CORNER_BL
-	if n and not s and w and not e: return WT_CORNER_BR
-	return WT_CENTER
 
 func _trees_for_biome(biome: Biome) -> Array:
 	match biome:
