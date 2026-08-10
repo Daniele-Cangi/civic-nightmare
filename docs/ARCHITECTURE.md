@@ -13,6 +13,8 @@ scenes/main.tscn
     ├── managers/room_manager.gd    interiors, doors, transitions, reparenting
     ├── managers/environment_effects.gd
     │                               lighting, CRT, ambient audio, particles
+    ├── managers/world_landmark_builder.gd
+    │                               static landmark nodes and entry triggers
     ├── sequences/intro_sequence.gd CRT/news intro timeline
     ├── sequences/mk_sequence.gd    final-mission presentation timeline
     ├── sequences/ending_sequence.gd
@@ -20,6 +22,7 @@ scenes/main.tscn
     └── encounters/
         ├── xi_pre_scene.gd         intercepted-communications pre-scene
         ├── kim_phone_encounter.gd  red-phone dialogue overlay
+        ├── ufo_encounter.gd        in-world UFO presentation and trigger
         ├── bezos_drone_encounter.gd
         │                           in-world drone prelude
         └── bezos_encounter.gd      arcade encounter presentation
@@ -36,6 +39,7 @@ scenes/main.tscn
 | Interior registry and world return points | `RoomManager` | Creates interiors and doors, reparents the player, and owns transition UI. |
 | Intro, MK, and ending presentation | `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, and timers. |
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
+| Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the Great Wall, nuclear plant, hidden bunker, and Pyongyang entrances. |
 | Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, and atmospheric particles. |
 | Overworld and global story orchestration | `main.gd` | Coordinates systems that need world nodes or multiple narrative states. |
 | Room-local actors and geometry | `scripts/oval_office_room.gd`, `scenes/interiors/` | Separate from global travel. |
@@ -66,4 +70,4 @@ scenes/main.tscn
 
 ## Deliberately retained debt
 
-The overworld generator, contamination/hidden-bunker storyline, final-mission flow, and several tightly coupled landmark builders remain in `main.gd`. Their state is interleaved with world nodes and narrative side effects; extracting them safely calls for dedicated scene tests and smaller follow-up changes. `scripts/oval_office_room.gd` is also large, but owns a different, room-local concern and was left untouched to keep this refactor behavior-preserving.
+The overworld generator, contamination/hidden-bunker storyline, and final-mission flow remain in `main.gd`. Their state is interleaved with world nodes and narrative side effects; extracting them safely calls for dedicated scene tests and smaller follow-up changes. `scripts/oval_office_room.gd` is also large, but owns a different, room-local concern and was left untouched to keep this refactor behavior-preserving.
