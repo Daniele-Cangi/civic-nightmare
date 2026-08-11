@@ -51,6 +51,7 @@ Your central hub is a satirical 90s digital mascot—a parody of modern AI assis
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
 - `scripts/managers/`: dialogue, quest progression, room transitions, environment setup, and static world landmarks.
+- `scripts/data/`: read-only character colors, portraits, and world-sprite metadata.
 - `scripts/sequences/`: intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
