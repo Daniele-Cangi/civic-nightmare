@@ -30,6 +30,11 @@ Navigate a procedurally detailed overworld and interact with the "Architects of 
 ### 🤖 C.L.A.U.D.I.A. Assistant
 Your central hub is a satirical 90s digital mascot—a parody of modern AI assistants—housed in a CRT terminal. She provides helpful (and highly cynical) guidance on your path to bureaucratic salvation.
 
+### 💾 Persistent Dossier
+The title screen offers **Continue** and **New Game**. Progress, encounter consequences, and final-mission state are archived in a versioned local dossier; Continue always returns the player to the latest safe overworld checkpoint instead of reopening a cutscene or room transition midway through it.
+
+Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
+
 ## 🎨 Technical & Aesthetic Identity
 
 - **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
@@ -50,7 +55,7 @@ Your central hub is a satirical 90s digital mascot—a parody of modern AI assis
 
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
-- `scripts/managers/`: dialogue, quest progression, room transitions, environment setup, and static world landmarks.
+- `scripts/managers/`: dialogue, quest progression, versioned save data, room transitions, environment setup, and static world landmarks.
 - `scripts/data/`: read-only character colors, portraits, and world-sprite metadata.
 - `scripts/sequences/`: intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
@@ -68,7 +73,7 @@ godot --headless --path . --editor --quit
 godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
 ```
 
-The smoke test loads the main scene and covers manager initialization, AI dialogue, and an interior round trip.
+The smoke test loads the main scene and covers the title flow, save/restore round trips, manager initialization, AI dialogue, and an interior round trip.
 
 ---
 

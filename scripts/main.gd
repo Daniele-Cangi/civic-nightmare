@@ -14,6 +14,8 @@ const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_dro
 const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
 const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
 const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
+const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
+const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -153,7 +155,17 @@ const CONTAMINATION_TERMINAL_OFFSET := Vector2(-140, -8)
 var intro_sequence: Node
 var intro_active: bool:
 	get:
-		return intro_sequence == null or bool(intro_sequence.get("active"))
+		return bool(intro_sequence.get("active")) if intro_sequence else false
+
+# --- Dossier / continue flow ---
+var save_manager: Node
+var start_menu: Node
+var start_menu_active: bool:
+	get:
+		return bool(start_menu.get("active")) if start_menu else false
+var autosave_enabled: bool = true
+var autosave_pending: bool = false
+var last_safe_world_position := Vector2(64, 80)
 
 # --- Ending sequence ---
 var ending_triggered: bool = false
@@ -423,10 +435,11 @@ func _ready() -> void:
 	_create_typewriter_bip()
 	environment_effects.setup_ambient_audio()
 	environment_effects.create_atmosphere_particles()
-	_setup_intro_sequence()
 	_create_ending_overlay()
 	_create_bezos_cinematic_overlay()
 	_setup_mk_sequence()
+	_setup_save_manager()
+	_setup_start_menu()
 
 func _remove_world_npcs() -> void:
 	for child in entities_layer.get_children():
@@ -664,6 +677,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		call_deferred("_try_open_optional_ai_followup")
 	if destination == "world":
 		call_deferred("_maybe_queue_contamination_event", contamination_source)
+		_request_autosave()
 
 func _enter_room(room_id: String, spawn_marker: String) -> void:
 	if not room_manager.enter_room(room_id, active_room_id, spawn_marker):
@@ -725,6 +739,8 @@ func _character_display_name(character_id: String) -> String:
 	return result
 
 func _process(delta: float) -> void:
+	if start_menu_active:
+		return
 	if intro_active:
 		intro_sequence.process_frame(delta)
 		return
@@ -747,6 +763,8 @@ func _process(delta: float) -> void:
 		xi_pre_scene_encounter.request_skip()
 	if dialogue_manager:
 		dialogue_manager.process_frame(delta)
+	_track_safe_world_checkpoint()
+	_flush_autosave()
 
 
 func _is_in_building_zone(x: int, y: int) -> bool:
@@ -1621,6 +1639,7 @@ func _finish_dialogue() -> void:
 	# Trigger Bezos cinematic if his Terminator dialogue just finished
 	if current_character_id == "jeff_bezos":
 		_close_dialogue()
+		_request_autosave()
 		get_tree().create_timer(0.4).timeout.connect(_start_bezos_cinematic)
 		return
 
@@ -1629,6 +1648,7 @@ func _finish_dialogue() -> void:
 	var queue_contamination_after_ai := current_character_id == "ai_terminal" and quest_index > 0 and not should_end and not ai_dialogue_override_active
 	var should_dissolve_terminal_contamination := current_character_id == "ai_terminal" and ai_dialogue_override_active and contamination_terminal_ready and not contamination_terminal_departed and not hidden_bunker_ai_ack_active
 	_close_dialogue()
+	_request_autosave()
 	if hidden_bunker_ai_ack_active:
 		hidden_bunker_ai_ack_active = false
 		if not contamination_terminal_ready and contamination_root and is_instance_valid(contamination_root):
@@ -1797,6 +1817,57 @@ func _apply_hidden_bunker_tone() -> void:
 		screen_fx_material.set_shader_parameter("overlay_strength", 0.18)
 		screen_fx_material.set_shader_parameter("tint_color", Color(0.78, 0.84, 0.94, 1.0))
 
+
+func _prepare_hidden_bunker_actors() -> Array:
+	var bunker_room = room_registry.get("mountain_bunker")
+	if not bunker_room:
+		return [null, null]
+	var z_npc = bunker_room.get_node_or_null("Entities/ZelenskyPlaceholder")
+	var d_npc = bunker_room.get_node_or_null("Entities/DeathPlaceholder")
+	if z_npc and d_npc:
+		z_npc.set("look_at_target", d_npc)
+
+	for data in [[z_npc, "zelensky_bunker", true], [d_npc, "death_bunker", false]]:
+		var node = data[0] as StaticBody2D
+		var sprite_id := str(data[1])
+		var is_z := bool(data[2])
+		if not node:
+			continue
+		node.process_mode = Node.PROCESS_MODE_INHERIT
+		node.scale = Vector2(0.88, 0.88)
+		if is_z:
+			node.set("patrol_range", 12.0)
+			node.set("patrol_speed", 16.0)
+			if not node.get_node_or_null("InquisitorLight"):
+				var light := PointLight2D.new()
+				light.name = "InquisitorLight"
+				light.color = Color(0.8, 0.9, 1.0)
+				light.energy = 0.65
+				light.texture_scale = 2.4
+				var tex := GradientTexture2D.new()
+				tex.fill = GradientTexture2D.FILL_RADIAL
+				tex.fill_from = Vector2(0.5, 0.5)
+				tex.fill_to = Vector2(1.0, 0.5)
+				var grad := Gradient.new()
+				grad.colors = PackedColorArray([Color.WHITE, Color(1, 1, 1, 0)])
+				tex.gradient = grad
+				light.texture = tex
+				light.position = Vector2(0, -60)
+				node.add_child(light)
+
+		var sprite := node.get_node_or_null("Sprite2D") as Sprite2D
+		if sprite:
+			var sprite_path := str(CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS.get(sprite_id, ""))
+			if ResourceLoader.exists(sprite_path):
+				sprite.texture = load(sprite_path)
+			sprite.visible = true
+			node.set("base_scale", sprite.scale)
+		var placeholder_visual = node.get_node_or_null("PlaceholderVisual")
+		if placeholder_visual:
+			placeholder_visual.visible = false
+	return [z_npc, d_npc]
+
+
 func _start_hidden_bunker_scene() -> void:
 	if seen_hidden_bunker_scene or hidden_bunker_scene_active or active_room_id != "mountain_bunker":
 		return
@@ -1810,52 +1881,12 @@ func _start_hidden_bunker_scene() -> void:
 	_apply_hidden_bunker_tone()
 
 	var bunker_room = room_registry.get("mountain_bunker")
-	if not bunker_room: return
-	
-	# Reference existing placeholders from oval_office_room.gd
-	var z_npc = bunker_room.get_node_or_null("Entities/ZelenskyPlaceholder")
-	var d_npc = bunker_room.get_node_or_null("Entities/DeathPlaceholder")
-	
-	if z_npc and d_npc:
-		z_npc.set("look_at_target", d_npc) # Always look at Death
-	
-	# Apply sprites and hide placeholder polygons
-	for data in [[z_npc, "zelensky_bunker", true], [d_npc, "death_bunker", false]]:
-		var node = data[0] as StaticBody2D
-		var sprite_id = data[1]
-		var is_z = data[2]
-		if node:
-			node.process_mode = Node.PROCESS_MODE_INHERIT
-			node.scale = Vector2(0.88, 0.88)
-			if is_z:
-				node.set("patrol_range", 12.0)
-				node.set("patrol_speed", 16.0)
-				# Add inquisitorial spotlight
-				var light = PointLight2D.new()
-				light.name = "InquisitorLight"
-				light.color = Color(0.8, 0.9, 1.0)
-				light.energy = 0.65
-				light.texture_scale = 2.4
-				var tex = GradientTexture2D.new()
-				tex.fill = GradientTexture2D.FILL_RADIAL
-				tex.fill_from = Vector2(0.5, 0.5)
-				tex.fill_to = Vector2(1.0, 0.5)
-				var grad = Gradient.new()
-				grad.colors = PackedColorArray([Color.WHITE, Color(1, 1, 1, 0)])
-				tex.gradient = grad
-				light.texture = tex
-				node.add_child(light)
-				light.position = Vector2(0, -60) # Top-down beam
-
-			var spr = node.get_node_or_null("Sprite2D")
-			if spr:
-				spr.texture = load(CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS.get(sprite_id, ""))
-				spr.visible = true
-				if node.has_method("_ready"):
-					node.set("base_scale", spr.scale) # Fix breathing baseline
-			var placeholder_visual = node.get_node_or_null("PlaceholderVisual")
-			if placeholder_visual:
-				placeholder_visual.visible = false
+	if not bunker_room:
+		hidden_bunker_scene_active = false
+		player.set_physics_process(true)
+		return
+	var actors := _prepare_hidden_bunker_actors()
+	var d_npc = actors[1]
 
 	if bunker_room.has_method("get_spawn_position"):
 		var target_pos: Vector2 = bunker_room.get_spawn_position("ApproachMarker")
@@ -1874,7 +1905,7 @@ func _start_hidden_bunker_scene() -> void:
 			await get_tree().create_timer(pause_before).timeout
 		
 		# Death appears when he speaks
-		if str(beat.get("speaker", "")) == "DEATH" and d_npc.modulate.a < 0.1:
+		if d_npc and str(beat.get("speaker", "")) == "DEATH" and d_npc.modulate.a < 0.1:
 			var d_tw = create_tween()
 			d_tw.tween_property(d_npc, "modulate:a", 1.0, 1.2)
 			
@@ -1886,6 +1917,7 @@ func _start_hidden_bunker_scene() -> void:
 	seen_hidden_bunker_scene = true
 	hidden_bunker_scene_active = false
 	player.set_physics_process(true)
+	_request_autosave()
 
 func _load_contamination_texture() -> Texture2D:
 	var tex_path := "res://assets/sprites/npc_contamination.png"
@@ -2129,9 +2161,244 @@ func _start_contamination_event(source: String) -> void:
 				contamination_root.modulate = Color.WHITE
 				contamination_root.visible = true
 				contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
+	_request_autosave()
 
 func register_encounter_residue(character_id: String, residue_id: String, residue_note: String = "") -> void:
 	quest_manager.register_encounter_residue(character_id, residue_id, residue_note)
+	_request_autosave()
+
+
+# ============================================================
+#  VERSIONED DOSSIER / CONTINUE
+# ============================================================
+
+func _setup_save_manager() -> void:
+	save_manager = SAVE_MANAGER_SCRIPT.new()
+	save_manager.name = "SaveManager"
+	add_child(save_manager)
+	save_manager.setup()
+	last_safe_world_position = player.global_position
+
+
+func _setup_start_menu() -> void:
+	start_menu = START_MENU_SCRIPT.new()
+	start_menu.name = "StartMenu"
+	add_child(start_menu)
+	start_menu.continue_requested.connect(_continue_saved_game)
+	start_menu.new_game_requested.connect(_begin_new_game)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	start_menu.setup(self, save_manager.get_save_summary())
+
+
+func _begin_new_game(clear_existing_save: bool = true) -> void:
+	if clear_existing_save and save_manager:
+		var clear_error: Error = save_manager.clear_save()
+		if clear_error != OK:
+			push_warning("Could not clear the previous dossier: %s" % error_string(clear_error))
+	autosave_pending = false
+	_close_start_menu()
+	_setup_intro_sequence()
+
+
+func _continue_saved_game() -> void:
+	if not save_manager:
+		return
+	var snapshot: Dictionary = save_manager.load_game()
+	if snapshot.is_empty():
+		return
+	_close_start_menu()
+	_apply_save_snapshot(snapshot)
+
+
+func _close_start_menu() -> void:
+	if start_menu:
+		start_menu.close()
+
+
+func _build_save_snapshot() -> Dictionary:
+	var rooms: Dictionary = {}
+	for room_id in room_registry:
+		var room = room_registry[room_id]
+		if room and room.has_method("get_save_data"):
+			rooms[str(room_id)] = room.get_save_data()
+
+	return {
+		"quest": quest_manager.get_save_data(),
+		"world": {
+			"safe_position": [last_safe_world_position.x, last_safe_world_position.y]
+		},
+		"story": {
+			"seen_hidden_bunker_scene": seen_hidden_bunker_scene,
+			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
+			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
+			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
+			"contamination_appearance_count": contamination_appearance_count,
+			"contamination_terminal_ready": contamination_terminal_ready,
+			"contamination_terminal_dialogue_seen": contamination_terminal_dialogue_seen,
+			"contamination_terminal_departed": contamination_terminal_departed,
+			"contamination_terminal_afterglow_pending": contamination_terminal_afterglow_pending,
+			"optional_ai_followup_lines": optional_ai_followup_lines.duplicate(),
+			"ufo_ai_followup_pending": ufo_ai_followup_pending,
+			"ai_override_lines": ai_override_lines.duplicate(),
+			"xi_pre_scene_seen": xi_pre_scene_seen,
+			"bezos_cinematic_seen": bezos_cinematic_seen,
+			"final_mission_active": final_mission_active,
+			"final_mission_done": final_mission_done,
+			"final_mission_margin_text": final_mission_margin_text,
+			"final_mission_choice": final_mission_choice,
+			"postgame_free_roam_started": postgame_free_roam_started
+		},
+		"rooms": rooms
+	}
+
+
+func _apply_save_snapshot(snapshot: Dictionary) -> void:
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	if player.get_parent() != entities_layer:
+		player.reparent(entities_layer, true)
+	for room_id in room_registry:
+		var room = room_registry[room_id]
+		if room and room.has_method("set_room_active"):
+			room.set_room_active(false)
+	active_room_id = ""
+	is_room_transition = false
+	_set_room_presentation(false)
+	if transition_overlay:
+		transition_overlay.visible = false
+		transition_overlay.modulate.a = 0.0
+
+	var quest_data = snapshot.get("quest", {})
+	if quest_data is Dictionary:
+		quest_manager.restore_save_data(quest_data)
+
+	var saved_rooms = snapshot.get("rooms", {})
+	if saved_rooms is Dictionary:
+		for room_id in saved_rooms:
+			var room = room_registry.get(str(room_id))
+			var room_data = saved_rooms[room_id]
+			if room and room_data is Dictionary and room.has_method("restore_save_data"):
+				room.restore_save_data(room_data)
+
+	var story = snapshot.get("story", {})
+	if not story is Dictionary:
+		story = {}
+	seen_hidden_bunker_scene = bool(story.get("seen_hidden_bunker_scene", false))
+	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
+	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
+	hidden_bunker_ai_ack_active = false
+	contamination_seen_sources = _save_dictionary(story, "contamination_seen_sources")
+	contamination_appearance_count = clampi(int(story.get("contamination_appearance_count", 0)), 0, CONTAMINATION_MAX_APPEARANCES)
+	contamination_terminal_ready = bool(story.get("contamination_terminal_ready", false))
+	contamination_terminal_dialogue_seen = bool(story.get("contamination_terminal_dialogue_seen", false))
+	contamination_terminal_departed = bool(story.get("contamination_terminal_departed", false))
+	contamination_terminal_afterglow_pending = bool(story.get("contamination_terminal_afterglow_pending", false))
+	optional_ai_followup_lines = _save_array(story, "optional_ai_followup_lines")
+	ufo_ai_followup_pending = bool(story.get("ufo_ai_followup_pending", false))
+	ai_override_lines = _save_array(story, "ai_override_lines")
+
+	if bool(story.get("xi_pre_scene_seen", false)):
+		_ensure_xi_pre_scene_encounter()
+		xi_pre_scene_encounter.set("xi_pre_scene_seen", true)
+	if bool(story.get("bezos_cinematic_seen", false)):
+		bezos_encounter.set("bezos_cinematic_seen", true)
+		bezos_drone_encounter.remove_drone()
+
+	final_mission_active = bool(story.get("final_mission_active", false))
+	final_mission_done = bool(story.get("final_mission_done", false))
+	final_mission_margin_text = str(story.get("final_mission_margin_text", ""))
+	final_mission_choice = int(story.get("final_mission_choice", -1))
+	postgame_free_roam_started = bool(story.get("postgame_free_roam_started", false))
+	if final_mission_done:
+		final_mission_active = false
+		postgame_free_roam_started = true
+	ending_triggered = final_mission_active or final_mission_done
+
+	var world = snapshot.get("world", {})
+	var safe_position = world.get("safe_position", []) if world is Dictionary else []
+	if safe_position is Array and safe_position.size() >= 2:
+		last_safe_world_position = Vector2(float(safe_position[0]), float(safe_position[1]))
+	player.global_position = last_safe_world_position
+
+	if seen_hidden_bunker_scene:
+		_prepare_hidden_bunker_actors()
+	_restore_contamination_presentation()
+	if final_mission_active and not final_mission_done:
+		call_deferred("_spawn_self_npc")
+	player.set_physics_process(true)
+
+
+func _save_dictionary(data: Dictionary, key: String) -> Dictionary:
+	var value = data.get(key, {})
+	return value.duplicate(true) if value is Dictionary else {}
+
+
+func _save_array(data: Dictionary, key: String) -> Array:
+	var value = data.get(key, [])
+	return value.duplicate(true) if value is Array else []
+
+
+func _restore_contamination_presentation() -> void:
+	if not contamination_root or not is_instance_valid(contamination_root):
+		return
+	contamination_root.visible = false
+	contamination_root.modulate = Color.WHITE
+	if contamination_terminal_ready and not contamination_terminal_departed:
+		var terminal := get_node_or_null("Entities/AITerminal")
+		if terminal:
+			contamination_root.visible = true
+			contamination_root.global_position = terminal.global_position + CONTAMINATION_TERMINAL_OFFSET
+
+
+func _track_safe_world_checkpoint() -> void:
+	if _is_world_checkpoint_safe():
+		last_safe_world_position = player.global_position
+
+
+func _is_autosave_safe() -> bool:
+	return (
+		not start_menu_active
+		and not intro_active
+		and not ending_active
+		and not is_dialogue_open
+		and not is_room_transition
+		and not hidden_bunker_scene_active
+		and not contamination_active
+		and not bezos_cinematic_active
+		and not ufo_abduction_active
+		and not final_mission_awaiting_input
+	)
+
+
+func _is_world_checkpoint_safe() -> bool:
+	return _is_autosave_safe() and active_room_id == "" and player.get_parent() == entities_layer
+
+
+func _request_autosave() -> void:
+	if autosave_enabled:
+		autosave_pending = true
+
+
+func _flush_autosave() -> void:
+	if not autosave_pending or not _is_autosave_safe():
+		return
+	_write_save_checkpoint()
+
+
+func _write_save_checkpoint(force: bool = false) -> void:
+	if not autosave_enabled or not save_manager:
+		return
+	if not force and not _is_autosave_safe():
+		autosave_pending = true
+		return
+	if _is_world_checkpoint_safe():
+		last_safe_world_position = player.global_position
+	var save_error: Error = save_manager.save_game(_build_save_snapshot())
+	if save_error == OK:
+		autosave_pending = false
+	else:
+		push_warning("Could not archive the dossier: %s" % error_string(save_error))
 
 
 # ============================================================
@@ -2139,10 +2406,17 @@ func register_encounter_residue(character_id: String, residue_id: String, residu
 # ============================================================
 
 func _setup_intro_sequence() -> void:
+	if intro_sequence and is_instance_valid(intro_sequence):
+		return
 	intro_sequence = INTRO_SEQUENCE_SCRIPT.new()
 	intro_sequence.name = "IntroSequence"
 	add_child(intro_sequence)
+	intro_sequence.finished.connect(_on_intro_finished)
 	intro_sequence.setup(self, player)
+
+
+func _on_intro_finished() -> void:
+	_request_autosave()
 
 
 
@@ -2172,6 +2446,7 @@ func _trigger_final_mission() -> void:
 		player.set_physics_process(true)
 		return
 	final_mission_active = true
+	_request_autosave()
 	# Force-close any open room so the world is visible
 	if active_room_id != "":
 		var old_room = room_registry.get(active_room_id)
@@ -2228,6 +2503,7 @@ func _start_postgame_free_roam() -> void:
 		"No more signatures. No more protocol. Just monuments, delusions, optional scandals, and several premium-grade civic hallucinations.",
 		"If you encounter anything ridiculous, spiritually offensive, or administratively impossible, do not panic. That is our highest fidelity mode."
 	]
+	_request_autosave()
 	get_tree().create_timer(0.8).timeout.connect(func() -> void:
 		open_dialogue("ai_terminal")
 	)
@@ -2431,6 +2707,7 @@ func _open_text_input_field() -> void:
 	)
 
 func _after_text_input() -> void:
+	_request_autosave()
 	# NPC-self fades and signs
 	if final_mission_npc:
 		var tw := create_tween()
@@ -2480,6 +2757,7 @@ func _start_final_credits() -> void:
 	final_mission_done = true
 	ending_sequence.configure_final_credits(final_mission_choice, final_mission_margin_text)
 	ending_triggered = true
+	_write_save_checkpoint(true)
 	start_ending_sequence()
 
 # ── Bezos SF2 cinematic (1280×720, centrato, fedele a SSF II) ──
@@ -2499,3 +2777,4 @@ func _create_bezos_cinematic_overlay() -> void:
 
 func _on_bezos_cinematic_finished() -> void:
 	bezos_drone_encounter.remove_drone()
+	_request_autosave()
