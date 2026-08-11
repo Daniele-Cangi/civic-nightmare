@@ -668,7 +668,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 	if entering_hidden_bunker:
 		call_deferred("_start_hidden_bunker_scene")
 	elif destination == "ufo_lab":
-		call_deferred("_start_ufo_lab_scene")
+		ufo_encounter.call_deferred("prepare_lab", room_registry.get("ufo_lab"), CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS)
 	elif leaving_hidden_bunker and seen_hidden_bunker_scene and not hidden_bunker_exit_acknowledged:
 		hidden_bunker_exit_acknowledged = true
 		hidden_bunker_ai_ack_pending = true
@@ -1808,33 +1808,6 @@ func _apply_hidden_bunker_tone() -> void:
 		screen_fx_material.set_shader_parameter("vignette_strength", 0.3)
 		screen_fx_material.set_shader_parameter("overlay_strength", 0.18)
 		screen_fx_material.set_shader_parameter("tint_color", Color(0.78, 0.84, 0.94, 1.0))
-
-func _start_ufo_lab_scene() -> void:
-	var ufo_room = room_registry.get("ufo_lab")
-	if not ufo_room: return
-	
-	var einstein = ufo_room.get_node_or_null("Entities/AlbertEinsteinPlaceholder")
-	var zuck = ufo_room.get_node_or_null("Entities/MarkZuckerbergPlaceholder")
-	
-	for data in [[einstein, "ufo_easter_egg", true], [zuck, "mark_zuckerberg_ufo", false]]:
-		var node = data[0] as StaticBody2D
-		var sprite_id = data[1]
-		var is_einstein = data[2]
-		if node:
-			node.process_mode = Node.PROCESS_MODE_INHERIT
-			node.scale = Vector2(0.88, 0.88)
-			if is_einstein:
-				node.set("patrol_range", 10.0)
-				node.set("patrol_speed", 18.0)
-			var spr = node.get_node_or_null("Sprite2D")
-			if spr:
-				spr.texture = load(CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS.get(sprite_id, ""))
-				spr.visible = true
-				if node.has_method("_ready"):
-					node.set("base_scale", spr.scale)
-			var placeholder_visual = node.get_node_or_null("PlaceholderVisual")
-			if placeholder_visual:
-				placeholder_visual.visible = false
 
 func _start_hidden_bunker_scene() -> void:
 	if seen_hidden_bunker_scene or hidden_bunker_scene_active or active_room_id != "mountain_bunker":
