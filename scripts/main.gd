@@ -167,18 +167,6 @@ var ending_active: bool:
 var ending_layer: CanvasLayer:
 	get:
 		return ending_sequence.get("ending_layer") as CanvasLayer if ending_sequence else null
-var ending_scenes: Array:
-	get:
-		return ending_sequence.get("ending_scenes") as Array if ending_sequence else []
-	set(value):
-		if ending_sequence:
-			ending_sequence.set("ending_scenes", value)
-var ending_phase: int:
-	get:
-		return int(ending_sequence.get("ending_phase")) if ending_sequence else 0
-	set(value):
-		if ending_sequence:
-			ending_sequence.set("ending_phase", value)
 
 
 # --- Bezos cinematic encounter ---
@@ -2490,36 +2478,7 @@ func _start_mk_sequence() -> void:
 
 func _start_final_credits() -> void:
 	final_mission_done = true
-
-	# Build final credits array dynamically
-	var choice_line: String
-	match final_mission_choice:
-		0: choice_line = "You knew it wouldn't matter.\nYou did it anyway."
-		1: choice_line = "You almost didn't.\nThat counts for something."
-		_: choice_line = "That was the only honest answer."
-
-	var margin_display: String
-	if final_mission_margin_text.strip_edges() == "":
-		margin_display = "[left blank]"
-	else:
-		margin_display = "\"" + final_mission_margin_text + "\""
-
-	ending_scenes = [
-		"[CLASSIFIED — FILE #0001]\n\nSeven signatures.\nThe document is complete.",
-		"Six of them were easy.\n\nThe seventh took everything.",
-		choice_line,
-		"C.L.A.U.D.I.A. received the file\nat 23:59:59.",
-		"She processed it in\n0.003 seconds.\n\nThen she sat with it\nfor a very long time.",
-		"For the first time in\nher operational history,\nshe created a subfolder.",
-		"She named it\n\n'Exceptions'.",
-		"The world didn't change.\n\nThe wars are still running.\nThe billionaires are still rich.\nThe warehouse worker\nstill doesn't have a chair.",
-		"The document is filed\nin a folder\nthat one machine\ndecided to create\nbecause one person\ndecided to try.",
-		"In the margin of the document,\nsomewhere between\nBezos's signature and yours,\nsomeone wrote:",
-		margin_display,
-		"C.L.A.U.D.I.A. read it.\n\nShe didn't comment.\n\nShe just added it to the file.",
-		"[CIVIC NIGHTMARE]\n\nwritten, directed,\nand survived\nby you.\n\n\n— FIN —",
-	]
-	ending_phase = 0
+	ending_sequence.configure_final_credits(final_mission_choice, final_mission_margin_text)
 	ending_triggered = true
 	start_ending_sequence()
 
