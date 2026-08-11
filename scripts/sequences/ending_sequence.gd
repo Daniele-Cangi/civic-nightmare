@@ -29,6 +29,32 @@ var ending_scenes: Array = [
 ]
 
 
+func configure_final_credits(choice: int, margin_text: String) -> void:
+	var choice_line: String
+	match choice:
+		0: choice_line = "You knew it wouldn't matter.\nYou did it anyway."
+		1: choice_line = "You almost didn't.\nThat counts for something."
+		_: choice_line = "That was the only honest answer."
+
+	var margin_display := "[left blank]" if margin_text.strip_edges() == "" else "\"%s\"" % margin_text
+	ending_scenes = [
+		"[CLASSIFIED — FILE #0001]\n\nSeven signatures.\nThe document is complete.",
+		"Six of them were easy.\n\nThe seventh took everything.",
+		choice_line,
+		"C.L.A.U.D.I.A. received the file\nat 23:59:59.",
+		"She processed it in\n0.003 seconds.\n\nThen she sat with it\nfor a very long time.",
+		"For the first time in\nher operational history,\nshe created a subfolder.",
+		"She named it\n\n'Exceptions'.",
+		"The world didn't change.\n\nThe wars are still running.\nThe billionaires are still rich.\nThe warehouse worker\nstill doesn't have a chair.",
+		"The document is filed\nin a folder\nthat one machine\ndecided to create\nbecause one person\ndecided to try.",
+		"In the margin of the document,\nsomewhere between\nBezos's signature and yours,\nsomeone wrote:",
+		margin_display,
+		"C.L.A.U.D.I.A. read it.\n\nShe didn't comment.\n\nShe just added it to the file.",
+		"[CIVIC NIGHTMARE]\n\nwritten, directed,\nand survived\nby you.\n\n\n— FIN —",
+	]
+	ending_phase = 0
+
+
 func setup(owner: Node) -> void:
 	host = owner
 	_create_overlay()

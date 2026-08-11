@@ -48,6 +48,34 @@ func process_frame(delta: float) -> void:
 		ufo_clouds.position.x = -sway * 0.5
 
 
+func prepare_lab(room: Node, npc_sprite_paths: Dictionary) -> void:
+	if not room:
+		return
+
+	var einstein = room.get_node_or_null("Entities/AlbertEinsteinPlaceholder")
+	var zuck = room.get_node_or_null("Entities/MarkZuckerbergPlaceholder")
+
+	for data in [[einstein, "ufo_easter_egg", true], [zuck, "mark_zuckerberg_ufo", false]]:
+		var node = data[0] as StaticBody2D
+		var sprite_id = data[1]
+		var is_einstein = data[2]
+		if node:
+			node.process_mode = Node.PROCESS_MODE_INHERIT
+			node.scale = Vector2(0.88, 0.88)
+			if is_einstein:
+				node.set("patrol_range", 10.0)
+				node.set("patrol_speed", 18.0)
+			var sprite = node.get_node_or_null("Sprite2D") as Sprite2D
+			if sprite:
+				sprite.texture = load(npc_sprite_paths.get(sprite_id, ""))
+				sprite.visible = true
+				if node.has_method("_ready"):
+					node.set("base_scale", sprite.scale)
+			var placeholder_visual = node.get_node_or_null("PlaceholderVisual")
+			if placeholder_visual:
+				placeholder_visual.visible = false
+
+
 func _create_world_node() -> void:
 	ufo_root = Node2D.new()
 	ufo_root.name = "UfoEasterEgg"

@@ -1,6 +1,5 @@
 extends Node2D
 
-const NPC_SCENE = preload("res://scenes/npc.tscn")
 const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
 const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
 const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
@@ -14,6 +13,7 @@ const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_e
 const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_drone_encounter.gd")
 const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
 const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
+const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -167,18 +167,6 @@ var ending_active: bool:
 var ending_layer: CanvasLayer:
 	get:
 		return ending_sequence.get("ending_layer") as CanvasLayer if ending_sequence else null
-var ending_scenes: Array:
-	get:
-		return ending_sequence.get("ending_scenes") as Array if ending_sequence else []
-	set(value):
-		if ending_sequence:
-			ending_sequence.set("ending_scenes", value)
-var ending_phase: int:
-	get:
-		return int(ending_sequence.get("ending_phase")) if ending_sequence else 0
-	set(value):
-		if ending_sequence:
-			ending_sequence.set("ending_phase", value)
 
 
 # --- Bezos cinematic encounter ---
@@ -233,8 +221,6 @@ const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
 const GREAT_WALL_TILE := Vector2i(0, -24)
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -20)
-const XI_WORLD_PIXEL_OFFSET := Vector2(54, -42)
-const SAM_ALTMAN_TILE := Vector2i(0, 24)
 const NUCLEAR_PLANT_TILE := Vector2i(0, 28)
 const UFO_TILE := Vector2i(30, -6)
 const UFO_FLOAT_OFFSET := Vector2(0, -24)
@@ -259,17 +245,10 @@ var ufo_encounter: Node
 var ufo_abduction_active: bool = false
 var bezos_drone_encounter: Node
 
-# --- Hidden bunker cutscene ---
-var bunker_caption_anchor: Control
-var bunker_caption_panel: PanelContainer
-var bunker_caption_speaker: Label
-var bunker_caption_text: RichTextLabel
-
 # --- Procedural atlas tiles (source 0 — fallback & buildings) ---
 const TILE_GRASS = Vector2i(0, 0)
 const TILE_WOOD = Vector2i(1, 0)
 const TILE_PATH = Vector2i(2, 0)
-const TILE_WATER = Vector2i(3, 0)
 
 const TILE_BRICK = Vector2i(0, 1)
 const TILE_METAL_FLOOR = Vector2i(1, 1)
@@ -283,21 +262,12 @@ const TILE_MARBLE_WALL = Vector2i(2, 2)
 const TILE_TREE_TOP = Vector2i(0, 3)
 const TILE_TREE_TRUNK = Vector2i(1, 3)
 const TILE_BUSH = Vector2i(2, 3)
-const TILE_DESK_WOOD = Vector2i(3, 3)
 
-const TILE_DESK_METAL = Vector2i(0, 4)
-const TILE_SERVER = Vector2i(1, 4)
-const TILE_BOOKSHELF = Vector2i(2, 4)
 const TILE_GOLD = Vector2i(3, 4)
 const TILE_FLAG = Vector2i(4, 4)
 const TILE_DOOR = Vector2i(7, 2)
-const TILE_FILE_CABINET_WIDE = Vector2i(0, 4)
-const TILE_FILE_CABINET = Vector2i(5, 4)
-const TILE_PLANT = Vector2i(6, 4)
-const TILE_CLOCK = Vector2i(7, 4)
 const TILE_WINDOW = Vector2i(6, 2)
 const TILE_COLUMN = Vector2i(6, 6)
-const TILE_GLOBE = Vector2i(7, 6)
 
 # --- Pack tile coordinates (when _pack_ready) ---
 const NT_BUSH := Vector2i(8, 5)
@@ -312,7 +282,6 @@ const FD_PINK := Vector2i(1, 6)
 const FD_PINK2 := Vector2i(3, 6)
 const FD_SNOW := Vector2i(1, 8)
 const FD_SNOW2 := Vector2i(3, 8)
-const WT_WATER := Vector2i(3, 2)
 
 # --- Floor/path autotile (first set in floor_32.png, sandy path) ---
 const FL_EDGE_T := Vector2i(3, 0)
@@ -359,10 +328,7 @@ var rock_tiles: Array = [
 	Vector2i(4, 12), Vector2i(6, 12), Vector2i(7, 12), Vector2i(9, 12),
 	Vector2i(11, 12), Vector2i(12, 12)
 ]
-# Small plants, stumps, cacti from nature_32
-var stump_tiles: Array = [
-	Vector2i(0, 7), Vector2i(1, 7), Vector2i(2, 7)
-]
+# Cacti from nature_32
 var cactus_tiles: Array = [
 	Vector2i(8, 7), Vector2i(9, 7)
 ]
@@ -420,103 +386,6 @@ var building_specs: Array = [
 	}
 ]
 
-# --- Character visual config ---
-var character_colors: Dictionary = {
-	"ai_terminal": Color(0.2, 0.7, 0.9),
-	"donald_trump": Color(0.82, 0.22, 0.18),
-	"elon_musk": Color(0.28, 0.48, 0.72),
-	"ursula_von_der_leyen": Color(0.18, 0.28, 0.58),
-	"christine_lagarde": Color(0.22, 0.22, 0.38),
-	"vladimir_putin": Color(0.52, 0.18, 0.18),
-	"emmanuel_macron": Color(0.18, 0.22, 0.58),
-	"xi_jinping": Color(0.7, 0.12, 0.12),
-	"sam_altman": Color(0.6, 0.62, 0.65),
-	"ufo_easter_egg": Color(0.58, 0.96, 0.78),
-	"mark_zuckerberg_ufo": Color(0.12, 0.12, 0.12),
-	"historical_contamination": Color(0.32, 0.32, 0.34),
-	"self": Color(0.75, 0.75, 0.82),
-	"mojtaba_khamenei": Color(0.12, 0.45, 0.12), # Iranian Green
-	"swedish_pm": Color(0.12, 0.45, 0.82), # Swedish Blue
-	"jeff_bezos": Color(1.0, 0.5, 0.0) # Amazon Orange
-}
-var portrait_paths: Dictionary = {
-	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
-	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
-	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
-	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png",
-	"xi_jinping": "res://assets/mockups/xi_jinping_caricature.png",
-	"sam_altman": "res://assets/mockups/sam_altman_caricature.png",
-	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
-	"ufo_easter_egg": "res://assets/mockups/einstein_caricature.png",
-	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
-	"historical_contamination": "res://assets/mockups/contamination_portrait.png",
-	"ZELENSKY": "res://assets/mockups/zelensky_portrait.png",
-	"DEATH": "res://assets/mockups/death_ironic.png",
-	"kim_jong_un": "res://assets/mockups/kim_jong_un_portrait.png",
-	"mojtaba_khamenei": "res://assets/mockups/mojtaba_portrait.png",
-	"swedish_pm": "res://assets/mockups/swedish_pm_portrait.png",
-	"jeff_bezos": "res://assets/mockups/bezos_portrait.png"
-}
-var combat_portrait_paths: Dictionary = {
-	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
-	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
-	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
-	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png"
-}
-var npc_sprite_paths: Dictionary = {
-	"donald_trump": "res://assets/mockups/trump_pure_sprite.png",
-	"elon_musk": "res://assets/mockups/musk_pure_sprite.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_pure_sprite.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_pure_sprite.png",
-	"vladimir_putin": "res://assets/mockups/putin_pure_sprite.png",
-	"emmanuel_macron": "res://assets/mockups/macron_pure_sprite.png",
-	"xi_jinping": "res://assets/characters/xi_jinping.png",
-	"sam_altman": "res://assets/characters/sam_altman.png",
-	"ufo_easter_egg": "res://assets/characters/einstein_sprite.png",
-	"mark_zuckerberg_ufo": "res://assets/characters/zuckerberg_sprite.png",
-	"zelensky_bunker": "res://assets/mockups/zelensky_move.png",
-	"death_bunker": "res://assets/mockups/death_ironic.png",
-	"kim_jong_un": "res://assets/mockups/kim_jong_un_sprite.png"
-}
-
-const NPC_TARGET_SPRITE_HEIGHT := 128.0
-var npc_facing_defaults: Dictionary = {
-	"donald_trump": false,
-	"elon_musk": false,
-	"ursula_von_der_leyen": false,
-	"christine_lagarde": false,
-	"vladimir_putin": true,
-	"emmanuel_macron": false,
-	"xi_jinping": false,
-	"sam_altman": false,
-	"kim_jong_un": false
-}
-var landmark_sprite_paths: Dictionary = {
-	"donald_trump": "res://assets/mockups/landmark_trump.png",
-	"elon_musk": "res://assets/mockups/landmark_musk.png",
-	"ursula_von_der_leyen": "res://assets/mockups/landmark_vdl.png",
-	"christine_lagarde": "res://assets/mockups/landmark_lagarde.png",
-	"vladimir_putin": "res://assets/mockups/landmark_putin.png",
-	"emmanuel_macron": "res://assets/mockups/landmark_macron_ruined.png",
-	"xi_jinping": "res://assets/mockups/landmark_great_wall.png",
-	"sam_altman": "res://assets/mockups/landmark_nuclear_plant.png",
-	"pyongyang": "res://assets/mockups/landmark_pyongyang.png"
-}
-
-# --- Meter visual config ---
-var meter_config: Dictionary = {
-	"TIME":   {"color": Color(0.3, 0.72, 0.72), "initial": 100},
-	"ACCESS": {"color": Color(0.3, 0.72, 0.3),  "initial": 100},
-	"TRUST":  {"color": Color(0.72, 0.65, 0.3), "initial": 100},
-	"RENT":   {"color": Color(0.72, 0.45, 0.3), "initial": 0},
-	"STRESS": {"color": Color(0.72, 0.3, 0.3),  "initial": 0},
-}
-
-
 # ============================================================
 #  SETUP
 # ============================================================
@@ -549,7 +418,7 @@ func _ready() -> void:
 	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
 	world_landmark_builder.create_pyongyang(PYONGYANG_TILE)
 	_ensure_contamination_figure()
-	_assign_npc_textures()
+	CHARACTER_VISUAL_CATALOG.assign_npc_textures(get_tree().get_nodes_in_group("npc"))
 	_create_ai_terminal()
 	_create_typewriter_bip()
 	environment_effects.setup_ambient_audio()
@@ -787,7 +656,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 	if entering_hidden_bunker:
 		call_deferred("_start_hidden_bunker_scene")
 	elif destination == "ufo_lab":
-		call_deferred("_start_ufo_lab_scene")
+		ufo_encounter.call_deferred("prepare_lab", room_registry.get("ufo_lab"), CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS)
 	elif leaving_hidden_bunker and seen_hidden_bunker_scene and not hidden_bunker_exit_acknowledged:
 		hidden_bunker_exit_acknowledged = true
 		hidden_bunker_ai_ack_pending = true
@@ -1162,10 +1031,10 @@ func _place_tree(pos: Vector2i) -> void:
 
 func _place_landmark(spec: Dictionary) -> void:
 	var cid: String = str(spec["npc"])
-	if not landmark_sprite_paths.has(cid):
+	if not CHARACTER_VISUAL_CATALOG.LANDMARK_SPRITE_PATHS.has(cid):
 		return
 
-	var path: String = landmark_sprite_paths[cid]
+	var path: String = CHARACTER_VISUAL_CATALOG.LANDMARK_SPRITE_PATHS[cid]
 	if not ResourceLoader.exists(path):
 		return
 
@@ -1584,26 +1453,6 @@ func _load_character_data() -> void:
 						hidden_bunker_data = entry
 					character_data_cache[entry["id"]] = entry
 
-func _assign_npc_textures() -> void:
-	for npc in get_tree().get_nodes_in_group("npc"):
-		var cid: String = npc.character_id
-		npc.faces_right_by_default = bool(npc_facing_defaults.get(cid, false))
-		if not npc_sprite_paths.has(cid):
-			continue
-		var sprite := npc.get_node_or_null("Sprite2D") as Sprite2D
-		var sprite_path: String = npc_sprite_paths[cid]
-		if sprite and ResourceLoader.exists(sprite_path):
-			var tex := load(sprite_path) as Texture2D
-			sprite.texture = tex
-			if tex != null:
-				var scale_factor: float = NPC_TARGET_SPRITE_HEIGHT / float(max(tex.get_height(), 1))
-				sprite.scale = Vector2(scale_factor, scale_factor)
-				npc.set("base_scale", sprite.scale)
-			var placeholder := npc.get_node_or_null("PlaceholderVisual")
-			if placeholder:
-				placeholder.queue_free()
-
-
 # ============================================================
 #  SCREEN FX (CRT Shader)
 # ============================================================
@@ -1630,8 +1479,8 @@ func _create_dialogue_ui() -> void:
 		ui_layer,
 		player,
 		character_data_cache,
-		character_colors,
-		portrait_paths
+		CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS,
+		CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS
 	)
 	dialogue_manager.line_changed.connect(_on_dialogue_line_changed)
 	dialogue_manager.choice_selected.connect(_on_dialogue_choice_selected)
@@ -1852,8 +1701,8 @@ func _show_bunker_caption(speaker: String, text: String) -> void:
 	
 	# Set Special Bunker Portraits
 	var portrait_id := "historical_contamination" if speaker == "CONTAMINATION" else speaker
-	if portrait_paths.has(portrait_id) and ResourceLoader.exists(portrait_paths[portrait_id]):
-		portrait_rect.texture = load(portrait_paths[portrait_id])
+	if CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS.has(portrait_id) and ResourceLoader.exists(CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS[portrait_id]):
+		portrait_rect.texture = load(CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS[portrait_id])
 		portrait_rect.visible = true
 	else:
 		portrait_rect.texture = null
@@ -1948,33 +1797,6 @@ func _apply_hidden_bunker_tone() -> void:
 		screen_fx_material.set_shader_parameter("overlay_strength", 0.18)
 		screen_fx_material.set_shader_parameter("tint_color", Color(0.78, 0.84, 0.94, 1.0))
 
-func _start_ufo_lab_scene() -> void:
-	var ufo_room = room_registry.get("ufo_lab")
-	if not ufo_room: return
-	
-	var einstein = ufo_room.get_node_or_null("Entities/AlbertEinsteinPlaceholder")
-	var zuck = ufo_room.get_node_or_null("Entities/MarkZuckerbergPlaceholder")
-	
-	for data in [[einstein, "ufo_easter_egg", true], [zuck, "mark_zuckerberg_ufo", false]]:
-		var node = data[0] as StaticBody2D
-		var sprite_id = data[1]
-		var is_einstein = data[2]
-		if node:
-			node.process_mode = Node.PROCESS_MODE_INHERIT
-			node.scale = Vector2(0.88, 0.88)
-			if is_einstein:
-				node.set("patrol_range", 10.0)
-				node.set("patrol_speed", 18.0)
-			var spr = node.get_node_or_null("Sprite2D")
-			if spr:
-				spr.texture = load(npc_sprite_paths.get(sprite_id, ""))
-				spr.visible = true
-				if node.has_method("_ready"):
-					node.set("base_scale", spr.scale)
-			var placeholder_visual = node.get_node_or_null("PlaceholderVisual")
-			if placeholder_visual:
-				placeholder_visual.visible = false
-
 func _start_hidden_bunker_scene() -> void:
 	if seen_hidden_bunker_scene or hidden_bunker_scene_active or active_room_id != "mountain_bunker":
 		return
@@ -2027,7 +1849,7 @@ func _start_hidden_bunker_scene() -> void:
 
 			var spr = node.get_node_or_null("Sprite2D")
 			if spr:
-				spr.texture = load(npc_sprite_paths.get(sprite_id, ""))
+				spr.texture = load(CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS.get(sprite_id, ""))
 				spr.visible = true
 				if node.has_method("_ready"):
 					node.set("base_scale", spr.scale) # Fix breathing baseline
@@ -2656,36 +2478,7 @@ func _start_mk_sequence() -> void:
 
 func _start_final_credits() -> void:
 	final_mission_done = true
-
-	# Build final credits array dynamically
-	var choice_line: String
-	match final_mission_choice:
-		0: choice_line = "You knew it wouldn't matter.\nYou did it anyway."
-		1: choice_line = "You almost didn't.\nThat counts for something."
-		_: choice_line = "That was the only honest answer."
-
-	var margin_display: String
-	if final_mission_margin_text.strip_edges() == "":
-		margin_display = "[left blank]"
-	else:
-		margin_display = "\"" + final_mission_margin_text + "\""
-
-	ending_scenes = [
-		"[CLASSIFIED — FILE #0001]\n\nSeven signatures.\nThe document is complete.",
-		"Six of them were easy.\n\nThe seventh took everything.",
-		choice_line,
-		"C.L.A.U.D.I.A. received the file\nat 23:59:59.",
-		"She processed it in\n0.003 seconds.\n\nThen she sat with it\nfor a very long time.",
-		"For the first time in\nher operational history,\nshe created a subfolder.",
-		"She named it\n\n'Exceptions'.",
-		"The world didn't change.\n\nThe wars are still running.\nThe billionaires are still rich.\nThe warehouse worker\nstill doesn't have a chair.",
-		"The document is filed\nin a folder\nthat one machine\ndecided to create\nbecause one person\ndecided to try.",
-		"In the margin of the document,\nsomewhere between\nBezos's signature and yours,\nsomeone wrote:",
-		margin_display,
-		"C.L.A.U.D.I.A. read it.\n\nShe didn't comment.\n\nShe just added it to the file.",
-		"[CIVIC NIGHTMARE]\n\nwritten, directed,\nand survived\nby you.\n\n\n— FIN —",
-	]
-	ending_phase = 0
+	ending_sequence.configure_final_credits(final_mission_choice, final_mission_margin_text)
 	ending_triggered = true
 	start_ending_sequence()
 
@@ -2702,7 +2495,7 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_encounter.name = "BezosEncounter"
 	add_child(bezos_encounter)
 	bezos_encounter.finished.connect(_on_bezos_cinematic_finished)
-	bezos_encounter.setup(self, player, combat_portrait_paths, character_colors)
+	bezos_encounter.setup(self, player, CHARACTER_VISUAL_CATALOG.COMBAT_PORTRAIT_PATHS, CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS)
 
 func _on_bezos_cinematic_finished() -> void:
 	bezos_drone_encounter.remove_drone()
