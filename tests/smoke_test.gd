@@ -73,6 +73,12 @@ func _run() -> void:
 	_check(office != null, "Oval Office is registered")
 	if office and office.has_method("get_entity_container"):
 		_check(player.get_parent() == office.get_entity_container(), "player is reparented into the room")
+		var office_npc := office.get_node_or_null("Entities/DonaldTrumpInterior")
+		_check(office_npc != null, "Oval Office NPC is created")
+		if office_npc:
+			var office_sprite := office_npc.get_node_or_null("Sprite2D") as Sprite2D
+			_check(office_sprite != null and office_sprite.texture != null, "visual catalog assigns the Oval Office NPC texture")
+			_check(office_npc.get_node_or_null("PlaceholderVisual") == null, "visual catalog removes the NPC placeholder")
 
 	game.call("_exit_room", "oval_office_exterior")
 	await process_frame
