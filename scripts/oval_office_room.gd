@@ -107,6 +107,19 @@ func get_room_title() -> String:
 func get_room_subtitle() -> String:
 	return str(theme.get("subtitle", ""))
 
+
+func get_save_data() -> Dictionary:
+	return {"encounter_state": encounter_state.duplicate(true)}
+
+
+func restore_save_data(data: Dictionary) -> void:
+	var saved_state = data.get("encounter_state", {})
+	if not saved_state is Dictionary:
+		return
+	encounter_state = saved_state.duplicate(true)
+	if room_key == "vault" and bool(encounter_state.get("aftermath_spawned", false)):
+		_spawn_vault_aftermath_notice(str(encounter_state.get("residue_id", "emotional_surcharge_notice")))
+
 func _setup_encounter_density() -> void:
 	ritual_stations.clear()
 	if room_key == "vault":
@@ -1443,6 +1456,8 @@ func _create_ritual_station(name: String, origin: Vector2, station_id: String, v
 	ritual_stations[station_id] = station
 
 func _spawn_vault_aftermath_notice(residue_id: String) -> void:
+	if decor_root and decor_root.get_node_or_null("AftermathNotice"):
+		return
 	var notice := Node2D.new()
 	notice.name = "AftermathNotice"
 	notice.position = Vector2(0, 126)

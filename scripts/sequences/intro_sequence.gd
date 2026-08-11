@@ -1,5 +1,7 @@
 extends Node
 
+signal finished
+
 var host: Node
 var player: CharacterBody2D
 var active: bool = true
@@ -573,8 +575,11 @@ func process_frame(delta: float) -> void:
 				_finish()
 
 func _finish() -> void:
+	if not active:
+		return
 	active = false
 	if intro_layer:
 		intro_layer.queue_free()
 		intro_layer = null
 	player.set_physics_process(true)
+	finished.emit()

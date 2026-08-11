@@ -8,6 +8,7 @@ This document describes the ownership boundaries around `scenes/main.tscn`. The 
 scenes/main.tscn
 └── scripts/main.gd                 composition root and story coordinator
     ├── managers/quest_manager.gd   quest state and dialogue selection
+    ├── managers/save_manager.gd    versioned local dossier persistence
     ├── managers/dialogue_manager.gd
     │                               dialogue UI, choices, portraits, typewriter
     ├── managers/room_manager.gd    interiors, doors, transitions, reparenting
@@ -17,6 +18,7 @@ scenes/main.tscn
     │                               static landmark nodes and entry triggers
     ├── data/character_visual_catalog.gd
     │                               read-only colors, portraits, and sprite paths
+    ├── sequences/start_menu.gd     Continue/New Game title flow
     ├── sequences/intro_sequence.gd CRT/news intro timeline
     ├── sequences/mk_sequence.gd    final-mission presentation timeline
     ├── sequences/ending_sequence.gd
@@ -37,9 +39,10 @@ scenes/main.tscn
 | Area | Owner | Notes |
 | --- | --- | --- |
 | Quest order, signatures, optional encounters, residues and marks | `QuestManager` | Also builds AI and politician dialogue from loaded content. |
+| Versioned local persistence and dossier validation | `SaveManager` | Stores JSON under `user://`; the composition root owns snapshot assembly and safe resume policy. |
 | Dialogue lifecycle and presentation | `DialogueManager` | Owns typewriter timing, portraits, choices, and open/close animation. |
 | Interior registry and world return points | `RoomManager` | Creates interiors and doors, reparents the player, and owns transition UI. |
-| Intro, MK, and ending presentation | `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, and timers. |
+| Title, intro, MK, and ending presentation | `StartMenu`, `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, and timers. |
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
 | Character colors, portraits, and sprite paths | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the Great Wall, nuclear plant, hidden bunker, and Pyongyang entrances. |
@@ -50,6 +53,7 @@ scenes/main.tscn
 ## Dependencies and contracts
 
 - `main.gd` is the only module that knows all managers and sequences.
+- Save snapshots contain quest, story, and room-local consequences, while their resume position is restricted to the latest stable overworld checkpoint.
 - Managers receive existing nodes in `setup(...)`; they do not search for global singletons.
 - Presentation sequences emit signals for cross-system effects. For example, `EndingSequence` requests the final mission or postgame mode instead of mutating those systems.
 - `DialogueManager` emits line, choice, and finish events. `main.gd` applies character-specific consequences and forwards room-local choices.
