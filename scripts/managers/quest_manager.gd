@@ -12,6 +12,35 @@ var encounter_marks: Dictionary = {}
 var optional_dialogue_seen: Dictionary = {}
 
 
+func get_save_data() -> Dictionary:
+	return {
+		"quest_order": quest_order.duplicate(),
+		"quest_completed": quest_completed.duplicate(true),
+		"quest_index": quest_index,
+		"quest_finished": quest_finished,
+		"encounter_residues": encounter_residues.duplicate(true),
+		"encounter_marks": encounter_marks.duplicate(true),
+		"optional_dialogue_seen": optional_dialogue_seen.duplicate(true)
+	}
+
+
+func restore_save_data(data: Dictionary) -> void:
+	var saved_order = data.get("quest_order", [])
+	if saved_order is Array and not saved_order.is_empty():
+		quest_order = saved_order.duplicate()
+	quest_completed = _saved_dictionary(data, "quest_completed")
+	quest_index = clampi(int(data.get("quest_index", -1)), -1, quest_order.size())
+	quest_finished = bool(data.get("quest_finished", false))
+	encounter_residues = _saved_dictionary(data, "encounter_residues")
+	encounter_marks = _saved_dictionary(data, "encounter_marks")
+	optional_dialogue_seen = _saved_dictionary(data, "optional_dialogue_seen")
+
+
+func _saved_dictionary(data: Dictionary, key: String) -> Dictionary:
+	var value = data.get(key, {})
+	return value.duplicate(true) if value is Dictionary else {}
+
+
 func build_ai_dialogue(ai_terminal_data: Dictionary, display_name_resolver: Callable, saw_hidden_bunker: bool) -> Array:
 	if ai_terminal_data.is_empty():
 		return ["System offline. Try again later."]
