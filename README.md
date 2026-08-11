@@ -1,10 +1,36 @@
-# 📺 Civic Nightmare: The Bureaucracy RPG
+<p align="center">
+  <img src="assets/mockups/ai_terminal_caricature.png" width="128" alt="C.L.A.U.D.I.A., the Civic Nightmare AI terminal mascot">
+</p>
+
+<h1 align="center">📺 CIVIC NIGHTMARE</h1>
+
+<p align="center">
+  <strong>The Bureaucracy RPG</strong><br>
+  A surreal 16-bit political satire about the most dangerous quest of all: renewing a passport.
+</p>
+
+<p align="center">
+  <a href="https://daniele-cangi.github.io/civic-nightmare/"><img alt="Play Civic Nightmare in the browser" src="https://img.shields.io/badge/PLAY_IN_BROWSER-ffcc33?style=for-the-badge&logo=godot-engine&logoColor=111111"></a>
+  <a href="https://unityloop.itch.io/civic-nightmare"><img alt="Civic Nightmare on itch.io" src="https://img.shields.io/badge/ITCH.IO-FA5C5C?style=for-the-badge&logo=itchdotio&logoColor=white"></a>
+  <a href="CONTRIBUTING.md"><img alt="Contributors welcome" src="https://img.shields.io/badge/CONTRIBUTORS-WELCOME-62d6a8?style=for-the-badge&logo=github&logoColor=111111"></a>
+</p>
+
+<p align="center">
+  <img src="assets/mockups/trump_caricature.png" width="104" alt="Donald Trump pixel-art portrait">
+  <img src="assets/mockups/musk_caricature.png" width="104" alt="Elon Musk pixel-art portrait">
+  <img src="assets/mockups/lagarde_caricature.png" width="104" alt="Christine Lagarde pixel-art portrait">
+  <img src="assets/mockups/macron_caricature.png" width="104" alt="Emmanuel Macron pixel-art portrait">
+  <img src="assets/mockups/bezos_combat_portrait.png" width="104" alt="Jeff Bezos pixel-art portrait">
+</p>
+
+<p align="center">
+  <img alt="Godot 4.6" src="https://img.shields.io/badge/Godot-4.6-478CBF?logo=godot-engine&logoColor=white">
+  <img alt="16-bit satire" src="https://img.shields.io/badge/Aesthetic-16--bit_Satire-f39c3d">
+  <img alt="Source code licensed under MIT" src="https://img.shields.io/badge/Source_Code-MIT-8bd5ca">
+  <a href="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml"><img alt="GitHub Pages deployment" src="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml/badge.svg"></a>
+</p>
 
 **Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.6** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, navigating a world where reality is filtered through 16-bit aesthetics and 90s television glitches.
-
-![Style](https://img.shields.io/badge/Aesthetic-16--bit_Satire-orange?style=for-the-badge)
-![AI](https://img.shields.io/badge/Assets-AI_Generated_%26_ML_Cleaned-green?style=for-the-badge)
-![Engine](https://img.shields.io/badge/Godot-4.6-blue?style=for-the-badge&logo=godot-engine)
 
 ## 🕹️ Game Features
 
@@ -35,6 +61,19 @@ The title screen offers **Continue** and **New Game**. Progress, encounter conse
 
 Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
 
+<table>
+  <tr>
+    <td width="33%" align="center"><img src="assets/mockups/landmark_trump.png" alt="Golden Eagle monument"></td>
+    <td width="33%" align="center"><img src="assets/mockups/ufo_advanced.png" alt="Quantum UFO encounter"></td>
+    <td width="33%" align="center"><img src="assets/mockups/landmark_nuclear_plant.png" alt="Unstable nuclear plant"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>THE GOLDEN EAGLE</strong><br><sub>Patriotism, now with collision.</sub></td>
+    <td align="center"><strong>QUANTUM UFO</strong><br><sub>Intergalactic monetization awaits.</sub></td>
+    <td align="center"><strong>NEURAL CORE</strong><br><sub>Perfectly safe. Legally speaking.</sub></td>
+  </tr>
+</table>
+
 ## 🎨 Technical & Aesthetic Identity
 
 - **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
@@ -42,7 +81,13 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Procedural World**: The overworld is generated with thematic buildings, dirt paths, and dense forests, ensuring a consistent yet chaotic layout.
 
-## 🛠️ Performance & Installation
+## 🤝 Contributing
+
+**The bureaucracy is accepting applications.** Contributions are welcome—from bug fixes and dialogue to encounters, pixel art, rooms, accessibility, translations, tests, tooling, and carefully scoped architectural improvements.
+
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), then use the [`architecture guide`](docs/ARCHITECTURE.md) to find the right system. The source-code license is in [`LICENSE`](LICENSE); media and narrative rights are explained separately in [`ASSET_NOTICE.md`](ASSET_NOTICE.md).
+
+## 🚀 Play & Run Locally
 
 1. **Prerequisites**: Godot Engine 4.6 (Standard).
 2. **Setup**:
@@ -51,13 +96,15 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
    - Run the `main.tscn` scene.
 3. **Web Support**: Optimized for GLES3, with a custom CI/CD pipeline for GitHub Pages deployment.
 
+Or [play the current build directly in your browser](https://daniele-cangi.github.io/civic-nightmare/).
+
 ## 🧩 Project Structure
 
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
 - `scripts/managers/`: dialogue, quest progression, versioned save data, room transitions, environment setup, and static world landmarks.
 - `scripts/data/`: read-only character colors, portraits, and world-sprite metadata.
-- `scripts/sequences/`: intro, MK, and ending presentation timelines.
+- `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
 - `scenes/interiors/`: reusable interior scenes and room-local behavior.
@@ -74,6 +121,12 @@ godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/
 ```
 
 The smoke test loads the main scene and covers the title flow, save/restore round trips, manager initialization, AI dialogue, and an interior round trip.
+
+## ⚖️ License
+
+**Source code and software implementation:** [MIT](LICENSE).
+
+**Media and narrative content:** not automatically covered by the MIT code license; see [`ASSET_NOTICE.md`](ASSET_NOTICE.md) for the repository's rights boundary and contribution policy.
 
 ---
 
