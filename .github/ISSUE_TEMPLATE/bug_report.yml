@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a reproducible problem in Civic Nightmare
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make the bureaucracy fail more predictably.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+      placeholder: A concise description of the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Give the smallest sequence that reliably reproduces the problem.
+      placeholder: |
+        1. Start a new game
+        2. Enter...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: godot_version
+    attributes:
+      label: Godot version
+      description: Include the full version when running locally.
+      placeholder: 4.6.stable
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Choose the closest environment.
+      options:
+        - Web browser
+        - Windows
+        - Linux
+        - macOS
+        - Other
+  - type: input
+    id: environment
+    attributes:
+      label: OS, browser, or device details
+      description: Add versions when they matter to the issue.
+      placeholder: Windows 11 / Firefox 141 / Steam Deck
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs or attach screenshots/video when useful. Remove sensitive information.

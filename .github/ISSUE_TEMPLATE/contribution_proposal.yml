@@ -1,0 +1,57 @@
+name: Contribution or feature proposal
+description: Propose a focused addition or improvement
+title: "[Proposal]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: Bounded ideas are welcome. Please discuss rewrites and major story changes before implementation.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you add or change?
+      placeholder: Describe the smallest useful version of the idea.
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why does it fit Civic Nightmare?
+      description: Explain the player, contributor, or project value.
+    validations:
+      required: true
+  - type: textarea
+    id: systems
+    attributes:
+      label: Likely systems or files
+      description: If known, list the areas likely to change. It is fine to leave this brief.
+      placeholder: scripts/sequences/, data/characters.json, UI only...
+  - type: dropdown
+    id: behavior
+    attributes:
+      label: Does it change gameplay or story flow?
+      options:
+        - "No"
+        - "Yes, in a focused way"
+        - "Yes, substantially"
+        - "Unsure"
+    validations:
+      required: true
+  - type: dropdown
+    id: media
+    attributes:
+      label: Does it introduce media or assets?
+      options:
+        - "No"
+        - "Yes, original"
+        - "Yes, generated"
+        - "Yes, third-party"
+        - "Unsure"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Mockups, references, constraints, provenance, or prior discussion when useful.
