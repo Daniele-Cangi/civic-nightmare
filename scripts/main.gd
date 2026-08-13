@@ -1367,7 +1367,7 @@ func _create_ai_terminal() -> void:
 	# Mascot Visual (Sprite2D)
 	var sprite := Sprite2D.new()
 	sprite.name = "MascotSprite"
-	var tex_path = "res://assets/mockups/ai_terminal_sprite.png"
+	var tex_path = "res://assets/mockups/ai_terminal_sprite_v2.png"
 	if ResourceLoader.exists(tex_path):
 		var tex = load(tex_path)
 		sprite.texture = tex

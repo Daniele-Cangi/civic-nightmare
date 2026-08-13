@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/mockups/ai_terminal_caricature.png" width="128" alt="C.L.A.U.D.I.A., the Civic Nightmare AI terminal mascot">
+  <img src="assets/mockups/ai_terminal_portrait_v2.png" width="128" alt="C.L.A.U.D.I.A., the Civic Nightmare AI terminal mascot">
 </p>
 
 <h1 align="center">📺 CIVIC NIGHTMARE</h1>

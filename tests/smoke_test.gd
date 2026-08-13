@@ -22,6 +22,7 @@ func _run() -> void:
 	_test_save_manager_round_trip()
 	_test_quest_manager_round_trip()
 	_test_combat_portraits()
+	_test_ai_terminal_assets()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
 	_check(packed_scene != null, "main scene can be loaded")
@@ -160,6 +161,19 @@ func _test_combat_portraits() -> void:
 		_check(portrait != null, "%s combat portrait can be loaded" % character_id)
 		if portrait:
 			_check(portrait.get_size() == Vector2(128, 128), "%s combat portrait is runtime-sized" % character_id)
+
+
+func _test_ai_terminal_assets() -> void:
+	var portrait_path: String = CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS["ai_terminal"]
+	var sprite_path := "res://assets/mockups/ai_terminal_sprite_v2.png"
+	for asset_path in [portrait_path, sprite_path]:
+		_check(ResourceLoader.exists(asset_path), "%s exists" % asset_path)
+		if not ResourceLoader.exists(asset_path):
+			continue
+		var texture := load(asset_path) as Texture2D
+		_check(texture != null, "%s can be loaded" % asset_path)
+		if texture:
+			_check(texture.get_size() == Vector2(128, 128), "%s is runtime-sized" % asset_path)
 
 
 func _test_save_manager_round_trip() -> void:
