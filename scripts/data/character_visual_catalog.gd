@@ -20,12 +20,12 @@ const CHARACTER_COLORS := {
 }
 
 const PORTRAIT_PATHS := {
-	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
-	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
-	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
-	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png",
+	"donald_trump": "res://assets/mockups/trump_combat_portrait_v2.png",
+	"elon_musk": "res://assets/mockups/musk_combat_portrait_v2.png",
+	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait_v2.png",
+	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait_v2.png",
+	"vladimir_putin": "res://assets/mockups/putin_combat_portrait_v2.png",
+	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait_v2.png",
 	"xi_jinping": "res://assets/mockups/xi_jinping_caricature.png",
 	"sam_altman": "res://assets/mockups/sam_altman_caricature.png",
 	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
@@ -41,12 +41,12 @@ const PORTRAIT_PATHS := {
 }
 
 const COMBAT_PORTRAIT_PATHS := {
-	"donald_trump": "res://assets/mockups/trump_combat_portrait.png",
-	"elon_musk": "res://assets/mockups/musk_combat_portrait.png",
-	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait.png",
-	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait.png",
-	"vladimir_putin": "res://assets/mockups/putin_combat_portrait.png",
-	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait.png"
+	"donald_trump": "res://assets/mockups/trump_combat_portrait_v2.png",
+	"elon_musk": "res://assets/mockups/musk_combat_portrait_v2.png",
+	"ursula_von_der_leyen": "res://assets/mockups/vdl_combat_portrait_v2.png",
+	"christine_lagarde": "res://assets/mockups/lagarde_combat_portrait_v2.png",
+	"vladimir_putin": "res://assets/mockups/putin_combat_portrait_v2.png",
+	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait_v2.png"
 }
 
 const NPC_SPRITE_PATHS := {
