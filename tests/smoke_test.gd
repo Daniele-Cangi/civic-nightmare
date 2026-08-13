@@ -21,6 +21,7 @@ func _check(condition: bool, message: String) -> void:
 func _run() -> void:
 	_test_save_manager_round_trip()
 	_test_quest_manager_round_trip()
+	_test_combat_portraits()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
 	_check(packed_scene != null, "main scene can be loaded")
@@ -147,6 +148,18 @@ func _run() -> void:
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 
 	_finish()
+
+
+func _test_combat_portraits() -> void:
+	for character_id in CHARACTER_VISUAL_CATALOG.COMBAT_PORTRAIT_PATHS:
+		var portrait_path: String = CHARACTER_VISUAL_CATALOG.COMBAT_PORTRAIT_PATHS[character_id]
+		_check(ResourceLoader.exists(portrait_path), "%s combat portrait exists" % character_id)
+		if not ResourceLoader.exists(portrait_path):
+			continue
+		var portrait := load(portrait_path) as Texture2D
+		_check(portrait != null, "%s combat portrait can be loaded" % character_id)
+		if portrait:
+			_check(portrait.get_size() == Vector2(128, 128), "%s combat portrait is runtime-sized" % character_id)
 
 
 func _test_save_manager_round_trip() -> void:
