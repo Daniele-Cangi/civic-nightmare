@@ -16,11 +16,13 @@
 </p>
 
 <p align="center">
-  <img src="assets/mockups/trump_caricature.png" width="104" alt="Donald Trump pixel-art portrait">
-  <img src="assets/mockups/musk_caricature.png" width="104" alt="Elon Musk pixel-art portrait">
-  <img src="assets/mockups/lagarde_caricature.png" width="104" alt="Christine Lagarde pixel-art portrait">
-  <img src="assets/mockups/macron_caricature.png" width="104" alt="Emmanuel Macron pixel-art portrait">
-  <img src="assets/mockups/bezos_combat_portrait.png" width="104" alt="Jeff Bezos pixel-art portrait">
+  <img src="assets/mockups/trump_combat_portrait_v2.png" width="96" alt="Donald Trump arcade fighter portrait">
+  <img src="assets/mockups/musk_combat_portrait_v2.png" width="96" alt="Elon Musk arcade fighter portrait">
+  <img src="assets/mockups/vdl_combat_portrait_v2.png" width="96" alt="Ursula von der Leyen arcade fighter portrait">
+  <img src="assets/mockups/lagarde_combat_portrait_v2.png" width="96" alt="Christine Lagarde arcade fighter portrait">
+  <img src="assets/mockups/putin_combat_portrait_v2.png" width="96" alt="Vladimir Putin arcade fighter portrait">
+  <img src="assets/mockups/macron_combat_portrait_v2.png" width="96" alt="Emmanuel Macron arcade fighter portrait">
+  <img src="assets/mockups/bezos_combat_portrait.png" width="96" alt="Jeff Bezos arcade fighter portrait">
 </p>
 
 <p align="center">
@@ -77,7 +79,7 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 ## 🎨 Technical & Aesthetic Identity
 
 - **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
-- **ML Pipeline**: Assets are processed through a custom Python pipeline using `rembg` (U2-Net) with aggressive alpha-thresholding for pixel-perfect, "halo-free" transparency.
+- **Portrait Pipeline**: Fighter portraits use controlled chroma-key extraction, premultiplied-alpha resizing, and automated 128×128 validation for clean, halo-free transparency.
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Procedural World**: The overworld is generated with thematic buildings, dirt paths, and dense forests, ensuring a consistent yet chaotic layout.
 
