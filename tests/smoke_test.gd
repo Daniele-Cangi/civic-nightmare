@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_quest_manager_round_trip()
 	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
+	_test_authority_facades()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
 
@@ -69,6 +70,17 @@ func _run() -> void:
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
+	var authority_facades := game.get_tree().get_nodes_in_group("authority_facade")
+	_check(authority_facades.size() == 6, "all six authority facades are placed in the overworld")
+	var facade_character_ids: Dictionary = {}
+	for facade in authority_facades:
+		facade_character_ids[str(facade.get_meta("character_id", ""))] = true
+	for character_id in CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS:
+		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
+	var ground_map: TileMap = game.get("ground_map")
+	for building_spec in game.get("building_specs"):
+		var building_center: Vector2i = building_spec["center"]
+		_check(ground_map.get_cell_source_id(2, building_center) == -1, "%s old roof tiles are hidden behind the hero facade" % building_spec["key"])
 	if ending_sequence:
 		for final_case in [[0, "wouldn't matter"], [1, "almost didn't"], [-1, "only honest"]]:
 			ending_sequence.call("configure_final_credits", final_case[0], "still here")
@@ -211,6 +223,23 @@ func _test_ai_terminal_assets() -> void:
 		_check(texture != null, "%s can be loaded" % asset_path)
 		if texture:
 			_check(texture.get_size() == Vector2(128, 128), "%s is runtime-sized" % asset_path)
+
+
+func _test_authority_facades() -> void:
+	_check(CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS.size() == 6, "visual catalog defines six authority facades")
+	for character_id in CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS:
+		var facade_path: String = CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS[character_id]
+		_check(ResourceLoader.exists(facade_path), "%s authority facade exists" % character_id)
+		if not ResourceLoader.exists(facade_path):
+			continue
+		var texture := load(facade_path) as Texture2D
+		_check(texture != null, "%s authority facade can be loaded" % character_id)
+		if texture == null:
+			continue
+		_check(texture.get_width() == 352, "%s authority facade uses the shared runtime width" % character_id)
+		_check(texture.get_height() >= 280 and texture.get_height() <= 330, "%s authority facade fits the world footprint" % character_id)
+		var image := texture.get_image()
+		_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s authority facade has a transparent corner" % character_id)
 
 
 func _test_ai_terminal_expressions() -> void:

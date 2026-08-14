@@ -103,6 +103,15 @@ const LANDMARK_SPRITE_PATHS := {
 	"pyongyang": "res://assets/mockups/landmark_pyongyang.png"
 }
 
+const AUTHORITY_FACADE_PATHS := {
+	"donald_trump": "res://assets/landmarks/authority_trump_v2.png",
+	"elon_musk": "res://assets/landmarks/authority_musk_v2.png",
+	"ursula_von_der_leyen": "res://assets/landmarks/authority_ursula_v2.png",
+	"vladimir_putin": "res://assets/landmarks/authority_putin_v2.png",
+	"christine_lagarde": "res://assets/landmarks/authority_lagarde_v2.png",
+	"emmanuel_macron": "res://assets/landmarks/authority_macron_v2.png"
+}
+
 const NPC_TARGET_SPRITE_HEIGHT := 128.0
 
 
