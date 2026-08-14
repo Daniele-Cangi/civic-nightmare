@@ -358,41 +358,41 @@ var building_specs: Array = [
 	{
 		"key": "oval_office",
 		"npc": "donald_trump",
-		"center": Vector2i(16, -20),
-		"npc_spawn": Vector2i(16, -13),
-		"entrance": Vector2i(16, -15),
+		"center": Vector2i(16, -23),
+		"npc_spawn": Vector2i(16, -16),
+		"entrance": Vector2i(16, -18),
 		"light_color": Color(1.0, 0.85, 0.6)
 	},
 	{
 		"key": "spaceship",
 		"npc": "elon_musk",
-		"center": Vector2i(-17, -20),
-		"npc_spawn": Vector2i(-17, -12),
-		"entrance": Vector2i(-17, -14),
+		"center": Vector2i(-17, -23),
+		"npc_spawn": Vector2i(-17, -15),
+		"entrance": Vector2i(-17, -17),
 		"light_color": Color(0.6, 0.8, 1.0)
 	},
 	{
 		"key": "eu_palace",
 		"npc": "ursula_von_der_leyen",
-		"center": Vector2i(16, 0),
-		"npc_spawn": Vector2i(16, 8),
-		"entrance": Vector2i(16, 6),
+		"center": Vector2i(16, -2),
+		"npc_spawn": Vector2i(16, 6),
+		"entrance": Vector2i(16, 4),
 		"light_color": Color(0.7, 0.75, 1.0)
 	},
 	{
 		"key": "kremlin",
 		"npc": "vladimir_putin",
-		"center": Vector2i(-17, 0),
-		"npc_spawn": Vector2i(-17, 8),
-		"entrance": Vector2i(-17, 6),
+		"center": Vector2i(-17, -2),
+		"npc_spawn": Vector2i(-17, 6),
+		"entrance": Vector2i(-17, 4),
 		"light_color": Color(0.9, 0.7, 0.5)
 	},
 	{
 		"key": "vault",
 		"npc": "christine_lagarde",
-		"center": Vector2i(16, 20),
-		"npc_spawn": Vector2i(16, 28),
-		"entrance": Vector2i(16, 26),
+		"center": Vector2i(16, 19),
+		"npc_spawn": Vector2i(16, 27),
+		"entrance": Vector2i(16, 25),
 		"light_color": Color(1.0, 0.9, 0.6)
 	},
 	{

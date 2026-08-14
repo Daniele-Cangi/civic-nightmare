@@ -81,11 +81,11 @@ func _run() -> void:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
 	var expected_authority_centers := {
-		"oval_office": Vector2i(16, -20),
-		"spaceship": Vector2i(-17, -20),
-		"eu_palace": Vector2i(16, 0),
-		"kremlin": Vector2i(-17, 0),
-		"vault": Vector2i(16, 20),
+		"oval_office": Vector2i(16, -23),
+		"spaceship": Vector2i(-17, -23),
+		"eu_palace": Vector2i(16, -2),
+		"kremlin": Vector2i(-17, -2),
+		"vault": Vector2i(16, 19),
 		"elysee": Vector2i(-17, 20)
 	}
 	for building_spec in game.get("building_specs"):
@@ -94,6 +94,19 @@ func _run() -> void:
 		_check(building_center == expected_authority_centers[building_spec["key"]], "%s is centered on its authored district clearing" % building_spec["key"])
 		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
 		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
+	var expected_facade_visual_centers := {
+		"donald_trump": Vector2(528.0, -683.0),
+		"elon_musk": Vector2(-528.0, -683.0),
+		"ursula_von_der_leyen": Vector2(528.0, 0.0),
+		"vladimir_putin": Vector2(-528.0, 0.0),
+		"christine_lagarde": Vector2(528.0, 683.0),
+		"emmanuel_macron": Vector2(-528.0, 683.0)
+	}
+	for facade in authority_facades:
+		var character_id := str(facade.get_meta("character_id", ""))
+		var expected_visual_center: Vector2 = expected_facade_visual_centers[character_id]
+		_check(absf(facade.position.x - expected_visual_center.x) <= 0.1, "%s facade is horizontally centered in its district panel" % character_id)
+		_check(absf(facade.position.y - expected_visual_center.y) <= 12.0, "%s facade is vertically centered in its district panel" % character_id)
 	var solid_positions: Dictionary = game.get("_solid_positions")
 	var trump_center: Vector2i = expected_authority_centers["oval_office"]
 	var musk_center: Vector2i = expected_authority_centers["spaceship"]
