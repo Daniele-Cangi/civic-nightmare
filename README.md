@@ -45,21 +45,20 @@ Navigate a procedurally detailed overworld and interact with the "Architects of 
 - **Vladimir Putin**: Within a cross-shaped bunker, active on the "Red Phone" network.
 - **Christine Lagarde**: Managed by interest rates, appearing in a custom "Chun-Li" arcade style.
 - **Emmanuel Macron**: Offering Raiden-style philosophy lectures near the Eiffel Tower ruins.
-- **Xi Jinping**: Located at the Great Wall; his dialogue box features a "Django Unchained" (DiCaprio laugh) parody while he sabotages AI domesticity.
-- **Kim Jong-un**: Found at Pyongyang Square (a cannon-shaped brazier); a "chubby E. Honda" parody who spends his time wiretapping world leaders to negotiate for premium Wagyu steaks.
 
-### 🛸 Easter Eggs & Secret Encounters
+### 🛸 Optional Investigations, Deviations & Anomalies
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.
 - **The Southern Sanctuary**: Find **Sam Altman** searching for trillion-dollar funding near an unstable Nuclear Plant (and its Neural Core).
-- **The Quantum UFO**: Get abducted into an observation deck where **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg** debate the monetization of the universe.
-- **The Hidden Bunker**: A secret location under the mountain where **Zelensky** delivers a devastating final plea, and **Death** itself appears (the "Ironic Paracula" version) to void all signatures.
-- **The Red Phone**: A satirical overlay during the Pyongyang encounter where you overhear Kim Jong-un bullying the leaders of **Russia**, **Iran (Mojtaba)**, and **Sweden** for grocery deliveries.
+- **Intercepted Channels**: Meet **Xi Jinping** at the Great Wall, or overhear **Kim Jong-un** using the Red Phone to negotiate grocery deliveries with **Russia**, **Iran (Mojtaba)**, and **Sweden**.
+- **The Quantum UFO**: Get abducted into an observation deck where **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg** debate the monetization of the universe—and where the case clock stops making sense.
+- **The Hidden Bunker**: Ignore a direct protocol warning and find **Zelensky** making a final plea while **Death** waits to void the paperwork.
+- **The Drone Escalation**: Follow an unsolicited delivery system into the Bezos encounter and discover what the route was really optimizing.
 
 ### 🤖 C.L.A.U.D.I.A. Assistant
 Your central hub is a satirical 90s digital mascot—a parody of modern AI assistants—housed in a CRT terminal. She provides helpful (and highly cynical) guidance on your path to bureaucratic salvation.
 
 ### 💾 Persistent Dossier
-The title screen offers **Continue** and **New Game**. Progress, encounter consequences, and final-mission state are archived in a versioned local dossier; Continue always returns the player to the latest safe overworld checkpoint instead of reopening a cutscene or room transition midway through it.
+The title screen offers **Continue** and **New Game**. Progress, encounter consequences, and final-mission state are archived in a versioned local dossier; Continue always returns the player to the latest safe overworld checkpoint instead of reopening a cutscene or room transition midway through it. ESC places the case under a diegetic **Administrative Hold** whose available material changes as the procedure develops.
 
 Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
 
@@ -104,7 +103,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
-- `scripts/managers/`: dialogue, quest progression, versioned save data, room transitions, environment setup, and static world landmarks.
+- `scripts/managers/`: dialogue, quest progression, behavioural evidence, versioned save data, room transitions, environment setup, and static world landmarks.
 - `scripts/data/`: read-only character colors, portraits, and world-sprite metadata.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
@@ -122,7 +121,7 @@ godot --headless --path . --editor --quit
 godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
 ```
 
-The smoke test loads the main scene and covers the title flow, save/restore round trips, manager initialization, AI dialogue, and an interior round trip.
+The smoke test loads the main scene and covers the title flow, dossier interpretation and save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip.
 
 ## ⚖️ License
 
