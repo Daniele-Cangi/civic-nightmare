@@ -5,7 +5,7 @@
 - Final asset: `assets/backgrounds/world_district_plate_v2.png`.
 - Runtime size: 2176×2048 px, exactly matching the overworld bounds.
 - Placement: centered at world origin, nearest-neighbour filtered, `z=-10`.
-- Authority alignment grid: compound centers at `x = ±16`, with rows `y = -16, 0, 16`.
+- Authority alignment grid: compound centers at `x = -17 / 16`, with rows `y = -20, 0, 20`. This follows the plate's two-column/three-row visual centers while accounting for tile-center coordinates around the world origin.
 - Trump, Musk, and Putin have bespoke collision footprints matched to the visible lower mass of their facade sprites; their obsolete procedural silhouettes are not retained invisibly.
 - The plate is fully opaque and collision-neutral. It supplies visible civic paving; path reservations, props, trees, buildings, triggers, entrances, and collision remain runtime-owned layers.
 - The field atlas remains a fallback only; its opaque center cells are used if the plate cannot load.
