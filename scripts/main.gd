@@ -114,6 +114,7 @@ var quest_finished: bool:
 		if quest_manager:
 			quest_manager.set("quest_finished", value)
 var ai_terminal_data: Dictionary = {}
+var ai_terminal_world_expression_textures: Dictionary = {}
 var hidden_bunker_data: Dictionary = {}
 var ai_override_lines: Array = []
 var optional_ai_followup_lines: Array = []
@@ -1367,9 +1368,13 @@ func _create_ai_terminal() -> void:
 	# Mascot Visual (Sprite2D)
 	var sprite := Sprite2D.new()
 	sprite.name = "MascotSprite"
-	var tex_path = "res://assets/mockups/ai_terminal_sprite_v2.png"
-	if ResourceLoader.exists(tex_path):
-		var tex = load(tex_path)
+	ai_terminal_world_expression_textures.clear()
+	for expression in CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS:
+		var expression_path := str(CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS[expression])
+		if ResourceLoader.exists(expression_path):
+			ai_terminal_world_expression_textures[expression] = load(expression_path)
+	var tex = ai_terminal_world_expression_textures.get("neutral")
+	if tex is Texture2D:
 		sprite.texture = tex
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.scale = Vector2(0.85, 0.85) 
@@ -1441,13 +1446,20 @@ func _process_ai_terminal(_delta: float) -> void:
 		return
 	var mascot := terminal.get_node_or_null("MascotSprite") as Sprite2D
 	var glow := terminal.get_node_or_null("InferenceGlow") as PointLight2D
-	var claudia_is_inferring := (
+	var claudia_is_visible := (
 		is_dialogue_open
 		and dialogue_manager
 		and str(dialogue_manager.get("active_portrait_id")) == "ai_terminal"
+	)
+	var claudia_is_inferring := (
+		claudia_is_visible
 		and bool(dialogue_manager.get("claudia_inference_active"))
 	)
 	if mascot:
+		var world_expression := str(dialogue_manager.get("claudia_visible_expression")) if claudia_is_visible else "neutral"
+		var world_texture = ai_terminal_world_expression_textures.get(world_expression, ai_terminal_world_expression_textures.get("neutral"))
+		if world_texture is Texture2D and mascot.texture != world_texture:
+			mascot.texture = world_texture
 		var inference_step := (typewriter_index / 10) % 3 if claudia_is_inferring else 0
 		mascot.scale = Vector2.ONE * (0.85 + inference_step * 0.012)
 		mascot.modulate = Color(1.0, 0.94 + inference_step * 0.02, 0.88 + inference_step * 0.04) if claudia_is_inferring else Color.WHITE

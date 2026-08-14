@@ -22,6 +22,9 @@ TERMINAL_ASSETS = {
     "claudia_smile": "ai_terminal_portrait_smile_v2.png",
     "claudia_sad": "ai_terminal_portrait_sad_v2.png",
     "claudia_exalted": "ai_terminal_portrait_exalted_v2.png",
+    "claudia_world_smile": "ai_terminal_sprite_smile_v2.png",
+    "claudia_world_sad": "ai_terminal_sprite_sad_v2.png",
+    "claudia_world_exalted": "ai_terminal_sprite_exalted_v2.png",
 }
 RUNTIME_SIZE = (128, 128)
 SAFE_CONTENT_SIZE = 116
