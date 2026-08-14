@@ -105,10 +105,24 @@ func _run() -> void:
 	_check(str(game.get("current_character_id")) == "ai_terminal", "dialogue identity crosses the manager boundary")
 	var lines: Array = game.get("dialogue_lines")
 	_check(not lines.is_empty(), "quest manager provides AI dialogue content")
+	dialogue_manager.call("_set_claudia_expression", "exalted")
+	await process_frame
+	var terminal_mascot := game.get_node_or_null("Entities/AITerminal/MascotSprite") as Sprite2D
+	_check(
+		terminal_mascot != null
+		and terminal_mascot.texture != null
+		and terminal_mascot.texture.resource_path == CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS["exalted"],
+		"AI dialogue expression is mirrored by the overworld terminal"
+	)
 
 	game.call("_close_dialogue")
 	await create_timer(0.35).timeout
 	_check(not bool(game.get("is_dialogue_open")), "dialogue closes after its exit animation")
+	_check(
+		terminal_mascot != null
+		and terminal_mascot.texture.resource_path == CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS["neutral"],
+		"overworld terminal returns to neutral after dialogue"
+	)
 
 	game.call("_enter_room", "oval_office", "EntryMarker")
 	await process_frame
@@ -179,13 +193,19 @@ func _test_ai_terminal_assets() -> void:
 
 
 func _test_ai_terminal_expressions() -> void:
-	for expression in CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS:
-		var asset_path: String = CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS[expression]
-		_check(ResourceLoader.exists(asset_path), "C.L.A.U.D.I.A. %s expression exists" % expression)
-		if not ResourceLoader.exists(asset_path):
-			continue
-		var texture := load(asset_path) as Texture2D
-		_check(texture != null and texture.get_size() == Vector2(128, 128), "C.L.A.U.D.I.A. %s expression is runtime-sized" % expression)
+	var expression_sets := {
+		"dialogue": CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS,
+		"world": CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS
+	}
+	for usage in expression_sets:
+		var expressions: Dictionary = expression_sets[usage]
+		for expression in expressions:
+			var asset_path: String = expressions[expression]
+			_check(ResourceLoader.exists(asset_path), "C.L.A.U.D.I.A. %s %s expression exists" % [usage, expression])
+			if not ResourceLoader.exists(asset_path):
+				continue
+			var texture := load(asset_path) as Texture2D
+			_check(texture != null and texture.get_size() == Vector2(128, 128), "C.L.A.U.D.I.A. %s %s expression is runtime-sized" % [usage, expression])
 
 	var manager := DIALOGUE_MANAGER_SCRIPT.new()
 	_check(manager.classify_claudia_expression("All six signatures! A record!") == "exalted", "AI confidence peak selects exaltation")

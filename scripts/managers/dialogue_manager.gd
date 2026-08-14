@@ -40,6 +40,7 @@ var ai_expression_paths: Dictionary
 var ai_expression_textures: Dictionary = {}
 var active_portrait_id: String = ""
 var claudia_target_expression: String = "neutral"
+var claudia_visible_expression: String = "neutral"
 var claudia_inference_active: bool = false
 var claudia_inference_load: float = 0.0
 var claudia_performance_step: int = 0
@@ -504,6 +505,7 @@ func _finish_claudia_inference() -> void:
 func _set_claudia_expression(expression: String) -> void:
 	var texture = ai_expression_textures.get(expression)
 	if texture is Texture2D:
+		claudia_visible_expression = expression
 		portrait_rect.texture = texture
 
 
