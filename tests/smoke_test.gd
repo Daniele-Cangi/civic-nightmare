@@ -80,9 +80,20 @@ func _run() -> void:
 	for character_id in CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
+	var expected_authority_centers := {
+		"oval_office": Vector2i(16, -16),
+		"spaceship": Vector2i(-16, -16),
+		"eu_palace": Vector2i(16, 0),
+		"kremlin": Vector2i(-16, 0),
+		"vault": Vector2i(16, 16),
+		"elysee": Vector2i(-16, 16)
+	}
 	for building_spec in game.get("building_specs"):
 		var building_center: Vector2i = building_spec["center"]
 		_check(ground_map.get_cell_source_id(2, building_center) == -1, "%s old roof tiles are hidden behind the hero facade" % building_spec["key"])
+		_check(building_center == expected_authority_centers[building_spec["key"]], "%s is centered on its authored district clearing" % building_spec["key"])
+		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
+		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
 	var district_plates := game.get_tree().get_nodes_in_group("world_district_plate")
 	_check(district_plates.size() == 1, "the overworld installs exactly one district ground plate")
 	_check(ground_map.get_cell_source_id(0, Vector2i(8, 12)) == -1, "the ground plate replaces repeated biome field tiles")
