@@ -81,12 +81,12 @@ func _run() -> void:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
 	var expected_authority_centers := {
-		"oval_office": Vector2i(16, -16),
-		"spaceship": Vector2i(-16, -16),
+		"oval_office": Vector2i(16, -20),
+		"spaceship": Vector2i(-17, -20),
 		"eu_palace": Vector2i(16, 0),
-		"kremlin": Vector2i(-16, 0),
-		"vault": Vector2i(16, 16),
-		"elysee": Vector2i(-16, 16)
+		"kremlin": Vector2i(-17, 0),
+		"vault": Vector2i(16, 20),
+		"elysee": Vector2i(-17, 20)
 	}
 	for building_spec in game.get("building_specs"):
 		var building_center: Vector2i = building_spec["center"]
