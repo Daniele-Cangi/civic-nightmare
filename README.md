@@ -64,7 +64,7 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 
 <table>
   <tr>
-    <td width="33%" align="center"><img src="assets/mockups/landmark_trump.png" alt="Golden Eagle monument"></td>
+    <td width="33%" align="center"><img src="assets/landmarks/authority_trump_v2.png" alt="Trump authority facade"></td>
     <td width="33%" align="center"><img src="assets/mockups/ufo_advanced.png" alt="Quantum UFO encounter"></td>
     <td width="33%" align="center"><img src="assets/mockups/landmark_nuclear_plant.png" alt="Unstable nuclear plant"></td>
   </tr>
@@ -79,6 +79,7 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 
 - **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
 - **Portrait Pipeline**: Fighter portraits use controlled chroma-key extraction, premultiplied-alpha resizing, and automated 128×128 validation for clean, halo-free transparency.
+- **Authority Architecture**: The six signature encounters use dedicated 352 px hero facades with shared perspective, pixel density, lighting, and door alignment instead of procedural roof symbols. Their reusable visual contract is documented in the [facade art direction](docs/AUTHORITY_FACADE_ART_DIRECTION.md).
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Procedural World**: The overworld is generated with thematic buildings, dirt paths, and dense forests, ensuring a consistent yet chaotic layout.
 
@@ -104,7 +105,8 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
 - `scripts/managers/`: dialogue, quest progression, behavioural evidence, versioned save data, room transitions, environment setup, and static world landmarks.
-- `scripts/data/`: read-only character colors, portraits, and world-sprite metadata.
+- `scripts/data/`: read-only character colors, portraits, world sprites, and authority-facade metadata.
+- `assets/landmarks/`: runtime-sized exterior hero facades for the six required-signature locations.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.

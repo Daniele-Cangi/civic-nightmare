@@ -18,7 +18,7 @@ scenes/main.tscn
     ├── managers/world_landmark_builder.gd
     │                               static landmark nodes and entry triggers
     ├── data/character_visual_catalog.gd
-    │                               read-only colors, portraits, and sprite paths
+    │                               read-only colors, portraits, sprites, facades
     ├── sequences/start_menu.gd     Continue/New Game title flow
     ├── sequences/administrative_hold.gd
     │                               diegetic pause and dossier presentation
@@ -49,7 +49,7 @@ scenes/main.tscn
 | Title, intro, MK, and ending presentation | `StartMenu`, `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, and timers. |
 | Diegetic pause presentation | `AdministrativeHold` | Suspends the tree, reveals only currently unlocked dossier sections, and records profile access through `DossierManager`. |
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
-| Character colors, portraits, and sprite paths | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
+| Character colors, portraits, sprite paths, and authority facades | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the Great Wall, nuclear plant, hidden bunker, and Pyongyang entrances. |
 | Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, and atmospheric particles. |
 | Overworld and global story orchestration | `main.gd` | Coordinates systems that need world nodes or multiple narrative states. |
@@ -73,6 +73,7 @@ scenes/main.tscn
 - `data/day_flow.json` and `data/crowd_fragments.json` contain supporting narrative data.
 - `scenes/interiors/oval_office.tscn` is the shared interior scene instantiated for configured rooms.
 - `assets/` and `shaders/` remain presentation resources; their paths were not changed.
+- `assets/landmarks/authority_*_v2.png` contains the six runtime-sized authority facades. Their transparent lower edge is aligned to each existing exterior doorway; procedural footprint collisions remain authoritative while their old roof tiles are hidden.
 
 ## Adding or changing behavior
 

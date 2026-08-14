@@ -1074,6 +1074,10 @@ func _place_tree(pos: Vector2i) -> void:
 
 func _place_landmark(spec: Dictionary) -> void:
 	var cid: String = str(spec["npc"])
+	var facade_path := str(CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS.get(cid, ""))
+	if facade_path != "" and ResourceLoader.exists(facade_path):
+		_place_authority_facade(spec, facade_path)
+		return
 	if not CHARACTER_VISUAL_CATALOG.LANDMARK_SPRITE_PATHS.has(cid):
 		return
 
@@ -1107,6 +1111,49 @@ func _place_landmark(spec: Dictionary) -> void:
 
 	sprite.z_index = 5
 	entities_layer.add_child(sprite)
+
+
+func _place_authority_facade(spec: Dictionary, facade_path: String) -> void:
+	var texture := load(facade_path) as Texture2D
+	if texture == null:
+		return
+
+	var center: Vector2i = spec["center"]
+	var entrance: Vector2i = spec["entrance"]
+	_clear_authority_structure_tiles(center)
+	var entrance_bottom_y := _tile_to_body_position(entrance).y + 16.0
+	var facade_position := Vector2(
+		_tile_to_body_position(center).x,
+		entrance_bottom_y - texture.get_height() * 0.5
+	)
+
+	var shadow := Sprite2D.new()
+	shadow.name = "%sFacadeShadow" % _pascal_case(str(spec["key"]))
+	shadow.texture = texture
+	shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	shadow.position = facade_position + Vector2(10, 9)
+	shadow.modulate = Color(0.025, 0.04, 0.07, 0.3)
+	shadow.z_index = 3
+	entities_layer.add_child(shadow)
+
+	var facade := Sprite2D.new()
+	facade.name = "%sFacade" % _pascal_case(str(spec["key"]))
+	facade.texture = texture
+	facade.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	facade.position = facade_position
+	facade.z_index = 4
+	facade.add_to_group("authority_facade")
+	facade.set_meta("character_id", str(spec["npc"]))
+	entities_layer.add_child(facade)
+
+
+func _clear_authority_structure_tiles(center: Vector2i) -> void:
+	# The procedural footprint remains the collision source, but the hero facade
+	# becomes the only visible architecture. This prevents old roof tiles from
+	# leaking through transparent corners of the new sprite.
+	for x in range(center.x - 6, center.x + 7):
+		for y in range(center.y - 6, center.y + 7):
+			ground_map.erase_cell(LAYER_STRUCT, Vector2i(x, y))
 
 func _place_bush(pos: Vector2i) -> void:
 	if not _can_place_decoration(pos, Vector2i(1, 1)):
