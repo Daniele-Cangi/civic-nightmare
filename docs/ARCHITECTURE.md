@@ -74,6 +74,7 @@ scenes/main.tscn
 - `scenes/interiors/oval_office.tscn` is the shared interior scene instantiated for configured rooms.
 - `assets/` and `shaders/` remain presentation resources; their paths were not changed.
 - `assets/landmarks/authority_*_v2.png` contains the six runtime-sized authority facades. Their transparent lower edge is aligned to each existing exterior doorway; procedural footprint collisions remain authoritative while their old roof tiles are hidden.
+- `assets/backgrounds/world_district_plate_v2.png` is a single opaque, collision-neutral ground plate matching the 2176×2048 overworld bounds. `main.gd` mounts it below the TileMap at `z=-10`; path reservations, decorations, structures, triggers, and collision remain generated runtime layers. The plate supplies the visible civic paving so the legacy floor atlas cannot reintroduce seams. If the plate cannot load, the generator falls back to corrected opaque center tiles from `field_32.png` and the original path rendering.
 
 ## Adding or changing behavior
 

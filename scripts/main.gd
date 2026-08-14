@@ -19,6 +19,8 @@ const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const ADMINISTRATIVE_HOLD_SCRIPT = preload("res://scripts/sequences/administrative_hold.gd")
 
+const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
+
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
 @onready var entities_layer: Node2D = $Entities
@@ -289,16 +291,16 @@ const TILE_COLUMN = Vector2i(6, 6)
 # --- Pack tile coordinates (when _pack_ready) ---
 const NT_BUSH := Vector2i(8, 5)
 # Field terrain biome tiles
-const FD_DIRT := Vector2i(1, 0)
-const FD_DIRT2 := Vector2i(3, 0)
-const FD_LGREEN := Vector2i(1, 2)
-const FD_LGREEN2 := Vector2i(3, 2)
-const FD_GRASS := Vector2i(1, 4)
-const FD_GRASS2 := Vector2i(3, 4)
-const FD_PINK := Vector2i(1, 6)
-const FD_PINK2 := Vector2i(3, 6)
-const FD_SNOW := Vector2i(1, 8)
-const FD_SNOW2 := Vector2i(3, 8)
+const FD_DIRT := Vector2i(1, 1)
+const FD_DIRT2 := Vector2i(1, 1)
+const FD_LGREEN := Vector2i(1, 4)
+const FD_LGREEN2 := Vector2i(1, 4)
+const FD_GRASS := Vector2i(1, 7)
+const FD_GRASS2 := Vector2i(1, 7)
+const FD_PINK := Vector2i(1, 10)
+const FD_PINK2 := Vector2i(1, 10)
+const FD_SNOW := Vector2i(1, 13)
+const FD_SNOW2 := Vector2i(1, 13)
 
 # --- Floor/path autotile (first set in floor_32.png, sandy path) ---
 const FL_EDGE_T := Vector2i(3, 0)
@@ -921,24 +923,31 @@ func _generate_world_layout() -> void:
 
 	var grass_source := SRC_FIELD if _pack_ready else SRC_PROC
 	var path_source := SRC_FLOOR if _pack_ready else SRC_PROC
+	var district_plate_ready := _install_world_district_plate()
 
-	# Paint ground with biome-aware tiles
-	for x in range(WORLD_MIN_X, WORLD_MAX_X):
-		for y in range(WORLD_MIN_Y, WORLD_MAX_Y):
-			var pos := Vector2i(x, y)
-			ground_map.set_cell(LAYER_GROUND, pos, grass_source, _grass_tile_for(pos))
+	# The authored plate avoids visible atlas seams while the TileMap continues
+	# to own paths, decoration, structures, and collision. Keep a corrected
+	# opaque-tile fallback so a missing optional texture never breaks the world.
+	if not district_plate_ready:
+		for x in range(WORLD_MIN_X, WORLD_MAX_X):
+			for y in range(WORLD_MIN_Y, WORLD_MAX_Y):
+				var pos := Vector2i(x, y)
+				ground_map.set_cell(LAYER_GROUND, pos, grass_source, _grass_tile_for(pos))
 
-	# Paint paths
-	for cell in _path_cells.keys():
-		var path_pos: Vector2i = cell
-		if _pack_ready:
-			var pn := _path_cells.has(path_pos + Vector2i(0, -1))
-			var ps := _path_cells.has(path_pos + Vector2i(0, 1))
-			var pw := _path_cells.has(path_pos + Vector2i(-1, 0))
-			var pe := _path_cells.has(path_pos + Vector2i(1, 0))
-			ground_map.set_cell(LAYER_GROUND, path_pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
-		else:
-			ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
+	# The plate already contains collision-neutral civic paving. The cached path
+	# cells still reserve readable routes, but drawing the legacy floor atlas on
+	# top would reintroduce the horizontal seams this layer replaces.
+	if not district_plate_ready:
+		for cell in _path_cells.keys():
+			var path_pos: Vector2i = cell
+			if _pack_ready:
+				var pn := _path_cells.has(path_pos + Vector2i(0, -1))
+				var ps := _path_cells.has(path_pos + Vector2i(0, 1))
+				var pw := _path_cells.has(path_pos + Vector2i(-1, 0))
+				var pe := _path_cells.has(path_pos + Vector2i(1, 0))
+				ground_map.set_cell(LAYER_GROUND, path_pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
+			else:
+				ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
 
 	# Build structures and decorations
 	for spec in building_specs:
@@ -1008,6 +1017,27 @@ func _generate_world_layout() -> void:
 
 	# Dense tree border around the world edge
 	_build_world_border()
+
+
+func _install_world_district_plate() -> bool:
+	if not ResourceLoader.exists(WORLD_DISTRICT_PLATE_PATH):
+		return false
+	var texture := load(WORLD_DISTRICT_PLATE_PATH) as Texture2D
+	if texture == null:
+		return false
+
+	var plate := Sprite2D.new()
+	plate.name = "WorldDistrictPlate"
+	plate.texture = texture
+	plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	plate.position = Vector2(
+		float(WORLD_MIN_X + WORLD_MAX_X) * 16.0,
+		float(WORLD_MIN_Y + WORLD_MAX_Y) * 16.0
+	)
+	plate.z_index = -10
+	plate.add_to_group("world_district_plate")
+	ground_map.add_child(plate)
+	return true
 
 func _place_cactus(pos: Vector2i) -> void:
 	if not _pack_ready or not _can_place_decoration(pos, Vector2i(1, 1)):
@@ -1496,20 +1526,22 @@ func _create_ai_terminal() -> void:
 	terminal.z_index = 2
 	entities_layer.add_child(terminal)
 
-	# Add path tiles around the terminal and Xi
+	# Reserve a clear walkable area around the terminal and Xi. The authored
+	# plate supplies its paving; only the fallback world needs legacy tiles.
 	_mark_path_rect(Vector2i(-4, -4), Vector2i(6, 10))
-	var path_source: int = SRC_FLOOR if _pack_ready else SRC_PROC
-	for x in range(-4, 7):
-		for y in range(-4, 11):
-			var pos := Vector2i(x, y)
-			if _pack_ready:
-				var pn := _path_cells.has(pos + Vector2i(0, -1))
-				var ps := _path_cells.has(pos + Vector2i(0, 1))
-				var pw := _path_cells.has(pos + Vector2i(-1, 0))
-				var pe := _path_cells.has(pos + Vector2i(1, 0))
-				ground_map.set_cell(LAYER_GROUND, pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
-			else:
-				ground_map.set_cell(LAYER_GROUND, pos, path_source, TILE_PATH)
+	if ground_map.get_node_or_null("WorldDistrictPlate") == null:
+		var path_source: int = SRC_FLOOR if _pack_ready else SRC_PROC
+		for x in range(-4, 7):
+			for y in range(-4, 11):
+				var pos := Vector2i(x, y)
+				if _pack_ready:
+					var pn := _path_cells.has(pos + Vector2i(0, -1))
+					var ps := _path_cells.has(pos + Vector2i(0, 1))
+					var pw := _path_cells.has(pos + Vector2i(-1, 0))
+					var pe := _path_cells.has(pos + Vector2i(1, 0))
+					ground_map.set_cell(LAYER_GROUND, pos, path_source, _path_tile_for_neighbors(pn, ps, pw, pe))
+				else:
+					ground_map.set_cell(LAYER_GROUND, pos, path_source, TILE_PATH)
 
 func _process_ai_terminal(_delta: float) -> void:
 	var terminal := get_node_or_null("Entities/AITerminal")

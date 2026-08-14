@@ -7,6 +7,7 @@ const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
+const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
 
 var failures: Array[String] = []
 
@@ -26,6 +27,7 @@ func _run() -> void:
 	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
 	_test_authority_facades()
+	_test_world_district_plate()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
 
@@ -81,6 +83,10 @@ func _run() -> void:
 	for building_spec in game.get("building_specs"):
 		var building_center: Vector2i = building_spec["center"]
 		_check(ground_map.get_cell_source_id(2, building_center) == -1, "%s old roof tiles are hidden behind the hero facade" % building_spec["key"])
+	var district_plates := game.get_tree().get_nodes_in_group("world_district_plate")
+	_check(district_plates.size() == 1, "the overworld installs exactly one district ground plate")
+	_check(ground_map.get_cell_source_id(0, Vector2i(8, 12)) == -1, "the ground plate replaces repeated biome field tiles")
+	_check(ground_map.get_cell_source_id(0, Vector2i.ZERO) == -1, "legacy path tiles do not band the authored civic corridor")
 	if ending_sequence:
 		for final_case in [[0, "wouldn't matter"], [1, "almost didn't"], [-1, "only honest"]]:
 			ending_sequence.call("configure_final_credits", final_case[0], "still here")
@@ -240,6 +246,18 @@ func _test_authority_facades() -> void:
 		_check(texture.get_height() >= 280 and texture.get_height() <= 330, "%s authority facade fits the world footprint" % character_id)
 		var image := texture.get_image()
 		_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s authority facade has a transparent corner" % character_id)
+
+
+func _test_world_district_plate() -> void:
+	_check(ResourceLoader.exists(WORLD_DISTRICT_PLATE_PATH), "the world district plate exists")
+	if not ResourceLoader.exists(WORLD_DISTRICT_PLATE_PATH):
+		return
+	var texture := load(WORLD_DISTRICT_PLATE_PATH) as Texture2D
+	_check(texture != null, "the world district plate can be loaded")
+	if texture:
+		_check(texture.get_size() == Vector2(2176, 2048), "the world district plate matches the overworld bounds")
+		var image := texture.get_image()
+		_check(image != null and image.get_pixel(0, 0).a > 0.99, "the world district plate is opaque at its boundary")
 
 
 func _test_ai_terminal_expressions() -> void:
