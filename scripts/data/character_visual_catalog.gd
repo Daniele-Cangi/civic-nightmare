@@ -40,6 +40,13 @@ const PORTRAIT_PATHS := {
 	"jeff_bezos": "res://assets/mockups/bezos_portrait.png"
 }
 
+const AI_TERMINAL_EXPRESSION_PATHS := {
+	"neutral": "res://assets/mockups/ai_terminal_portrait_v2.png",
+	"smile": "res://assets/mockups/ai_terminal_portrait_smile_v2.png",
+	"sad": "res://assets/mockups/ai_terminal_portrait_sad_v2.png",
+	"exalted": "res://assets/mockups/ai_terminal_portrait_exalted_v2.png"
+}
+
 const COMBAT_PORTRAIT_PATHS := {
 	"donald_trump": "res://assets/mockups/trump_combat_portrait_v2.png",
 	"elon_musk": "res://assets/mockups/musk_combat_portrait_v2.png",

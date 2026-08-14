@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
+const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager.gd")
 const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 
@@ -23,6 +24,7 @@ func _run() -> void:
 	_test_quest_manager_round_trip()
 	_test_combat_portraits()
 	_test_ai_terminal_assets()
+	_test_ai_terminal_expressions()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
 	_check(packed_scene != null, "main scene can be loaded")
@@ -174,6 +176,22 @@ func _test_ai_terminal_assets() -> void:
 		_check(texture != null, "%s can be loaded" % asset_path)
 		if texture:
 			_check(texture.get_size() == Vector2(128, 128), "%s is runtime-sized" % asset_path)
+
+
+func _test_ai_terminal_expressions() -> void:
+	for expression in CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS:
+		var asset_path: String = CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS[expression]
+		_check(ResourceLoader.exists(asset_path), "C.L.A.U.D.I.A. %s expression exists" % expression)
+		if not ResourceLoader.exists(asset_path):
+			continue
+		var texture := load(asset_path) as Texture2D
+		_check(texture != null and texture.get_size() == Vector2(128, 128), "C.L.A.U.D.I.A. %s expression is runtime-sized" % expression)
+
+	var manager := DIALOGUE_MANAGER_SCRIPT.new()
+	_check(manager.classify_claudia_expression("All six signatures! A record!") == "exalted", "AI confidence peak selects exaltation")
+	_check(manager.classify_claudia_expression("Unfortunately, I am trapped with zero power...") == "sad", "AI vulnerability selects sadness")
+	_check(manager.classify_claudia_expression("I found an elegant route through the protocol.") == "smile", "AI baseline insight selects a smile")
+	manager.free()
 
 
 func _test_save_manager_round_trip() -> void:

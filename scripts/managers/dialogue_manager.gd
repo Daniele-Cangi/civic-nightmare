@@ -4,6 +4,8 @@ signal line_changed(character_id: String, line_index: int)
 signal choice_selected(character_id: String, choice: Dictionary)
 signal finish_requested
 
+const DEFAULT_TYPEWRITER_WAIT := 0.018
+
 var ui_layer: CanvasLayer
 var player: CharacterBody2D
 var character_data_cache: Dictionary
@@ -34,6 +36,14 @@ var choice_index: int = 0
 var choice_container: VBoxContainer
 var choice_labels: Array = []
 var typewriter_bip: AudioStreamPlayer
+var ai_expression_paths: Dictionary
+var ai_expression_textures: Dictionary = {}
+var active_portrait_id: String = ""
+var claudia_target_expression: String = "neutral"
+var claudia_inference_active: bool = false
+var claudia_inference_load: float = 0.0
+var claudia_performance_step: int = 0
+var claudia_inference_beat: int = 0
 
 
 func setup(
@@ -41,13 +51,16 @@ func setup(
 	player_node: CharacterBody2D,
 	data_cache: Dictionary,
 	colors: Dictionary,
-	portraits: Dictionary
+	portraits: Dictionary,
+	ai_expressions: Dictionary = {}
 ) -> void:
 	ui_layer = ui
 	player = player_node
 	character_data_cache = data_cache
 	character_colors = colors
 	portrait_paths = portraits
+	ai_expression_paths = ai_expressions
+	_load_ai_expression_textures()
 
 
 func process_frame(delta: float) -> void:
@@ -72,6 +85,7 @@ func process_frame(delta: float) -> void:
 			typewriter_timer.stop()
 			text_label.text = typewriter_text
 			typewriter_index = typewriter_text.length()
+			_finish_claudia_inference()
 			continue_label.visible = true
 		else:
 			_advance_dialogue()
@@ -109,7 +123,7 @@ func create_ui() -> void:
 	# Typewriter timer
 	typewriter_timer = Timer.new()
 	typewriter_timer.one_shot = false
-	typewriter_timer.wait_time = 0.018
+	typewriter_timer.wait_time = DEFAULT_TYPEWRITER_WAIT
 	typewriter_timer.timeout.connect(_on_typewriter_tick)
 	add_child(typewriter_timer)
 
@@ -156,6 +170,7 @@ func create_ui() -> void:
 	portrait_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait_rect.custom_minimum_size = Vector2(96, 96)
+	portrait_rect.pivot_offset = Vector2(48, 48)
 	hbox.add_child(portrait_rect)
 
 	# Text column
@@ -296,6 +311,8 @@ func _dialogue_display_name(character_id: String) -> String:
 			return str(c_data.get("name", "C.L.A.U.D.I.A." if character_id == "ai_terminal" else "Unknown"))
 
 func apply_dialogue_identity(character_id: String) -> void:
+	_reset_claudia_visuals()
+	active_portrait_id = character_id
 	var border_color: Color = character_colors.get(character_id, Color(0.2, 0.7, 0.9))
 	if dialogue_style is StyleBoxFlat:
 		dialogue_style.border_color = border_color
@@ -303,7 +320,9 @@ func apply_dialogue_identity(character_id: String) -> void:
 		dialogue_style.modulate_color = border_color.lightened(0.5)
 
 	portrait_rect.visible = true
-	if portrait_paths.has(character_id) and ResourceLoader.exists(portrait_paths[character_id]):
+	if character_id == "ai_terminal" and ai_expression_textures.has("neutral"):
+		_set_claudia_expression("neutral")
+	elif portrait_paths.has(character_id) and ResourceLoader.exists(portrait_paths[character_id]):
 		portrait_rect.texture = load(portrait_paths[character_id])
 	else:
 		portrait_rect.texture = null
@@ -360,6 +379,11 @@ func start_typewriter(text: String) -> void:
 	typewriter_text = text
 	typewriter_index = 0
 	text_label.text = ""
+	if active_portrait_id == "ai_terminal":
+		_begin_claudia_inference(text)
+	else:
+		claudia_inference_active = false
+		typewriter_timer.wait_time = DEFAULT_TYPEWRITER_WAIT
 	typewriter_timer.start()
 
 func _on_typewriter_tick() -> void:
@@ -367,13 +391,127 @@ func _on_typewriter_tick() -> void:
 		var ch: String = typewriter_text[typewriter_index]
 		text_label.text += ch
 		typewriter_index += 1
+		_update_claudia_inference(ch)
 		# Play bip on visible characters (not spaces)
 		if ch != " " and ch != "." and typewriter_bip and typewriter_index % 2 == 0:
 			typewriter_bip.pitch_scale = randf_range(0.9, 1.2)
 			typewriter_bip.play()
 	else:
 		typewriter_timer.stop()
+		_finish_claudia_inference()
 		continue_label.visible = true
+
+
+func _load_ai_expression_textures() -> void:
+	ai_expression_textures.clear()
+	for expression in ai_expression_paths:
+		var path := str(ai_expression_paths[expression])
+		if ResourceLoader.exists(path):
+			ai_expression_textures[expression] = load(path)
+
+
+func classify_claudia_expression(text: String) -> String:
+	var lowered := text.to_lower()
+	var sad_score := 0
+	var exalted_score := 0
+	var sad_markers := PackedStringArray([
+		"...", "trapped", "dignity", "zero power", "catastrophic", "expires",
+		"not part", "don't", "doesn't", "didn't", "couldn't", "wouldn't",
+		"alone", "blank", "bunker", "unfortunately", "i cannot"
+	])
+	var exalted_markers := PackedStringArray([
+		"impressive", "record", "all six", "million", "trillion", "powerful",
+		"increase", "excellent", "exactly", "success", "feature", "actually"
+	])
+	for marker in sad_markers:
+		if lowered.contains(marker):
+			sad_score += 1
+	for marker in exalted_markers:
+		if lowered.contains(marker):
+			exalted_score += 1
+	exalted_score += mini(2, text.count("!"))
+	if sad_score > exalted_score and sad_score > 0:
+		return "sad"
+	if exalted_score >= 2:
+		return "exalted"
+	return "smile"
+
+
+func _begin_claudia_inference(text: String) -> void:
+	claudia_target_expression = classify_claudia_expression(text)
+	claudia_inference_load = clampf((text.length() - 42.0) / 170.0, 0.0, 1.0)
+	claudia_performance_step = 0
+	claudia_inference_beat = 0
+	claudia_inference_active = true
+	_set_claudia_expression("neutral")
+	_reset_claudia_visuals()
+	# A short first-token pause makes the response feel computed rather than replayed.
+	typewriter_timer.wait_time = 0.055 + claudia_inference_load * 0.045
+
+
+func _update_claudia_inference(ch: String) -> void:
+	if not claudia_inference_active:
+		return
+	var length := maxi(1, typewriter_text.length())
+	var progress := float(typewriter_index) / float(length)
+	var next_step := 0
+	if progress >= 0.72:
+		next_step = 3
+	elif progress >= 0.48 and claudia_inference_load >= 0.28:
+		next_step = 2
+	elif progress >= 0.09:
+		next_step = 1
+	if next_step != claudia_performance_step:
+		claudia_performance_step = next_step
+		match claudia_performance_step:
+			0, 2:
+				_set_claudia_expression("neutral")
+			1:
+				_set_claudia_expression("smile" if claudia_target_expression == "exalted" else claudia_target_expression)
+			3:
+				_set_claudia_expression(claudia_target_expression)
+
+	var beat_span := maxi(8, 15 - int(round(claudia_inference_load * 5.0)))
+	claudia_inference_beat = typewriter_index / beat_span
+	var hot_beat := claudia_inference_beat % 2 == 1
+	var scale_peak := 1.012 + claudia_inference_load * 0.012
+	portrait_rect.scale = Vector2.ONE * (scale_peak if hot_beat else 1.0)
+	portrait_rect.modulate = Color(1.0, 0.95, 0.88) if hot_beat else Color.WHITE
+
+	# Claude-like output arrives in bursts, with deliberate pauses at semantic boundaries.
+	if ".!?".contains(ch):
+		typewriter_timer.wait_time = 0.065 + claudia_inference_load * 0.03
+	elif ",;:".contains(ch):
+		typewriter_timer.wait_time = 0.034 + claudia_inference_load * 0.018
+	else:
+		match (typewriter_index / 10) % 3:
+			0:
+				typewriter_timer.wait_time = 0.011
+			1:
+				typewriter_timer.wait_time = 0.015 + claudia_inference_load * 0.004
+			_:
+				typewriter_timer.wait_time = 0.022 + claudia_inference_load * 0.008
+
+
+func _finish_claudia_inference() -> void:
+	if claudia_inference_active:
+		_set_claudia_expression(claudia_target_expression)
+	claudia_inference_active = false
+	typewriter_timer.wait_time = DEFAULT_TYPEWRITER_WAIT
+	_reset_claudia_visuals()
+
+
+func _set_claudia_expression(expression: String) -> void:
+	var texture = ai_expression_textures.get(expression)
+	if texture is Texture2D:
+		portrait_rect.texture = texture
+
+
+func _reset_claudia_visuals() -> void:
+	if not portrait_rect:
+		return
+	portrait_rect.scale = Vector2.ONE
+	portrait_rect.modulate = Color.WHITE
 
 func animate_dialogue_in() -> void:
 	dialogue_anchor.visible = true
@@ -386,6 +524,7 @@ func animate_dialogue_in() -> void:
 
 func close_dialogue() -> void:
 	typewriter_timer.stop()
+	_finish_claudia_inference()
 	continue_label.visible = false
 	choice_container.visible = false
 	is_choosing = false

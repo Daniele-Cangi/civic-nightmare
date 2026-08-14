@@ -19,6 +19,9 @@ PORTRAITS = (
 TERMINAL_ASSETS = {
     "claudia_portrait": "ai_terminal_portrait_v2.png",
     "claudia_sprite": "ai_terminal_sprite_v2.png",
+    "claudia_smile": "ai_terminal_portrait_smile_v2.png",
+    "claudia_sad": "ai_terminal_portrait_sad_v2.png",
+    "claudia_exalted": "ai_terminal_portrait_exalted_v2.png",
 }
 RUNTIME_SIZE = (128, 128)
 SAFE_CONTENT_SIZE = 116
@@ -79,11 +82,17 @@ def build_portrait(slug: str) -> Path:
 
 def main() -> None:
     for portrait in PORTRAITS:
+        source = SOURCE_DIR / f"{portrait}_transparent_v2.png"
+        if not source.exists():
+            continue
         output = build_portrait(portrait)
         print(output.relative_to(ROOT))
     for source_name, destination_name in TERMINAL_ASSETS.items():
+        source = SOURCE_DIR / f"{source_name}_transparent.png"
+        if not source.exists():
+            continue
         output = build_runtime_asset(
-            SOURCE_DIR / f"{source_name}_transparent.png",
+            source,
             OUTPUT_DIR / destination_name,
         )
         print(output.relative_to(ROOT))
