@@ -28,7 +28,7 @@ const PORTRAIT_PATHS := {
 	"emmanuel_macron": "res://assets/mockups/macron_combat_portrait_v2.png",
 	"xi_jinping": "res://assets/mockups/xi_jinping_caricature.png",
 	"sam_altman": "res://assets/mockups/sam_altman_caricature.png",
-	"ai_terminal": "res://assets/mockups/ai_terminal_caricature.png",
+	"ai_terminal": "res://assets/mockups/ai_terminal_portrait_v2.png",
 	"ufo_easter_egg": "res://assets/mockups/einstein_caricature.png",
 	"mark_zuckerberg_ufo": "res://assets/mockups/zuckerberg_caricature.png",
 	"historical_contamination": "res://assets/mockups/contamination_portrait.png",

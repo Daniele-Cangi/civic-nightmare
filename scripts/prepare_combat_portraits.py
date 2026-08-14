@@ -16,13 +16,15 @@ PORTRAITS = (
     "putin",
     "macron",
 )
+TERMINAL_ASSETS = {
+    "claudia_portrait": "ai_terminal_portrait_v2.png",
+    "claudia_sprite": "ai_terminal_sprite_v2.png",
+}
 RUNTIME_SIZE = (128, 128)
 SAFE_CONTENT_SIZE = 116
 
 
-def build_portrait(slug: str) -> Path:
-    source = SOURCE_DIR / f"{slug}_transparent_v2.png"
-    destination = OUTPUT_DIR / f"{slug}_combat_portrait_v2.png"
+def build_runtime_asset(source: Path, destination: Path) -> Path:
     if not source.exists():
         raise FileNotFoundError(source)
 
@@ -68,9 +70,22 @@ def build_portrait(slug: str) -> Path:
     return destination
 
 
+def build_portrait(slug: str) -> Path:
+    return build_runtime_asset(
+        SOURCE_DIR / f"{slug}_transparent_v2.png",
+        OUTPUT_DIR / f"{slug}_combat_portrait_v2.png",
+    )
+
+
 def main() -> None:
     for portrait in PORTRAITS:
         output = build_portrait(portrait)
+        print(output.relative_to(ROOT))
+    for source_name, destination_name in TERMINAL_ASSETS.items():
+        output = build_runtime_asset(
+            SOURCE_DIR / f"{source_name}_transparent.png",
+            OUTPUT_DIR / destination_name,
+        )
         print(output.relative_to(ROOT))
 
 
