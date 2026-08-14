@@ -1230,6 +1230,8 @@ func _create_solid_wall(x: int, y: int) -> void:
 
 func _build_structure(spec: Dictionary) -> void:
 	var center: Vector2i = spec["center"]
+	if _build_custom_facade_footprint(str(spec["key"]), center):
+		return
 	match spec["key"]:
 		"oval_office":
 			_build_oval_office(center)
@@ -1243,6 +1245,34 @@ func _build_structure(spec: Dictionary) -> void:
 			_build_vault(center)
 		"elysee":
 			_build_elysee(center)
+
+
+func _build_custom_facade_footprint(building_key: String, center: Vector2i) -> bool:
+	# These three legacy procedural silhouettes were visibly larger and higher
+	# than their replacement facade sprites. Their collision now follows the
+	# visible lower mass and stops before the exterior doorway.
+	match building_key:
+		"oval_office":
+			for dx in range(-5, 6):
+				for dy in range(-3, 5):
+					var xr := pow(float(dx) / 5.0, 2)
+					var yr := pow(float(dy - 1) / 4.0, 2)
+					if xr + yr <= 1.0:
+						_create_solid_wall(center.x + dx, center.y + dy)
+			return true
+		"spaceship":
+			for dx in range(-5, 6):
+				for dy in range(-3, 6):
+					if abs(dx) + abs(dy - 2) <= 5:
+						_create_solid_wall(center.x + dx, center.y + dy)
+			return true
+		"kremlin":
+			for dx in range(-5, 6):
+				for dy in range(-2, 6):
+					if abs(dx) <= 2 or abs(dy - 3) <= 2:
+						_create_solid_wall(center.x + dx, center.y + dy)
+			return true
+	return false
 
 func _set_structure_tile(pos: Vector2i, coords: Vector2i, solid: bool = false, source_id: int = SRC_PROC) -> void:
 	ground_map.set_cell(LAYER_STRUCT, pos, source_id, coords)

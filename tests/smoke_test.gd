@@ -94,6 +94,19 @@ func _run() -> void:
 		_check(building_center == expected_authority_centers[building_spec["key"]], "%s is centered on its authored district clearing" % building_spec["key"])
 		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
 		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
+	var solid_positions: Dictionary = game.get("_solid_positions")
+	var trump_center: Vector2i = expected_authority_centers["oval_office"]
+	var musk_center: Vector2i = expected_authority_centers["spaceship"]
+	var putin_center: Vector2i = expected_authority_centers["kremlin"]
+	_check(not solid_positions.has(trump_center + Vector2i(0, -4)), "Trump has no invisible legacy collision above the facade")
+	_check(solid_positions.has(trump_center + Vector2i(0, -3)), "Trump retains a collision footprint inside the visible facade")
+	_check(not solid_positions.has(trump_center + Vector2i(0, 5)), "Trump exterior doorway remains accessible")
+	_check(not solid_positions.has(musk_center + Vector2i(0, -5)), "Musk has no invisible legacy collision above the facade")
+	_check(solid_positions.has(musk_center + Vector2i(0, -3)), "Musk retains a collision footprint inside the visible facade")
+	_check(not solid_positions.has(musk_center + Vector2i(0, 6)), "Musk exterior doorway remains accessible")
+	_check(not solid_positions.has(putin_center + Vector2i(0, -5)), "Putin has no invisible legacy collision above the facade")
+	_check(solid_positions.has(putin_center + Vector2i(0, -2)), "Putin retains a collision footprint inside the visible facade")
+	_check(not solid_positions.has(putin_center + Vector2i(0, 6)), "Putin exterior doorway remains accessible")
 	var district_plates := game.get_tree().get_nodes_in_group("world_district_plate")
 	_check(district_plates.size() == 1, "the overworld installs exactly one district ground plate")
 	_check(ground_map.get_cell_source_id(0, Vector2i(8, 12)) == -1, "the ground plate replaces repeated biome field tiles")
