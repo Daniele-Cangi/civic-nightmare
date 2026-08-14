@@ -1399,6 +1399,7 @@ func _create_ai_terminal() -> void:
 
 	# Glow light
 	var glow := PointLight2D.new()
+	glow.name = "InferenceGlow"
 	glow.position = Vector2(0, -20)
 	glow.color = Color(1.0, 0.45, 0.1) # Orange glow
 	glow.energy = 0.5
@@ -1438,6 +1439,20 @@ func _process_ai_terminal(_delta: float) -> void:
 	var terminal := get_node_or_null("Entities/AITerminal")
 	if not terminal or not player:
 		return
+	var mascot := terminal.get_node_or_null("MascotSprite") as Sprite2D
+	var glow := terminal.get_node_or_null("InferenceGlow") as PointLight2D
+	var claudia_is_inferring := (
+		is_dialogue_open
+		and dialogue_manager
+		and str(dialogue_manager.get("active_portrait_id")) == "ai_terminal"
+		and bool(dialogue_manager.get("claudia_inference_active"))
+	)
+	if mascot:
+		var inference_step := (typewriter_index / 10) % 3 if claudia_is_inferring else 0
+		mascot.scale = Vector2.ONE * (0.85 + inference_step * 0.012)
+		mascot.modulate = Color(1.0, 0.94 + inference_step * 0.02, 0.88 + inference_step * 0.04) if claudia_is_inferring else Color.WHITE
+		if glow:
+			glow.energy = 0.5 + inference_step * 0.14 if claudia_is_inferring else 0.5
 	if (contamination_terminal_ready or hidden_bunker_ai_ack_pending or hidden_bunker_ai_ack_active) and not contamination_terminal_departed and contamination_root and is_instance_valid(contamination_root) and not contamination_active:
 		contamination_root.modulate = Color.WHITE
 		contamination_root.visible = true
@@ -1498,7 +1513,8 @@ func _create_dialogue_ui() -> void:
 		player,
 		character_data_cache,
 		CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS,
-		CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS
+		CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS,
+		CHARACTER_VISUAL_CATALOG.AI_TERMINAL_EXPRESSION_PATHS
 	)
 	dialogue_manager.line_changed.connect(_on_dialogue_line_changed)
 	dialogue_manager.choice_selected.connect(_on_dialogue_choice_selected)
