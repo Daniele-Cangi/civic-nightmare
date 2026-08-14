@@ -16,6 +16,8 @@ const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd"
 const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
+const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
+const ADMINISTRATIVE_HOLD_SCRIPT = preload("res://scripts/sequences/administrative_hold.gd")
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -160,6 +162,8 @@ var intro_active: bool:
 
 # --- Dossier / continue flow ---
 var save_manager: Node
+var dossier_manager: Node
+var administrative_hold: Node
 var start_menu: Node
 var start_menu_active: bool:
 	get:
@@ -408,8 +412,14 @@ func _setup_quest_manager() -> void:
 	quest_manager.name = "QuestManager"
 	add_child(quest_manager)
 
+func _setup_dossier_manager() -> void:
+	dossier_manager = DOSSIER_MANAGER_SCRIPT.new()
+	dossier_manager.name = "DossierManager"
+	add_child(dossier_manager)
+
 func _ready() -> void:
 	_setup_quest_manager()
+	_setup_dossier_manager()
 	# Remove old dialogue box from scene (if present)
 	var old_box = get_node_or_null("UI/DialogueBox")
 	if old_box:
@@ -441,6 +451,7 @@ func _ready() -> void:
 	_setup_mk_sequence()
 	_setup_save_manager()
 	_setup_start_menu()
+	_setup_administrative_hold()
 
 func _remove_world_npcs() -> void:
 	for child in entities_layer.get_children():
@@ -509,6 +520,19 @@ func _on_ufo_triggered() -> void:
 func _start_ufo_abduction() -> void:
 	if ufo_abduction_active or is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
+	dossier_manager.record_anomaly(
+		"anomaly:ufo_time_discontinuity",
+		"ufo_lab",
+		"Location and elapsed-time records could not be reconciled after an unscheduled transfer.",
+		{
+			"before_time": "14:03",
+			"invalid_time": "14:04",
+			"return_time": "14:04",
+			"elapsed_local": "01:12",
+			"recorded_system": "17:44",
+		}
+	)
+	_request_autosave()
 	ufo_abduction_active = true
 	is_room_transition = true
 	player.velocity = Vector2.ZERO
@@ -1627,6 +1651,12 @@ func _setup_ai_dialogue() -> void:
 		Callable(self, "_character_display_name"),
 		seen_hidden_bunker_scene
 	)
+	var dossier_observation: Dictionary = dossier_manager.claim_claudia_observation()
+	if not dossier_observation.is_empty():
+		var observation_lines: Array = dossier_observation.get("lines", [])
+		if not observation_lines.is_empty():
+			dialogue_lines.append("...")
+			dialogue_lines.append_array(observation_lines)
 
 func _setup_politician_dialogue(character_id: String) -> void:
 	var content: Dictionary = quest_manager.build_politician_dialogue(
@@ -1658,6 +1688,13 @@ func _finish_dialogue() -> void:
 	if bool(current_data.get("optional", false)):
 		quest_manager.mark_optional_seen(current_character_id)
 		if not was_optional_seen:
+			if current_character_id == "kim_jong_un":
+				dossier_manager.record_investigation(
+					"investigation:red_phone",
+					"pyongyang_red_phone",
+					"A private communications channel remained open during the meeting.",
+					{"intercepted": true, "player_disconnected_call": false}
+				)
 			_queue_optional_ai_followup(current_character_id)
 			if current_character_id == "sam_altman":
 				get_tree().create_timer(0.24).timeout.connect(_try_open_optional_ai_followup)
@@ -1718,6 +1755,7 @@ func _try_open_optional_ai_followup() -> void:
 
 func _record_choice_mark(character_id: String, choice: Dictionary) -> void:
 	quest_manager.record_choice_mark(character_id, choice)
+	dossier_manager.record_choice(character_id, choice)
 
 
 func _apply_dialogue_identity(character_id: String) -> void:
@@ -1943,6 +1981,12 @@ func _start_hidden_bunker_scene() -> void:
 	_hide_bunker_caption()
 	await get_tree().create_timer(0.6).timeout
 	seen_hidden_bunker_scene = true
+	dossier_manager.record_protocol_deviation(
+		"protocol_deviation:hidden_bunker",
+		"mountain_bunker",
+		"Subject deliberately entered a location excluded from case instructions.",
+		{"direct_warning_ignored": true, "warning_source": "ai_terminal"}
+	)
 	hidden_bunker_scene_active = false
 	player.set_physics_process(true)
 	_request_autosave()
@@ -2219,12 +2263,40 @@ func _setup_start_menu() -> void:
 	start_menu.setup(self, save_manager.get_save_summary())
 
 
+func _setup_administrative_hold() -> void:
+	administrative_hold = ADMINISTRATIVE_HOLD_SCRIPT.new()
+	administrative_hold.name = "AdministrativeHold"
+	add_child(administrative_hold)
+	administrative_hold.state_changed.connect(_on_administrative_hold_state_changed)
+	administrative_hold.setup(self, dossier_manager, Callable(self, "_can_open_administrative_hold"))
+
+
+func _can_open_administrative_hold() -> bool:
+	return (
+		not start_menu_active
+		and not intro_active
+		and not ending_active
+		and not is_room_transition
+		and not hidden_bunker_scene_active
+		and not contamination_active
+		and not bezos_cinematic_active
+		and not ufo_abduction_active
+		and not final_mission_awaiting_input
+	)
+
+
+func _on_administrative_hold_state_changed() -> void:
+	_request_autosave()
+
+
 func _begin_new_game(clear_existing_save: bool = true) -> void:
 	if clear_existing_save and save_manager:
 		var clear_error: Error = save_manager.clear_save()
 		if clear_error != OK:
 			push_warning("Could not clear the previous dossier: %s" % error_string(clear_error))
 	autosave_pending = false
+	if dossier_manager:
+		dossier_manager.reset()
 	_close_start_menu()
 	_setup_intro_sequence()
 
@@ -2253,6 +2325,7 @@ func _build_save_snapshot() -> Dictionary:
 
 	return {
 		"quest": quest_manager.get_save_data(),
+		"dossier": dossier_manager.get_save_data(),
 		"world": {
 			"safe_position": [last_safe_world_position.x, last_safe_world_position.y]
 		},
@@ -2300,6 +2373,10 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	var quest_data = snapshot.get("quest", {})
 	if quest_data is Dictionary:
 		quest_manager.restore_save_data(quest_data)
+
+	var dossier_data = snapshot.get("dossier", {})
+	if dossier_data is Dictionary:
+		dossier_manager.restore_save_data(dossier_data)
 
 	var saved_rooms = snapshot.get("rooms", {})
 	if saved_rooms is Dictionary:
@@ -2395,6 +2472,7 @@ func _is_autosave_safe() -> bool:
 		and not contamination_active
 		and not bezos_cinematic_active
 		and not ufo_abduction_active
+		and not (administrative_hold and bool(administrative_hold.get("opened")))
 		and not final_mission_awaiting_input
 	)
 

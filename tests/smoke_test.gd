@@ -4,6 +4,7 @@ const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_ca
 const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager.gd")
 const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
+const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 
@@ -22,6 +23,7 @@ func _check(condition: bool, message: String) -> void:
 func _run() -> void:
 	_test_save_manager_round_trip()
 	_test_quest_manager_round_trip()
+	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
@@ -42,6 +44,8 @@ func _run() -> void:
 	var room_manager: Node = game.get("room_manager")
 	var quest_manager: Node = game.get("quest_manager")
 	var dialogue_manager: Node = game.get("dialogue_manager")
+	var dossier_manager: Node = game.get("dossier_manager")
+	var administrative_hold: Node = game.get("administrative_hold")
 	var mk_sequence: Node = game.get("mk_sequence")
 	var ending_sequence: Node = game.get("ending_sequence")
 	var environment_effects: Node = game.get("environment_effects")
@@ -57,6 +61,8 @@ func _run() -> void:
 	_check(room_manager != null, "room manager is initialized")
 	_check(quest_manager != null, "quest manager is initialized")
 	_check(dialogue_manager != null, "dialogue manager is initialized")
+	_check(dossier_manager != null, "dossier manager is initialized")
+	_check(administrative_hold != null, "Administrative Hold is initialized")
 	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(ending_sequence != null, "ending sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
@@ -124,6 +130,20 @@ func _run() -> void:
 		"overworld terminal returns to neutral after dialogue"
 	)
 
+	var integration_choice := {
+		"text": "Tell him it was tremendous.",
+		"file_tag": "spectacle-compliant",
+		"file_note": "Praised authority for access",
+		"ai_comment": "You praised the desk. The desk has accepted the tribute."
+	}
+	game.call("_record_choice_mark", "donald_trump", integration_choice)
+	_check((dossier_manager.get("events") as Array).size() == 1, "dialogue choice crosses into dossier evidence")
+	administrative_hold.call("open")
+	_check(bool(administrative_hold.get("opened")), "ESC owner can place the case under Administrative Hold")
+	_check(paused, "Administrative Hold suspends world processing")
+	administrative_hold.call("close")
+	_check(not paused, "resuming Administrative Hold restores world processing")
+
 	game.call("_enter_room", "oval_office", "EntryMarker")
 	await process_frame
 	_check(str(game.get("active_room_id")) == "oval_office", "room manager enters the Oval Office")
@@ -162,6 +182,7 @@ func _run() -> void:
 	await process_frame
 	_check(player.global_position.is_equal_approx(Vector2(160, 224)), "Continue restores the safe overworld checkpoint")
 	_check(int(game.get("quest_index")) == 2, "Continue restores quest progression")
+	_check((dossier_manager.get("events") as Array).size() == 1, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 
 	_finish()
@@ -227,12 +248,17 @@ func _test_save_manager_round_trip() -> void:
 		},
 		"world": {"safe_position": [12.5, -8.0]},
 		"story": {"final_mission_done": false},
+		"dossier": {
+			"events": [{"event_id": "choice:a", "source": "a", "category": "choice", "tag": "manual-routing", "note": "Manual route", "order": 0, "visibility": "recorded", "metadata": {}}],
+			"profile_discovered": false
+		},
 		"rooms": {}
 	}
 	_check(manager.save_game(snapshot) == OK, "versioned dossier can be written")
 	var restored: Dictionary = manager.load_game()
 	_check(not restored.is_empty(), "versioned dossier can be loaded")
 	_check(float(restored["world"]["safe_position"][0]) == 12.5, "dossier preserves checkpoint coordinates")
+	_check((restored["dossier"]["events"] as Array).size() == 1, "versioned save preserves behavioural evidence")
 	_check(int(manager.get_save_summary().get("signatures", 0)) == 1, "dossier summary reports signatures")
 	_check(manager.clear_save() == OK, "smoke dossier can be removed")
 	manager.queue_free()
@@ -253,6 +279,75 @@ func _test_quest_manager_round_trip() -> void:
 	_check(manager.quest_completed.size() == 2, "quest dossier restores completed signatures")
 	_check(manager.encounter_marks.has("elon_musk"), "quest dossier restores choice marks")
 	manager.queue_free()
+
+
+func _test_dossier_manager_round_trip() -> void:
+	var manager := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(manager)
+	var trump_choice := {
+		"text": "Tell him it was tremendous.",
+		"file_tag": "spectacle-compliant",
+		"file_note": "Praised authority for access",
+		"ai_comment": "The desk accepted the tribute."
+	}
+	var musk_choice := {
+		"text": "Ask for the manual route.",
+		"file_tag": "manual-routing",
+		"file_note": "Declined innovation theater",
+		"ai_comment": "You rejected the platform."
+	}
+	var ursula_choice := {
+		"text": "Wait for the committee.",
+		"file_tag": "committee-pending",
+		"file_note": "Accepted bureaucratic delay",
+		"ai_comment": "Patience was recorded."
+	}
+	_check(manager.record_choice("donald_trump", trump_choice), "first signature creates raw dossier evidence")
+	_check(manager.record_choice("elon_musk", musk_choice), "second signature creates raw dossier evidence")
+	_check(manager.derive_contradictions().size() == 1, "known opposing choices derive a contradiction")
+	_check(_has_dossier_section(manager, "citizen_dossier"), "two signatures unlock the citizen dossier")
+	_check(manager.record_profile_access(), "opening the dossier records profile discovery")
+	_check(bool(manager.get("profile_discovered")), "profile discovery is retained as behavioural context")
+	_check(manager.record_choice("ursula_von_der_leyen", ursula_choice), "post-profile choice is recorded")
+	var patterns: Array = manager.derive_patterns()
+	_check(_has_pattern(patterns, "post_profile_behaviour_shift"), "post-profile strategy change is derived from event order")
+	var observation: Dictionary = manager.claim_claudia_observation()
+	_check(str(observation.get("id", "")) == "claudia_profile_shift", "CLAUDIA prioritizes the recursive behaviour callback")
+	manager.record_investigation("investigation:red_phone", "pyongyang_red_phone", "Private channel remained open.")
+	manager.record_protocol_deviation("protocol_deviation:hidden_bunker", "mountain_bunker", "Direct warning ignored.")
+	manager.record_anomaly("anomaly:ufo_time_discontinuity", "ufo_lab", "Clock records disagree.")
+	_check(_has_dossier_section(manager, "unresolved_material"), "deviation and anomaly unlock unresolved material")
+	_check((manager.get_pause_summary("unresolved_material").get("lines", []) as Array).size() == 2, "unresolved material distinguishes bunker and UFO evidence")
+	var investigation_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(investigation_only)
+	investigation_only.record_investigation("investigation:red_phone", "pyongyang_red_phone", "Private channel remained open.")
+	_check(str(investigation_only.claim_claudia_observation().get("id", "")) == "claudia_red_phone", "Red Phone evidence creates a later CLAUDIA callback")
+
+	var expected_classification: String = manager.derive_classification()
+	var snapshot: Dictionary = manager.get_save_data()
+	var restored := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(restored)
+	restored.restore_save_data(snapshot)
+	_check((restored.get("events") as Array).size() == (manager.get("events") as Array).size(), "dossier round trip preserves raw event history")
+	_check(restored.derive_classification() == expected_classification, "classification is deterministically reconstructed after restore")
+	_check(bool(restored.get("profile_discovered")), "dossier round trip preserves profile awareness")
+	manager.queue_free()
+	restored.queue_free()
+	investigation_only.queue_free()
+
+
+func _has_dossier_section(manager: Node, section_id: String) -> bool:
+	for section in manager.get_hold_sections():
+		if section is Dictionary and str(section.get("id", "")) == section_id:
+			return true
+	return false
+
+
+func _has_pattern(patterns: Array, pattern_id: String) -> bool:
+	for pattern in patterns:
+		if pattern is Dictionary and str(pattern.get("id", "")) == pattern_id:
+			return true
+	return false
 
 
 func _finish() -> void:

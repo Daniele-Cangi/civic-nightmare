@@ -9,6 +9,7 @@ scenes/main.tscn
 └── scripts/main.gd                 composition root and story coordinator
     ├── managers/quest_manager.gd   quest state and dialogue selection
     ├── managers/save_manager.gd    versioned local dossier persistence
+    ├── managers/dossier_manager.gd behavioural evidence and interpretation
     ├── managers/dialogue_manager.gd
     │                               dialogue UI, choices, portraits, typewriter
     ├── managers/room_manager.gd    interiors, doors, transitions, reparenting
@@ -19,6 +20,8 @@ scenes/main.tscn
     ├── data/character_visual_catalog.gd
     │                               read-only colors, portraits, and sprite paths
     ├── sequences/start_menu.gd     Continue/New Game title flow
+    ├── sequences/administrative_hold.gd
+    │                               diegetic pause and dossier presentation
     ├── sequences/intro_sequence.gd CRT/news intro timeline
     ├── sequences/mk_sequence.gd    final-mission presentation timeline
     ├── sequences/ending_sequence.gd
@@ -39,10 +42,12 @@ scenes/main.tscn
 | Area | Owner | Notes |
 | --- | --- | --- |
 | Quest order, signatures, optional encounters, residues and marks | `QuestManager` | Also builds AI and politician dialogue from loaded content. |
+| Behavioural evidence, patterns, contradictions, and classification | `DossierManager` | Stores ordered source events; derived interpretations are rebuilt from that evidence. |
 | Versioned local persistence and dossier validation | `SaveManager` | Stores JSON under `user://`; the composition root owns snapshot assembly and safe resume policy. |
 | Dialogue lifecycle and presentation | `DialogueManager` | Owns typewriter timing, portraits, choices, and open/close animation. |
 | Interior registry and world return points | `RoomManager` | Creates interiors and doors, reparents the player, and owns transition UI. |
 | Title, intro, MK, and ending presentation | `StartMenu`, `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, and timers. |
+| Diegetic pause presentation | `AdministrativeHold` | Suspends the tree, reveals only currently unlocked dossier sections, and records profile access through `DossierManager`. |
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
 | Character colors, portraits, and sprite paths | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the Great Wall, nuclear plant, hidden bunker, and Pyongyang entrances. |
@@ -53,10 +58,12 @@ scenes/main.tscn
 ## Dependencies and contracts
 
 - `main.gd` is the only module that knows all managers and sequences.
-- Save snapshots contain quest, story, and room-local consequences, while their resume position is restricted to the latest stable overworld checkpoint.
+- Save snapshots contain quest, raw dossier evidence, story, and room-local consequences, while their resume position is restricted to the latest stable overworld checkpoint.
 - Managers receive existing nodes in `setup(...)`; they do not search for global singletons.
 - Presentation sequences emit signals for cross-system effects. For example, `EndingSequence` requests the final mission or postgame mode instead of mutating those systems.
 - `DialogueManager` emits line, choice, and finish events. `main.gd` applies character-specific consequences and forwards room-local choices.
+- `main.gd` forwards existing choice metadata and selected encounter boundaries to `DossierManager`; it does not derive traits or write Administrative Hold copy.
+- `DossierManager` treats `file_tag` and `file_note` as source evidence. It never owns dialogue mechanics, quest order, or persistence I/O.
 - `RoomManager` owns movement between world and interior containers. `main.gd` retains narrative hooks around travel.
 - Compatibility properties in `main.gd` expose manager-owned state to remaining encounter code. They are migration seams, not duplicate sources of truth.
 
@@ -69,11 +76,23 @@ scenes/main.tscn
 
 ## Adding or changing behavior
 
-1. Put reusable quest rules in `QuestManager`, dialogue mechanics in `DialogueManager`, and travel mechanics in `RoomManager`.
+1. Put reusable quest rules in `QuestManager`, behavioural interpretation in `DossierManager`, dialogue mechanics in `DialogueManager`, and travel mechanics in `RoomManager`.
 2. Put a self-contained cinematic or encounter overlay in `scripts/sequences/` or `scripts/encounters/` and expose only the signals needed by `main.gd`.
 3. Keep story decisions that touch multiple systems in `main.gd` so individual modules do not depend on each other.
 4. Add data-driven dialogue to `data/characters.json` before hard-coding it in a manager.
 5. Run the editor parse check and `tests/smoke_test.gd` before committing.
+
+## Behavioural dossier vertical slice
+
+The current slice records the first three signature choices from their existing `file_tag`, `file_note`, and `ai_comment` fields. It proves ordered evidence, deterministic patterns and contradictions, evolving Administrative Hold sections, profile discovery, post-discovery behaviour comparison, sparse C.L.A.U.D.I.A. callbacks, and save/restore.
+
+Three optional-content grammars are connected at existing orchestration boundaries:
+
+- the Red Phone is an optional investigation;
+- the hidden bunker is a protocol deviation because its direct warning is part of the evidence;
+- the UFO is an anomaly whose location and time records cannot be reconciled.
+
+Xi, Sam Altman, the Bezos/drone sequence, and historical contamination retain their current behaviour. They should be propagated only after a follow-up pass decides what lasting evidence each encounter genuinely creates. Do not classify every optional scene merely because it exists.
 
 ## Deliberately retained debt
 
