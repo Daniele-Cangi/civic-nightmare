@@ -360,7 +360,7 @@ var building_specs: Array = [
 		"npc": "donald_trump",
 		"center": Vector2i(16, -23),
 		"npc_spawn": Vector2i(16, -16),
-		"entrance": Vector2i(16, -18),
+		"entrance": Vector2i(16, -17),
 		"light_color": Color(1.0, 0.85, 0.6)
 	},
 	{
