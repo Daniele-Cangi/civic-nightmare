@@ -9,6 +9,8 @@ const ROUND_SECONDS := 32.0
 const ATTACK_WARNING_SECONDS := 1.35
 const ATTACK_RECOVERY_SECONDS := 0.42
 const CONTEST_COOLDOWN_SECONDS := 0.18
+const OBJECTION_HOLD_SECONDS := 0.56
+const MISTAKE_DAMAGE := 20.0
 const ATTACK_SEQUENCE := ["prime_delivery", "terms_sweep", "one_click_charge"]
 
 var active: bool = false
@@ -24,6 +26,7 @@ var active_attack: String = ""
 var active_attack_elapsed: float = 0.0
 var active_attack_resolved: bool = false
 var objection_filed: bool = false
+var objection_hold_progress: float = 0.0
 var next_attack_index: int = 0
 var contest_cooldown: float = 0.0
 var pose_until: float = -1.0
@@ -33,6 +36,8 @@ var contest_count: int = 0
 var objection_count: int = 0
 var intercepted_attacks: int = 0
 var suffered_charges: int = 0
+var mistake_count: int = 0
+var damage_shake_until: float = -1.0
 var battle_result: Dictionary = {}
 
 var arena_texture: TextureRect
@@ -41,16 +46,14 @@ var bezos_sprite: Sprite2D
 var citizen_sprite: Sprite2D
 var legal_shield_ring: Polygon2D
 var attack_fx: Control
+var damage_flash: ColorRect
 var tutorial_panel: PanelContainer
 var tutorial_title: Label
-var tutorial_sequence: Label
 var tutorial_progress: ProgressBar
 var warning_panel: PanelContainer
 var warning_title: Label
 var warning_subtitle: Label
 var warning_progress: ProgressBar
-var contest_button: Button
-var objection_button: Button
 
 
 func setup() -> void:
@@ -76,6 +79,7 @@ func start() -> void:
 	active_attack_elapsed = 0.0
 	active_attack_resolved = false
 	objection_filed = false
+	objection_hold_progress = 0.0
 	next_attack_index = 0
 	contest_cooldown = 0.0
 	pose_until = -1.0
@@ -83,17 +87,20 @@ func start() -> void:
 	objection_count = 0
 	intercepted_attacks = 0
 	suffered_charges = 0
+	mistake_count = 0
+	damage_shake_until = -1.0
 	battle_result.clear()
-	contest_latched = Input.is_action_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_Z)
-	objection_latched = Input.is_physical_key_pressed(KEY_X) or Input.is_physical_key_pressed(KEY_SHIFT)
+	contest_latched = Input.is_physical_key_pressed(KEY_Z)
+	objection_latched = Input.is_physical_key_pressed(KEY_X)
 	_set_pose(bezos_sprite, Vector2i(0, 0))
 	_set_pose(citizen_sprite, Vector2i(0, 0))
 	bezos_sprite.modulate = Color.WHITE
 	citizen_sprite.modulate = Color.WHITE
 	legal_shield_ring.visible = true
+	legal_shield_ring.scale = Vector2.ONE
+	damage_flash.color.a = 0.0
 	_start_guided_round(true)
 	_clear_attack_fx()
-	_update_controls()
 	_emit_telemetry()
 
 
@@ -108,28 +115,27 @@ func process_frame(delta: float) -> void:
 		return
 	elapsed += delta
 	contest_cooldown = maxf(contest_cooldown - delta, 0.0)
-	_read_actions()
+	_read_actions(delta)
 	if not active:
 		return
 	_update_ambient_motion(delta)
 	_update_fighter_motion()
 	_update_attack(delta)
-	_update_controls()
+	if not active:
+		return
 	_emit_telemetry()
 
 	if citizen_hp <= 0.0:
 		_finish_battle("administrative_defeat")
 	elif bezos_hp <= 0.0:
 		_finish_battle("citizen_victory")
-	elif elapsed >= ROUND_SECONDS:
-		_finish_battle("processing_timeout")
 
 
 func perform_contest() -> bool:
 	if not active:
 		return false
 	if active_attack != "":
-		_fail_input()
+		_penalize_current_prompt()
 		return false
 	if contest_cooldown > 0.0:
 		return false
@@ -141,10 +147,17 @@ func perform_contest() -> bool:
 	if legal_shield > 0.0:
 		legal_shield = maxf(legal_shield - damage, 0.0)
 		_flash(legal_shield_ring, Color(1.6, 0.45, 0.18), 0.16)
+		_punch_scale(legal_shield_ring, Vector2.ONE * (0.72 + 0.28 * legal_shield / 48.0))
+		if legal_shield <= 0.0:
+			var shield_tween := create_tween()
+			shield_tween.tween_interval(0.16)
+			shield_tween.tween_callback(func(): legal_shield_ring.visible = false)
 	else:
 		bezos_hp = maxf(bezos_hp - damage, 0.0)
 		_set_pose(bezos_sprite, Vector2i(0, 1))
 		_flash(bezos_sprite, Color(1.7, 0.35, 0.22), 0.16)
+		_punch_scale(bezos_sprite, Vector2(0.77, 0.77))
+	_punch_scale(citizen_sprite, Vector2(0.77, 0.77))
 	if bezos_hp > 0.0:
 		_advance_guided_contest()
 	return true
@@ -156,7 +169,7 @@ func perform_objection() -> bool:
 	if objection_filed:
 		return false
 	if active_attack == "" or active_attack_resolved:
-		_fail_input()
+		_penalize_current_prompt()
 		return false
 	objection_count += 1
 	objection_filed = true
@@ -165,12 +178,23 @@ func perform_objection() -> bool:
 	active_attack_elapsed = ATTACK_WARNING_SECONDS
 	pose_until = elapsed + 0.36
 	_set_pose(citizen_sprite, Vector2i(0, 1))
-	warning_title.text = "✓"
-	warning_subtitle.text = ""
 	warning_progress.value = 1.0
+	warning_panel.visible = false
 	_clear_attack_fx()
 	_flash(citizen_sprite, Color(0.45, 1.2, 1.45), 0.14)
+	_flash(bezos_sprite, Color(0.32, 0.92, 1.2), 0.12)
+	_punch_scale(citizen_sprite, Vector2(0.77, 0.77))
 	return true
+
+
+func advance_objection_hold(delta: float) -> bool:
+	if not active or active_attack == "" or objection_filed or active_attack_resolved:
+		return false
+	objection_hold_progress = minf(objection_hold_progress + maxf(delta, 0.0), OBJECTION_HOLD_SECONDS)
+	warning_progress.value = objection_hold_progress / OBJECTION_HOLD_SECONDS
+	if objection_hold_progress >= OBJECTION_HOLD_SECONDS:
+		return perform_objection()
+	return false
 
 
 func get_result() -> Dictionary:
@@ -212,9 +236,16 @@ func _build_stage() -> void:
 	attack_fx.z_index = 5
 	add_child(attack_fx)
 
+	damage_flash = ColorRect.new()
+	damage_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	damage_flash.color = Color(0.82, 0.04, 0.02, 0.0)
+	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	damage_flash.z_index = 6
+	add_child(damage_flash)
+
 	tutorial_panel = PanelContainer.new()
-	tutorial_panel.position = Vector2(460, 94)
-	tutorial_panel.size = Vector2(360, 118)
+	tutorial_panel.position = Vector2(530, 92)
+	tutorial_panel.size = Vector2(220, 116)
 	tutorial_panel.z_index = 8
 	tutorial_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tutorial_style := StyleBoxFlat.new()
@@ -230,20 +261,15 @@ func _build_stage() -> void:
 	tutorial_panel.add_child(tutorial_stack)
 	tutorial_title = Label.new()
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_title.add_theme_font_size_override("font_size", 34)
+	tutorial_title.add_theme_font_size_override("font_size", 54)
 	tutorial_title.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
 	tutorial_stack.add_child(tutorial_title)
-	tutorial_sequence = Label.new()
-	tutorial_sequence.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_sequence.add_theme_font_size_override("font_size", 16)
-	tutorial_sequence.add_theme_color_override("font_color", Color(0.9, 0.94, 0.96))
-	tutorial_stack.add_child(tutorial_sequence)
 	tutorial_progress = _create_prompt_progress(Color(0.95, 0.7, 0.16))
 	tutorial_stack.add_child(tutorial_progress)
 
 	warning_panel = PanelContainer.new()
-	warning_panel.position = Vector2(460, 94)
-	warning_panel.size = Vector2(360, 118)
+	warning_panel.position = Vector2(530, 92)
+	warning_panel.size = Vector2(220, 132)
 	warning_panel.z_index = 8
 	warning_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var warning_style := StyleBoxFlat.new()
@@ -259,7 +285,7 @@ func _build_stage() -> void:
 	warning_panel.add_child(warning_stack)
 	warning_title = Label.new()
 	warning_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warning_title.add_theme_font_size_override("font_size", 34)
+	warning_title.add_theme_font_size_override("font_size", 54)
 	warning_title.add_theme_color_override("font_color", Color(0.32, 0.88, 1.0))
 	warning_stack.add_child(warning_title)
 	warning_subtitle = Label.new()
@@ -267,14 +293,9 @@ func _build_stage() -> void:
 	warning_subtitle.add_theme_font_size_override("font_size", 16)
 	warning_subtitle.add_theme_color_override("font_color", Color(0.82, 0.87, 0.9))
 	warning_stack.add_child(warning_subtitle)
-	warning_progress = _create_prompt_progress(Color(1.0, 0.34, 0.12))
+	warning_progress = _create_prompt_progress(Color(0.2, 0.78, 1.0))
 	warning_stack.add_child(warning_progress)
 	warning_panel.visible = false
-
-	contest_button = _create_action_button("CONTEST\nSPACE / Z", Vector2(668, 654), Color(0.95, 0.7, 0.16))
-	contest_button.pressed.connect(perform_contest)
-	objection_button = _create_action_button("OBJECT\nX / SHIFT", Vector2(944, 654), Color(0.2, 0.75, 0.9))
-	objection_button.pressed.connect(perform_objection)
 
 
 func _create_fighter(path: String, fighter_position: Vector2, fighter_scale: Vector2, flip_h: bool) -> Sprite2D:
@@ -302,34 +323,6 @@ func _set_pose(sprite: Sprite2D, cell: Vector2i) -> void:
 	sprite.texture = _pose_texture(path, cell)
 
 
-func _create_action_button(text: String, button_position: Vector2, accent: Color) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.position = button_position
-	button.size = Vector2(260, 58)
-	button.z_index = 10
-	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 15)
-	button.add_theme_color_override("font_color", Color(0.95, 0.96, 0.98))
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.025, 0.035, 0.05, 0.94)
-	normal.border_color = accent.darkened(0.18)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(3)
-	button.add_theme_stylebox_override("normal", normal)
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = accent.darkened(0.72)
-	hover.border_color = accent
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", hover)
-	var disabled := normal.duplicate() as StyleBoxFlat
-	disabled.bg_color = Color(0.025, 0.03, 0.04, 0.82)
-	disabled.border_color = Color(0.25, 0.28, 0.31, 0.75)
-	button.add_theme_stylebox_override("disabled", disabled)
-	add_child(button)
-	return button
-
-
 func _create_prompt_progress(accent: Color) -> ProgressBar:
 	var progress := ProgressBar.new()
 	progress.custom_minimum_size = Vector2(0, 10)
@@ -349,14 +342,21 @@ func _create_prompt_progress(accent: Color) -> ProgressBar:
 	return progress
 
 
-func _read_actions() -> void:
-	var contest_down := Input.is_action_pressed("ui_accept") or Input.is_physical_key_pressed(KEY_Z)
+func _read_actions(delta: float) -> void:
+	var contest_down := Input.is_physical_key_pressed(KEY_Z)
 	if contest_down and not contest_latched:
 		perform_contest()
 	contest_latched = contest_down
-	var objection_down := Input.is_physical_key_pressed(KEY_X) or Input.is_physical_key_pressed(KEY_SHIFT)
-	if objection_down and not objection_latched:
-		perform_objection()
+	var objection_down := Input.is_physical_key_pressed(KEY_X)
+	if active_attack == "":
+		if objection_down and not objection_latched:
+			perform_objection()
+	elif not objection_filed and not active_attack_resolved:
+		if objection_down:
+			advance_objection_hold(delta)
+		else:
+			objection_hold_progress = maxf(objection_hold_progress - delta * 1.8, 0.0)
+		warning_progress.value = objection_hold_progress / OBJECTION_HOLD_SECONDS
 	objection_latched = objection_down
 
 
@@ -365,7 +365,7 @@ func _update_attack(delta: float) -> void:
 		attack_wait -= delta
 		tutorial_progress.value = clampf(1.0 - attack_wait / maxf(prompt_limit, 0.01), 0.0, 1.0)
 		if attack_wait <= 0.0:
-			_fail_input()
+			_penalize_current_prompt()
 		return
 
 	active_attack_elapsed += delta
@@ -385,6 +385,7 @@ func _start_guided_round(first_round: bool) -> void:
 	active_attack_elapsed = 0.0
 	active_attack_resolved = false
 	objection_filed = false
+	objection_hold_progress = 0.0
 	guided_contest_step = 0
 	guided_round += 1
 	prompt_limit = 3.2 if first_round else maxf(1.55, 2.25 - float(guided_round - 1) * 0.08)
@@ -409,8 +410,7 @@ func _advance_guided_contest() -> void:
 
 
 func _update_guided_prompt() -> void:
-	tutorial_title.text = "CONTEST"
-	tutorial_sequence.text = "[ SPACE / Z ]"
+	tutorial_title.text = "Z"
 
 
 func _begin_attack(attack_id: String) -> void:
@@ -418,9 +418,11 @@ func _begin_attack(attack_id: String) -> void:
 	active_attack_elapsed = 0.0
 	active_attack_resolved = false
 	objection_filed = false
+	objection_hold_progress = 0.0
 	tutorial_panel.visible = false
-	warning_title.text = "OBJECT"
-	warning_subtitle.text = "[ X / SHIFT ]"
+	warning_title.text = "X"
+	warning_subtitle.text = "HOLD"
+	warning_title.modulate = Color.WHITE
 	warning_progress.value = 0.0
 	warning_panel.visible = true
 	_set_pose(bezos_sprite, Vector2i(1, 0))
@@ -429,10 +431,7 @@ func _begin_attack(attack_id: String) -> void:
 
 
 func _resolve_attack() -> void:
-	active_attack_resolved = true
-	if active_attack == "one_click_charge":
-		suffered_charges += 1
-	_fail_input()
+	_penalize_current_prompt()
 
 
 func _create_attack_visual(attack_id: String) -> void:
@@ -482,11 +481,8 @@ func _create_attack_visual(attack_id: String) -> void:
 
 func _update_attack_visual() -> void:
 	var progress := clampf(active_attack_elapsed / ATTACK_WARNING_SECONDS, 0.0, 1.0)
-	warning_progress.value = progress
-	if not objection_filed and not active_attack_resolved and progress >= 0.68:
-		warning_title.text = "OBJECT!"
-	elif objection_filed:
-		warning_title.text = "✓"
+	if not objection_filed and not active_attack_resolved:
+		warning_title.modulate.a = 0.64 + absf(sin(progress * PI * 6.0)) * 0.36
 	match active_attack:
 		"prime_delivery":
 			var parcel := attack_fx.get_node_or_null("IncomingParcel") as Control
@@ -521,41 +517,11 @@ func _update_fighter_motion() -> void:
 	var bezos_base := Vector2(322, 382)
 	var citizen_base := Vector2(942, 392)
 	bezos_sprite.position = bezos_base + Vector2(0, sin(elapsed * 2.2) * 2.0)
-	citizen_sprite.position = citizen_base + Vector2(sin(elapsed * 4.1) * 1.4, absf(sin(elapsed * 3.3)) * 2.4)
+	var damage_shake := sin(elapsed * 92.0) * 9.0 if elapsed < damage_shake_until else 0.0
+	citizen_sprite.position = citizen_base + Vector2(sin(elapsed * 4.1) * 1.4 + damage_shake, absf(sin(elapsed * 3.3)) * 2.4)
 	if elapsed >= pose_until and active_attack == "":
 		_set_pose(bezos_sprite, Vector2i(0, 0))
 		_set_pose(citizen_sprite, Vector2i(0, 0))
-
-
-func _update_controls() -> void:
-	if not contest_button or not objection_button:
-		return
-	if not active:
-		contest_button.disabled = true
-		objection_button.disabled = true
-		return
-	var pulse := 0.88 + (sin(elapsed * 8.0) + 1.0) * 0.06
-	if active_attack == "":
-		contest_button.disabled = contest_cooldown > 0.0
-		objection_button.disabled = false
-		contest_button.text = "CONTEST\nSPACE / Z"
-		objection_button.text = "OBJECT\nX / SHIFT"
-		contest_button.modulate = Color(1.0, 0.9 + pulse * 0.08, 0.72, pulse if contest_cooldown <= 0.0 else 0.72)
-		objection_button.modulate = Color(0.42, 0.46, 0.5, 0.54)
-	elif objection_filed or active_attack_resolved:
-		contest_button.disabled = true
-		objection_button.disabled = true
-		contest_button.text = "CONTEST\nSPACE / Z"
-		objection_button.text = "✓"
-		contest_button.modulate = Color(0.62, 0.66, 0.7, 0.66)
-		objection_button.modulate = Color(0.65, 1.0, 1.0, 0.9)
-	else:
-		contest_button.disabled = false
-		objection_button.disabled = false
-		contest_button.text = "CONTEST\nSPACE / Z"
-		objection_button.text = "OBJECT\nX / SHIFT"
-		contest_button.modulate = Color(0.42, 0.46, 0.5, 0.54)
-		objection_button.modulate = Color(0.72, 0.94, 1.0, pulse)
 
 
 func _emit_telemetry() -> void:
@@ -571,8 +537,6 @@ func _finish_battle(outcome: String) -> void:
 	if not active:
 		return
 	active = false
-	contest_button.disabled = true
-	objection_button.disabled = true
 	tutorial_panel.visible = false
 	warning_panel.visible = false
 	_clear_attack_fx()
@@ -588,17 +552,39 @@ func _finish_battle(outcome: String) -> void:
 		"objection_count": objection_count,
 		"intercepted_attacks": intercepted_attacks,
 		"suffered_charges": suffered_charges,
+		"mistake_count": mistake_count,
 		"elapsed_seconds": snappedf(elapsed, 0.1),
 		"profile_was_known": false,
 	}
 	resolved.emit(battle_result.duplicate(true))
 
 
-func _fail_input() -> void:
+func _penalize_current_prompt() -> void:
 	if not active:
 		return
-	citizen_hp = 0.0
-	_finish_battle("administrative_defeat")
+	mistake_count += 1
+	citizen_hp = maxf(citizen_hp - MISTAKE_DAMAGE, 0.0)
+	damage_shake_until = elapsed + 0.34
+	pose_until = elapsed + 0.34
+	_set_pose(citizen_sprite, Vector2i(1, 1))
+	_flash(citizen_sprite, Color(1.65, 0.24, 0.12), 0.2)
+	damage_flash.color = Color(0.82, 0.04, 0.02, 0.34)
+	var damage_tween := create_tween()
+	damage_tween.tween_property(damage_flash, "color:a", 0.0, 0.28)
+	if citizen_hp <= 0.0:
+		_finish_battle("administrative_defeat")
+		return
+	if active_attack == "":
+		_advance_guided_contest()
+		return
+	if active_attack == "one_click_charge":
+		suffered_charges += 1
+	active_attack_resolved = true
+	objection_hold_progress = 0.0
+	active_attack_elapsed = ATTACK_WARNING_SECONDS
+	warning_progress.value = 0.0
+	warning_panel.visible = false
+	_clear_attack_fx()
 
 
 func _flash(canvas_item: CanvasItem, flash_color: Color, duration: float) -> void:
@@ -607,6 +593,14 @@ func _flash(canvas_item: CanvasItem, flash_color: Color, duration: float) -> voi
 	canvas_item.modulate = flash_color
 	var tween := create_tween()
 	tween.tween_property(canvas_item, "modulate", Color.WHITE, duration)
+
+
+func _punch_scale(node: Node2D, base_scale: Vector2) -> void:
+	if not node:
+		return
+	node.scale = base_scale * 1.12
+	var tween := create_tween()
+	tween.tween_property(node, "scale", base_scale, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _ellipse_points(center: Vector2, radius: Vector2, segments: int = 28) -> PackedVector2Array:
