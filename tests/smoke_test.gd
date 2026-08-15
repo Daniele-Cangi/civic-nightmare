@@ -16,6 +16,7 @@ const AUTHORED_INTERIOR_PATHS := {
 	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
 	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
 	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
+	"neural_core": "res://assets/interiors/neural_core_aligned_demo_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -91,6 +92,7 @@ func _run() -> void:
 		"vault": ["StabilityDesk", "WestLuxuryTier", "EastLuxuryTier", "WestAusterityMachinery", "EastAusterityMachinery"],
 		"red_command": ["ObservationDesk", "SubjectChair", "WestFirewallModel", "EastFirewallModel", "WestCameraArray", "EastCameraArray", "WestCensoredConsole", "EastCensoredConsole"],
 		"pyongyang_command": ["BroadcastDais", "WestSceneryMissile", "EastSceneryMissile", "WestProductionBank", "EastProductionBank", "WestAudienceBlock", "EastAudienceBlock", "RedPhoneReliquary", "BackstageDressingRoom"],
+		"neural_core": ["AlignmentDesk", "WestPrototypeCurtain", "LockedEmergencyCases", "ImprovisedReactor", "DaisyChainedBackend", "WestDemoSeating"],
 		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
 	}
 	for room_key in AUTHORED_INTERIOR_PATHS:
