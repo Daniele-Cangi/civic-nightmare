@@ -31,6 +31,7 @@ Optional interiors use the same gameplay contract but expose a different kind of
 |---|---|---|---|
 | Xi / Harmonious Observation | A perfectly ordered continuity command | A symmetrical surveillance room in which every camera, cable and firewall model converges on one visitor chair | The screens are expensive and blank; the room gathers more information about its guest than about the outside world. |
 | Kim / Supreme Broadcast Command | A strategic missile-control center | A live television stage of painted mountains, supported missile flats, applause seating, cameras and theatrical wiring | The broadcast equipment is real; the missiles are scenery; the Red Phone is protected better than the command console. |
+| Altman / Aligned Demonstration Core | A calm, safe and inevitable AI demonstration | A minimalist demo chapel concealing a reactor, portable generation, daisy-chained power strips and emergency controls locked under glass | The friendly green lamp is connected to nothing; the alarming backend is already running. |
 
 ## Runtime contract
 

@@ -20,6 +20,7 @@ const AUTHORED_INTERIOR_PATHS := {
 	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
 	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
 	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
+	"neural_core": "res://assets/interiors/neural_core_aligned_demo_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -393,8 +394,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"neural_core":
 			return {
-				"title": "NEURAL CORE",
-				"subtitle": "Reactor alignment room",
+				"title": "ALIGNED DEMONSTRATION CORE",
+				"subtitle": "Safety review in progress",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_METAL_FLOOR,
 				"accent_source": SRC_PROC,
@@ -409,7 +410,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.06, 0.12, 0.16, 0.96),
 				"rug_glow": Color(0.24, 0.62, 0.72, 0.14),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 24),
+				"npc_position": Vector2(0, -42),
 				"desk_position": Vector2(0, -82),
 				"lights": [
 					{"pos": Vector2(-126, -182), "color": Color(0.46, 0.86, 1.0), "scale": 2.9, "energy": 0.24},
@@ -617,6 +618,13 @@ func _build_authored_obstacles() -> void:
 			_create_barrier(Rect2(Vector2(30, 48), Vector2(88, 150)), "EastAudienceBlock")
 			_create_barrier(Rect2(Vector2(126, 76), Vector2(124, 144)), "RedPhoneReliquary")
 			_create_barrier(Rect2(Vector2(-298, 72), Vector2(166, 148)), "BackstageDressingRoom")
+		"neural_core":
+			_create_barrier(Rect2(Vector2(-90, -152), Vector2(180, 84)), "AlignmentDesk")
+			_create_barrier(Rect2(Vector2(-292, -144), Vector2(190, 158)), "WestPrototypeCurtain")
+			_create_barrier(Rect2(Vector2(164, -184), Vector2(126, 182)), "LockedEmergencyCases")
+			_create_barrier(Rect2(Vector2(-300, 14), Vector2(204, 244)), "ImprovisedReactor")
+			_create_barrier(Rect2(Vector2(104, 0), Vector2(196, 258)), "DaisyChainedBackend")
+			_create_barrier(Rect2(Vector2(-156, -28), Vector2(72, 90)), "WestDemoSeating")
 		"elysee":
 			_create_barrier(Rect2(Vector2(-84, -58), Vector2(168, 93)), "CeremonialDesk")
 			_create_barrier(Rect2(Vector2(-280, -126), Vector2(82, 260)), "ConcealedRestoration")
