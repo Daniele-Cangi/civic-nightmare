@@ -17,6 +17,8 @@ scenes/main.tscn
     │                               lighting, CRT, ambient audio, particles
     ├── managers/world_landmark_builder.gd
     │                               static landmark nodes and entry triggers
+    ├── managers/authority_world_patch_builder.gd
+    │                               facade, terrain seam, approach, footprint
     ├── data/character_visual_catalog.gd
     │                               read-only colors, portraits, sprites, facades
     ├── sequences/start_menu.gd     Continue/New Game title flow
@@ -52,6 +54,7 @@ scenes/main.tscn
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
 | Character colors, portraits, sprite paths, and authority facades | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the Great Wall, nuclear plant, hidden bunker, and Pyongyang entrances. |
+| Main-authority exterior composition | `AuthorityWorldPatchBuilder` | Creates each facade, terrain seam, local approach motif, and visible-mass collision footprint as one unit. |
 | Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, and atmospheric particles. |
 | Overworld and global story orchestration | `main.gd` | Coordinates systems that need world nodes or multiple narrative states. |
 | Room-local actors and geometry | `scripts/oval_office_room.gd`, `scenes/interiors/` | Separate from global travel. |
@@ -75,10 +78,10 @@ scenes/main.tscn
 - `scenes/interiors/oval_office.tscn` is the shared interior scene instantiated for configured rooms.
 - `assets/interiors/` contains all eleven authored room backgrounds: six main authorities, three optional investigations, one classified deviation, and one anomaly. `oval_office_room.gd` suppresses its generic visual tile/prop pass when one is present, but retains the shared NPC/sequence actors, exit, lighting, boundary, dialogue, and room-state behavior. Named code-owned barriers follow baked furniture. See [authority interior art direction](AUTHORITY_INTERIOR_ART_DIRECTION.md).
 - `assets/` and `shaders/` remain presentation resources; their paths were not changed.
-- `assets/landmarks/authority_*_v2.png` contains the six runtime-sized satirical authority facades. Their architecture is narrative: spectacle masks neglect for Trump, permanent-beta industry for Musk, inaccessible transparency for Ursula, wartime paranoia for Putin, stratified stability for Lagarde, and theatrical grandeur for Macron. Their transparent lower edge is aligned to each exterior doorway; procedural footprint collisions remain authoritative while their old roof tiles are hidden.
+- `assets/landmarks/authority_*_v2.png` contains the six runtime-sized satirical authority facades. Their architecture is narrative: spectacle masks neglect for Trump, permanent-beta industry for Musk, inaccessible transparency for Ursula, wartime paranoia for Putin, stratified stability for Lagarde, and theatrical grandeur for Macron. `AuthorityWorldPatchBuilder` aligns each transparent lower edge to the doorway and owns its visible-mass collision rows, ground contact, and approach motif. See [World Patch Visual System](WORLD_PATCH_VISUAL_SYSTEM.md).
 - `assets/backgrounds/world_district_plate_v2.png` is a single opaque, collision-neutral ground plate matching the 2176×2048 overworld bounds. `main.gd` mounts it below the TileMap at `z=-10`; path reservations, decorations, structures, triggers, and collision remain generated runtime layers. The plate supplies the visible civic paving so the legacy floor atlas cannot reintroduce seams. If the plate cannot load, the generator falls back to corrected opaque center tiles from `field_32.png` and the original path rendering.
-- The six main compounds follow the authored plate's two-column/three-row visual grid. Their facade sprite centers land near world coordinates `x = ±528` and `y = -683 / 0 / 683`. Facades use shared row heights (330 px top, 320 px middle, 298 px bottom), so paired landmarks align predictably with their doorway rows. Each specification moves its facade, procedural footprint, entrance, NPC spawn, light, and generated route together; encounter code should not introduce independent world coordinates for those elements.
-- Trump, Musk, and Putin use facade-specific collision masks rather than their larger legacy procedural silhouettes. Each mask follows the visible lower building mass and stops before the exterior doorway; this prevents invisible collision above the replacement artwork while preserving the doorway trigger owned by `RoomManager`.
+- The six main compounds follow the authored plate's two-column/three-row visual grid. Their facade sprite centers land near world coordinates `x = ±528` and `y = -683 / 0 / 683`. Facades use shared row heights (330 px top, 320 px middle, 298 px bottom), so paired landmarks align predictably with their doorway rows. Each building specification supplies the centre, entrance, NPC spawn, light, and route axis; its world patch keeps the visual and collision layers on that same contract.
+- All six authorities use facade-specific collision masks rather than legacy procedural silhouettes. Each mask follows the visible lower building mass and stops before the exterior threshold; the doorway trigger remains owned by `RoomManager`.
 
 ## Adding or changing behavior
 
