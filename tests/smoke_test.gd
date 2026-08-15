@@ -335,6 +335,8 @@ func _test_bezos_battle_stage() -> void:
 	stage.start()
 	_check(stage.get("tutorial_panel").visible, "Bezos battle starts with a visible action prompt")
 	_check(str(stage.get("tutorial_title").text) == "Z", "combat prompt contains only the required key")
+	var tap_prompt_stack := stage.get("tutorial_panel").get_child(0) as VBoxContainer
+	_check(tap_prompt_stack != null and tap_prompt_stack.get_child_count() == 1, "tap prompt has no timing bar or explanatory copy")
 	var shield_before := float(stage.get("legal_shield"))
 	_check(stage.perform_contest(), "citizen can actively contest the corporate shield")
 	_check(float(stage.get("legal_shield")) < shield_before, "contest action changes battle state")
