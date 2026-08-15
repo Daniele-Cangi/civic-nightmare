@@ -80,6 +80,7 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 - **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
 - **Portrait Pipeline**: Fighter portraits use controlled chroma-key extraction, premultiplied-alpha resizing, and automated 128×128 validation for clean, halo-free transparency.
 - **Authority Architecture**: The six signature encounters use dedicated 352 px hero facades with shared perspective, pixel density, lighting, and door alignment instead of procedural roof symbols. Their reusable visual contract is documented in the [facade art direction](docs/AUTHORITY_FACADE_ART_DIRECTION.md).
+- **Narrative Interiors**: Authority rooms may replace the shared visual tile pass with a full authored environment while keeping the same travel, collision, dialogue, and save contract. Putin's continuity bunker and Macron's maintained reception set form the first pair; their visual grammar is documented in the [interior art direction](docs/AUTHORITY_INTERIOR_ART_DIRECTION.md).
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 
@@ -107,6 +108,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `scripts/managers/`: dialogue, quest progression, behavioural evidence, versioned save data, room transitions, environment setup, and static world landmarks.
 - `scripts/data/`: read-only character colors, portraits, world sprites, and authority-facade metadata.
 - `assets/landmarks/`: runtime-sized exterior hero facades for the six required-signature locations.
+- `assets/interiors/`: opaque authored room backgrounds aligned to the shared indoor gameplay canvas.
 - `assets/backgrounds/`: collision-neutral overworld ground art rendered beneath the procedural gameplay layers.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
