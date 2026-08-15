@@ -10,14 +10,16 @@ Every main-signature interior should therefore answer three questions before add
 
 The answer must be architectural and comic, not a collection of national props. Interiors share the same rectangular `608×544` gameplay canvas, bottom-center entrance, central approach lane, NPC interaction contract, and room-transition scene. Their visible geometry may be fully authored when a generic tile layout would flatten the joke. Collision remains code-owned and must follow the visible furniture.
 
-## First authored pair
+## Authored authority rooms
 
 | Room | Public claim | Interior machine | Visual joke |
 |---|---|---|---|
+| Trump / Oval Studio | Success, attention and executive dominance | A presidential office rebuilt as a gold-plated broadcast set with ratings screens, cameras, mirrors and applause staging | The prestige is laminate, the cameras outnumber the visitors, and every mirror points toward the central chair. |
+| Musk / Permanent Beta | A frictionless interplanetary future | An unfinished private launch room of temporary power, incompatible adapters, prototype debris and demonstrations running before completion | The most expensive console is still powered by a portable generator; the tunnel stops almost immediately. |
 | Putin / Continuity Command | Total control and permanent readiness | A subterranean wartime command room of redundant surveillance, cables, generators, telephones and sealed files | The conference table is absurdly long for the room; the reassuring sky exists only on fake backlit windows. |
 | Macron / Élysée Salon | Restored grandeur and effortless cultural wealth | A reception set held together by braces, extension leads, screens, buckets and deferred restoration | Everything inside the official camera angle is immaculate; the edges disclose the maintenance debt. |
 
-The contrast is deliberate. Putin hides the outside world; Macron hides the inside damage.
+The contrasts are deliberate. Trump manufactures attention, Musk demonstrates unfinished inevitability, Putin hides the outside world, and Macron hides the inside damage.
 
 ## Runtime contract
 
