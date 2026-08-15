@@ -21,6 +21,8 @@ const AUTHORED_INTERIOR_PATHS := {
 	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
 	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
 	"neural_core": "res://assets/interiors/neural_core_aligned_demo_v1.png",
+	"mountain_bunker": "res://assets/interiors/mountain_bunker_administrative_war_v1.png",
+	"ufo_lab": "res://assets/interiors/ufo_unreconciled_chamber_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -286,8 +288,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"ufo_lab":
 			return {
-				"title": "UNIDENTIFIED CRAFT",
-				"subtitle": "Observation deck",
+				"title": "UNRECONCILED LOCATION",
+				"subtitle": "Local record unavailable",
 				"floor_source": SRC_INTERIOR_FLOOR,
 				"floor_tile": IF_OFFICE,
 				"accent_source": SRC_INTERIOR_FLOOR,
@@ -313,8 +315,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"mountain_bunker":
 			return {
-				"title": "MOUNTAIN BUNKER",
-				"subtitle": "Excluded from protocol",
+				"title": "EXCLUDED CONTINUITY OFFICE",
+				"subtitle": "No visit is scheduled",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_METAL_FLOOR,
 				"accent_source": SRC_PROC,
@@ -625,6 +627,23 @@ func _build_authored_obstacles() -> void:
 			_create_barrier(Rect2(Vector2(-300, 14), Vector2(204, 244)), "ImprovisedReactor")
 			_create_barrier(Rect2(Vector2(104, 0), Vector2(196, 258)), "DaisyChainedBackend")
 			_create_barrier(Rect2(Vector2(-156, -28), Vector2(72, 90)), "WestDemoSeating")
+		"mountain_bunker":
+			_create_barrier(Rect2(Vector2(-154, -136), Vector2(314, 188)), "UnendingOperationsTable")
+			_create_barrier(Rect2(Vector2(-294, -214), Vector2(170, 168)), "RedactedMapWall")
+			_create_barrier(Rect2(Vector2(170, -100), Vector2(130, 164)), "OfficeDroneBench")
+			_create_barrier(Rect2(Vector2(194, 56), Vector2(106, 172)), "LockedFormConveyor")
+			_create_barrier(Rect2(Vector2(-300, -44), Vector2(142, 226)), "ContinuityFilingCluster")
+			_create_barrier(Rect2(Vector2(-116, 50), Vector2(62, 76)), "UnscheduledVisitorChair")
+		"ufo_lab":
+			_create_barrier(Rect2(Vector2(-108, -160), Vector2(216, 146)), "ContradictoryDebateConsole")
+			_create_barrier(Rect2(Vector2(-292, -154), Vector2(142, 124)), "WestDuplicateCases")
+			_create_barrier(Rect2(Vector2(150, -154), Vector2(142, 124)), "EastDuplicateCases")
+			_create_barrier(Rect2(Vector2(-296, -56), Vector2(126, 140)), "WestInvalidClockBank")
+			_create_barrier(Rect2(Vector2(170, -56), Vector2(126, 140)), "EastInvalidClockBank")
+			_create_barrier(Rect2(Vector2(-276, 20), Vector2(146, 116)), "WestMissingSpecimen")
+			_create_barrier(Rect2(Vector2(126, 20), Vector2(150, 116)), "EastRepeatedSpecimen")
+			_create_barrier(Rect2(Vector2(-300, 116), Vector2(208, 140)), "ReturningWestStair")
+			_create_barrier(Rect2(Vector2(116, 116), Vector2(184, 140)), "ReturningEastStair")
 		"elysee":
 			_create_barrier(Rect2(Vector2(-84, -58), Vector2(168, 93)), "CeremonialDesk")
 			_create_barrier(Rect2(Vector2(-280, -126), Vector2(82, 260)), "ConcealedRestoration")

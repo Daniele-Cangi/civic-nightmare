@@ -17,6 +17,8 @@ const AUTHORED_INTERIOR_PATHS := {
 	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
 	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
 	"neural_core": "res://assets/interiors/neural_core_aligned_demo_v1.png",
+	"mountain_bunker": "res://assets/interiors/mountain_bunker_administrative_war_v1.png",
+	"ufo_lab": "res://assets/interiors/ufo_unreconciled_chamber_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -93,6 +95,8 @@ func _run() -> void:
 		"red_command": ["ObservationDesk", "SubjectChair", "WestFirewallModel", "EastFirewallModel", "WestCameraArray", "EastCameraArray", "WestCensoredConsole", "EastCensoredConsole"],
 		"pyongyang_command": ["BroadcastDais", "WestSceneryMissile", "EastSceneryMissile", "WestProductionBank", "EastProductionBank", "WestAudienceBlock", "EastAudienceBlock", "RedPhoneReliquary", "BackstageDressingRoom"],
 		"neural_core": ["AlignmentDesk", "WestPrototypeCurtain", "LockedEmergencyCases", "ImprovisedReactor", "DaisyChainedBackend", "WestDemoSeating"],
+		"mountain_bunker": ["UnendingOperationsTable", "RedactedMapWall", "OfficeDroneBench", "LockedFormConveyor", "ContinuityFilingCluster", "UnscheduledVisitorChair"],
+		"ufo_lab": ["ContradictoryDebateConsole", "WestDuplicateCases", "EastDuplicateCases", "WestInvalidClockBank", "EastInvalidClockBank", "WestMissingSpecimen", "EastRepeatedSpecimen", "ReturningWestStair", "ReturningEastStair"],
 		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
 	}
 	for room_key in AUTHORED_INTERIOR_PATHS:
@@ -104,18 +108,25 @@ func _run() -> void:
 		_check(authored_background != null and authored_background.texture != null, "%s installs its authored background" % room_key)
 		if authored_background and authored_background.texture:
 			_check(authored_background.texture.resource_path == AUTHORED_INTERIOR_PATHS[room_key], "%s uses the expected authored background" % room_key)
-		var authored_npc: Node = authored_room.get("room_npc")
-		var authored_npc_sprite := authored_npc.get_node_or_null("Sprite2D") as Sprite2D if authored_npc else null
-		var authored_character_id := str(authored_room.get("character_id"))
-		_check(
-			authored_npc_sprite != null
-			and authored_npc_sprite.texture != null
-			and authored_npc_sprite.texture.resource_path == CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS[authored_character_id],
-			"%s uses its own character sprite" % room_key
-		)
-		if authored_npc_sprite:
-			var visible_sprite_height := authored_npc_sprite.region_rect.size.y * absf(authored_npc_sprite.scale.y)
-			_check(authored_npc_sprite.region_enabled and visible_sprite_height < 130.0, "%s character sprite is normalized for the room" % room_key)
+		if room_key == "ufo_lab":
+			_check(authored_room.get_node_or_null("Entities/AlbertEinsteinPlaceholder") != null, "ufo_lab retains its encounter-owned Einstein actor")
+			_check(authored_room.get_node_or_null("Entities/MarkZuckerbergPlaceholder") != null, "ufo_lab retains its encounter-owned Zuckerberg actor")
+		elif room_key == "mountain_bunker":
+			_check(authored_room.get_node_or_null("Entities/ZelenskyPlaceholder") != null, "mountain_bunker retains its sequence-owned Zelensky actor")
+			_check(authored_room.get_node_or_null("Entities/DeathPlaceholder") != null, "mountain_bunker retains its sequence-owned Death actor")
+		else:
+			var authored_npc: Node = authored_room.get("room_npc")
+			var authored_npc_sprite := authored_npc.get_node_or_null("Sprite2D") as Sprite2D if authored_npc else null
+			var authored_character_id := str(authored_room.get("character_id"))
+			_check(
+				authored_npc_sprite != null
+				and authored_npc_sprite.texture != null
+				and authored_npc_sprite.texture.resource_path == CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS[authored_character_id],
+				"%s uses its own character sprite" % room_key
+			)
+			if authored_npc_sprite:
+				var visible_sprite_height := authored_npc_sprite.region_rect.size.y * absf(authored_npc_sprite.scale.y)
+				_check(authored_npc_sprite.region_enabled and visible_sprite_height < 130.0, "%s character sprite is normalized for the room" % room_key)
 		var authored_room_map := authored_room.get_node_or_null("RoomMap") as TileMap
 		_check(authored_room_map != null and authored_room_map.get_used_cells(0).is_empty(), "%s suppresses the shared generic floor" % room_key)
 		for obstacle_name in authored_obstacles[room_key]:
