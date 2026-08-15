@@ -8,6 +8,10 @@ const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.g
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
+const AUTHORED_INTERIOR_PATHS := {
+	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
+	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
+}
 
 var failures: Array[String] = []
 
@@ -27,6 +31,7 @@ func _run() -> void:
 	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
 	_test_authority_facades()
+	_test_authority_interiors()
 	_test_world_district_plate()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
@@ -72,6 +77,35 @@ func _run() -> void:
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
+	var authored_obstacles := {
+		"kremlin": ["LongConferenceTable", "BackupGenerator", "ContinuitySupplies"],
+		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
+	}
+	for room_key in AUTHORED_INTERIOR_PATHS:
+		var authored_room: Node = registry.get(room_key)
+		_check(authored_room != null, "%s authored interior is registered" % room_key)
+		if authored_room == null:
+			continue
+		var authored_background := authored_room.get_node_or_null("DecorRoot/AuthoredInteriorBackground") as Sprite2D
+		_check(authored_background != null and authored_background.texture != null, "%s installs its authored background" % room_key)
+		if authored_background and authored_background.texture:
+			_check(authored_background.texture.resource_path == AUTHORED_INTERIOR_PATHS[room_key], "%s uses the expected authored background" % room_key)
+		var authored_npc: Node = authored_room.get("room_npc")
+		var authored_npc_sprite := authored_npc.get_node_or_null("Sprite2D") as Sprite2D if authored_npc else null
+		var authored_character_id := str(authored_room.get("character_id"))
+		_check(
+			authored_npc_sprite != null
+			and authored_npc_sprite.texture != null
+			and authored_npc_sprite.texture.resource_path == CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS[authored_character_id],
+			"%s uses its own character sprite" % room_key
+		)
+		if authored_npc_sprite:
+			var visible_sprite_height := authored_npc_sprite.region_rect.size.y * absf(authored_npc_sprite.scale.y)
+			_check(authored_npc_sprite.region_enabled and visible_sprite_height < 130.0, "%s character sprite is normalized for the room" % room_key)
+		var authored_room_map := authored_room.get_node_or_null("RoomMap") as TileMap
+		_check(authored_room_map != null and authored_room_map.get_used_cells(0).is_empty(), "%s suppresses the shared generic floor" % room_key)
+		for obstacle_name in authored_obstacles[room_key]:
+			_check(authored_room.get_node_or_null("CollisionRoot/%s" % obstacle_name) != null, "%s collision follows %s" % [room_key, obstacle_name])
 	var authority_facades := game.get_tree().get_nodes_in_group("authority_facade")
 	_check(authority_facades.size() == 6, "all six authority facades are placed in the overworld")
 	var facade_character_ids: Dictionary = {}
@@ -291,6 +325,20 @@ func _test_authority_facades() -> void:
 		_check(texture.get_height() == expected_heights[character_id], "%s authority facade uses its district-row height" % character_id)
 		var image := texture.get_image()
 		_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s authority facade has a transparent corner" % character_id)
+
+
+func _test_authority_interiors() -> void:
+	for room_key in AUTHORED_INTERIOR_PATHS:
+		var interior_path: String = AUTHORED_INTERIOR_PATHS[room_key]
+		_check(ResourceLoader.exists(interior_path), "%s authored interior exists" % room_key)
+		if not ResourceLoader.exists(interior_path):
+			continue
+		var texture := load(interior_path) as Texture2D
+		_check(texture != null, "%s authored interior can be loaded" % room_key)
+		if texture:
+			_check(texture.get_size() == Vector2(608, 544), "%s authored interior matches the room canvas" % room_key)
+			var image := texture.get_image()
+			_check(image != null and image.get_pixel(0, 0).a > 0.99, "%s authored interior is opaque at its boundary" % room_key)
 
 
 func _test_world_district_plate() -> void:

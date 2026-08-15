@@ -1,5 +1,6 @@
 extends Node2D
 
+const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
 const NPC_SCENE = preload("res://scenes/npc.tscn")
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const RITUAL_STATION_SCRIPT = preload("res://scripts/ritual_station.gd")
@@ -10,6 +11,11 @@ const PROP_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/O
 const PROP_MONEY_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/MoneyBag.png")
 const PROP_CRATE = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/CrateEmpty.png")
 const PROP_GOLD_CUP = preload("res://assets/packs/civic_nightmare/items_props/ninja/Treasure/GoldCup.png")
+
+const AUTHORED_INTERIOR_PATHS := {
+	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
+	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
+}
 
 const SRC_PROC := 0
 const SRC_INTERIOR_FLOOR := 1
@@ -47,6 +53,7 @@ const ROOM_RIGHT := 9
 const ROOM_TOP := -8
 const ROOM_BOTTOM := 8
 const ITEM_SCALE := Vector2(2.0, 2.0)
+const INTERIOR_NPC_VISIBLE_HEIGHT := 116.0
 
 @export var room_key := "oval_office"
 @export var character_id := "donald_trump"
@@ -217,8 +224,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"kremlin":
 			return {
-				"title": "KREMLIN STUDY",
-				"subtitle": "State intelligence office",
+				"title": "CONTINUITY COMMAND",
+				"subtitle": "Temporary wartime office",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_WOOD,
 				"accent_source": SRC_PROC,
@@ -234,7 +241,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.22, 0.05, 0.05, 0.94),
 				"rug_glow": Color(0.72, 0.22, 0.16, 0.16),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 26),
+				"npc_position": Vector2(0, 6),
 				"desk_position": Vector2(0, -82),
 				"lights": [
 					{"pos": Vector2(-118, -184), "color": Color(0.92, 0.72, 0.56), "scale": 2.8, "energy": 0.24},
@@ -408,7 +415,7 @@ func _theme_for_key(key: String) -> Dictionary:
 		"elysee":
 			return {
 				"title": "ELYSEE SALON",
-				"subtitle": "Presidential reception",
+				"subtitle": "Officially restored reception",
 				"floor_source": SRC_INTERIOR_FLOOR,
 				"floor_tile": IF_PALACE,
 				"accent_source": SRC_INTERIOR_FLOOR,
@@ -424,7 +431,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.12, 0.18, 0.48, 0.92),
 				"rug_glow": Color(0.84, 0.76, 0.48, 0.16),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 30),
+				"npc_position": Vector2(0, 58),
 				"desk_position": Vector2(0, -76),
 				"lights": [
 					{"pos": Vector2(-128, -182), "color": Color(0.82, 0.88, 1.0), "scale": 3.0, "energy": 0.28},
@@ -519,14 +526,47 @@ func _build_room() -> void:
 	add_child(foreground_root)
 	move_child(foreground_root, get_child_count() - 1)
 
-	_fill_floor()
-	_build_walls()
-	_build_wall_panels()
-	_build_top_trim()
-	_build_rug()
-	_build_room_props()
+	var uses_authored_background := _build_authored_background()
+	if uses_authored_background:
+		_build_authored_obstacles()
+	else:
+		_fill_floor()
+		_build_walls()
+		_build_wall_panels()
+		_build_top_trim()
+		_build_rug()
+		_build_room_props()
 	_build_boundaries()
 	_build_foreground()
+
+func _build_authored_background() -> bool:
+	var texture_path := str(AUTHORED_INTERIOR_PATHS.get(room_key, ""))
+	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
+		return false
+
+	var background_texture := load(texture_path) as Texture2D
+	if background_texture == null:
+		return false
+
+	var background := Sprite2D.new()
+	background.name = "AuthoredInteriorBackground"
+	background.texture = background_texture
+	background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	background.position = Vector2.ZERO
+	background.z_index = -5
+	decor_root.add_child(background)
+	return true
+
+func _build_authored_obstacles() -> void:
+	match room_key:
+		"kremlin":
+			_create_barrier(Rect2(Vector2(-208, -112), Vector2(416, 88)), "LongConferenceTable")
+			_create_barrier(Rect2(Vector2(-280, 24), Vector2(118, 140)), "BackupGenerator")
+			_create_barrier(Rect2(Vector2(150, 18), Vector2(132, 174)), "ContinuitySupplies")
+		"elysee":
+			_create_barrier(Rect2(Vector2(-84, -58), Vector2(168, 93)), "CeremonialDesk")
+			_create_barrier(Rect2(Vector2(-280, -126), Vector2(82, 260)), "ConcealedRestoration")
+			_create_barrier(Rect2(Vector2(214, 4), Vector2(68, 188)), "DeferredMaintenance")
 
 func _fill_floor() -> void:
 	for x in range(ROOM_LEFT, ROOM_RIGHT + 1):
@@ -1313,9 +1353,32 @@ func _spawn_character() -> void:
 	npc.character_name = character_name
 	npc.position = theme.get("npc_position", Vector2(0, 40))
 	npc.z_index = 3
+	_apply_standard_character_visual(npc)
 	entities.add_child(npc)
 	room_npc = npc
 	_refresh_encounter_density()
+
+func _apply_standard_character_visual(npc: Node) -> void:
+	var sprite := npc.get_node_or_null("Sprite2D") as Sprite2D
+	var sprite_path := str(CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS.get(character_id, ""))
+	if sprite == null or sprite_path.is_empty() or not ResourceLoader.exists(sprite_path):
+		return
+	var character_texture := load(sprite_path) as Texture2D
+	if character_texture == null:
+		return
+	sprite.texture = character_texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var character_image := character_texture.get_image()
+	if character_image == null:
+		return
+	var visible_rect := character_image.get_used_rect()
+	if visible_rect.size.y <= 0:
+		return
+	sprite.region_enabled = true
+	sprite.region_rect = Rect2(visible_rect)
+	var fit_scale := INTERIOR_NPC_VISIBLE_HEIGHT / float(visible_rect.size.y)
+	sprite.scale = Vector2.ONE * fit_scale
+	sprite.offset = Vector2(0, -float(visible_rect.size.y) * 0.125)
 
 func _attach_placeholder_visual(parent: Node, label_text: String, body_color: Color, accent_color: Color) -> void:
 	var shell := Node2D.new()
@@ -1561,8 +1624,10 @@ func _set_markers() -> void:
 			markers.add_child(approach)
 		approach.position = theme.get("approach_position", Vector2(0, 118))
 
-func _create_barrier(rect: Rect2) -> void:
+func _create_barrier(rect: Rect2, barrier_name := "") -> void:
 	var body = StaticBody2D.new()
+	if not barrier_name.is_empty():
+		body.name = barrier_name
 	body.position = rect.position + rect.size * 0.5
 	var col = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
