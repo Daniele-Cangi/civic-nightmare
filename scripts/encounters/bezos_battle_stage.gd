@@ -49,7 +49,6 @@ var attack_fx: Control
 var damage_flash: ColorRect
 var tutorial_panel: PanelContainer
 var tutorial_title: Label
-var tutorial_progress: ProgressBar
 var warning_panel: PanelContainer
 var warning_title: Label
 var warning_subtitle: Label
@@ -245,7 +244,7 @@ func _build_stage() -> void:
 
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.position = Vector2(530, 92)
-	tutorial_panel.size = Vector2(220, 116)
+	tutorial_panel.size = Vector2(220, 94)
 	tutorial_panel.z_index = 8
 	tutorial_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tutorial_style := StyleBoxFlat.new()
@@ -264,8 +263,6 @@ func _build_stage() -> void:
 	tutorial_title.add_theme_font_size_override("font_size", 54)
 	tutorial_title.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
 	tutorial_stack.add_child(tutorial_title)
-	tutorial_progress = _create_prompt_progress(Color(0.95, 0.7, 0.16))
-	tutorial_stack.add_child(tutorial_progress)
 
 	warning_panel = PanelContainer.new()
 	warning_panel.position = Vector2(530, 92)
@@ -363,7 +360,8 @@ func _read_actions(delta: float) -> void:
 func _update_attack(delta: float) -> void:
 	if active_attack == "":
 		attack_wait -= delta
-		tutorial_progress.value = clampf(1.0 - attack_wait / maxf(prompt_limit, 0.01), 0.0, 1.0)
+		var prompt_progress := clampf(1.0 - attack_wait / maxf(prompt_limit, 0.01), 0.0, 1.0)
+		tutorial_title.modulate.a = 0.72 + absf(sin(elapsed * (5.0 + prompt_progress * 7.0))) * 0.28
 		if attack_wait <= 0.0:
 			_penalize_current_prompt()
 		return
@@ -392,7 +390,7 @@ func _start_guided_round(first_round: bool) -> void:
 	attack_wait = prompt_limit
 	tutorial_panel.visible = true
 	warning_panel.visible = false
-	tutorial_progress.value = 0.0
+	tutorial_title.modulate = Color.WHITE
 	_update_guided_prompt()
 
 
@@ -405,7 +403,7 @@ func _advance_guided_contest() -> void:
 		return
 	prompt_limit = maxf(1.45, 2.1 - float(guided_round - 1) * 0.07)
 	attack_wait = prompt_limit
-	tutorial_progress.value = 0.0
+	tutorial_title.modulate = Color.WHITE
 	_update_guided_prompt()
 
 
