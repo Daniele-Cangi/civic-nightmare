@@ -33,6 +33,15 @@ Optional interiors use the same gameplay contract but expose a different kind of
 | Kim / Supreme Broadcast Command | A strategic missile-control center | A live television stage of painted mountains, supported missile flats, applause seating, cameras and theatrical wiring | The broadcast equipment is real; the missiles are scenery; the Red Phone is protected better than the command console. |
 | Altman / Aligned Demonstration Core | A calm, safe and inevitable AI demonstration | A minimalist demo chapel concealing a reactor, portable generation, daisy-chained power strips and emergency controls locked under glass | The friendly green lamp is connected to nothing; the alarming backend is already running. |
 
+## Classified deviation and anomaly rooms
+
+These rooms should not read as valuable collectibles. The bunker is a prohibited place that leaves a procedural scar; the UFO is evidence the administrative model cannot reconcile.
+
+| Room | Narrative function | Interior machine | Visual joke |
+|---|---|---|---|
+| Mountain bunker / Excluded Continuity Office | Classified protocol deviation | A worn wartime office where maps, disconnected phones, drone repair and locked form conveyors process conflict as paperwork | The meeting table is always prepared and almost every chair is empty; disobedience has its own visitor chair. |
+| UFO / Unreconciled Location | Anomaly | A calm observation room with duplicated objects, incompatible clocks, missing shadows and staircases that return to the same floor | The instruments are precise; the room is impossible; the only ordinary object has been recorded twice. |
+
 ## Runtime contract
 
 - Authored backgrounds are opaque full-room images in `assets/interiors/`.
