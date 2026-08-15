@@ -18,6 +18,8 @@ const AUTHORED_INTERIOR_PATHS := {
 	"eu_palace": "res://assets/interiors/berlaymont_transparency_maze_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
 	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
+	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
+	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -337,8 +339,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"pyongyang_command":
 			return {
-				"title": "PYONGYANG BATTERY",
-				"subtitle": "Artillery guidance room",
+				"title": "SUPREME BROADCAST COMMAND",
+				"subtitle": "Strategic applause ready",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_METAL_FLOOR,
 				"accent_source": SRC_PROC,
@@ -353,7 +355,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.12, 0.03, 0.03, 0.96),
 				"rug_glow": Color(0.5, 0.12, 0.08, 0.14),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 24),
+				"npc_position": Vector2(0, -16),
 				"desk_position": Vector2(0, -82),
 				"lights": [
 					{"pos": Vector2(-120, -180), "color": Color(0.92, 0.32, 0.22), "scale": 2.6, "energy": 0.18},
@@ -364,8 +366,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"red_command":
 			return {
-				"title": "RED COMMAND",
-				"subtitle": "Continuity chamber",
+				"title": "HARMONIOUS OBSERVATION",
+				"subtitle": "Visitor coherence review",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_WOOD,
 				"accent_source": SRC_PROC,
@@ -380,7 +382,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.18, 0.03, 0.03, 0.96),
 				"rug_glow": Color(0.72, 0.18, 0.08, 0.12),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 24),
+				"npc_position": Vector2(0, -42),
 				"desk_position": Vector2(0, -82),
 				"lights": [
 					{"pos": Vector2(-124, -180), "color": Color(0.96, 0.22, 0.18), "scale": 2.8, "energy": 0.2},
@@ -596,6 +598,25 @@ func _build_authored_obstacles() -> void:
 			_create_barrier(Rect2(Vector2(100, -112), Vector2(198, 136)), "EastLuxuryTier")
 			_create_barrier(Rect2(Vector2(-300, 22), Vector2(202, 250)), "WestAusterityMachinery")
 			_create_barrier(Rect2(Vector2(102, 24), Vector2(198, 248)), "EastAusterityMachinery")
+		"red_command":
+			_create_barrier(Rect2(Vector2(-108, -164), Vector2(216, 98)), "ObservationDesk")
+			_create_barrier(Rect2(Vector2(-13, 8), Vector2(26, 48)), "SubjectChair")
+			_create_barrier(Rect2(Vector2(-298, -80), Vector2(142, 234)), "WestFirewallModel")
+			_create_barrier(Rect2(Vector2(156, -80), Vector2(142, 234)), "EastFirewallModel")
+			_create_barrier(Rect2(Vector2(-148, -70), Vector2(68, 226)), "WestCameraArray")
+			_create_barrier(Rect2(Vector2(80, -70), Vector2(68, 226)), "EastCameraArray")
+			_create_barrier(Rect2(Vector2(-286, 162), Vector2(196, 92)), "WestCensoredConsole")
+			_create_barrier(Rect2(Vector2(90, 162), Vector2(196, 92)), "EastCensoredConsole")
+		"pyongyang_command":
+			_create_barrier(Rect2(Vector2(-126, -140), Vector2(252, 122)), "BroadcastDais")
+			_create_barrier(Rect2(Vector2(-294, -244), Vector2(166, 172)), "WestSceneryMissile")
+			_create_barrier(Rect2(Vector2(132, -244), Vector2(162, 178)), "EastSceneryMissile")
+			_create_barrier(Rect2(Vector2(-300, -68), Vector2(166, 140)), "WestProductionBank")
+			_create_barrier(Rect2(Vector2(136, -72), Vector2(166, 148)), "EastProductionBank")
+			_create_barrier(Rect2(Vector2(-116, 48), Vector2(86, 150)), "WestAudienceBlock")
+			_create_barrier(Rect2(Vector2(30, 48), Vector2(88, 150)), "EastAudienceBlock")
+			_create_barrier(Rect2(Vector2(126, 76), Vector2(124, 144)), "RedPhoneReliquary")
+			_create_barrier(Rect2(Vector2(-298, 72), Vector2(166, 148)), "BackstageDressingRoom")
 		"elysee":
 			_create_barrier(Rect2(Vector2(-84, -58), Vector2(168, 93)), "CeremonialDesk")
 			_create_barrier(Rect2(Vector2(-280, -126), Vector2(82, 260)), "ConcealedRestoration")
