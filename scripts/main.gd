@@ -2988,7 +2988,13 @@ func _create_bezos_cinematic_overlay() -> void:
 	bezos_encounter.name = "BezosEncounter"
 	add_child(bezos_encounter)
 	bezos_encounter.finished.connect(_on_bezos_cinematic_finished)
-	bezos_encounter.setup(self, player, CHARACTER_VISUAL_CATALOG.COMBAT_PORTRAIT_PATHS, CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS)
+	bezos_encounter.setup(
+		self,
+		player,
+		CHARACTER_VISUAL_CATALOG.COMBAT_PORTRAIT_PATHS,
+		CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS,
+		dossier_manager
+	)
 
 func _on_bezos_cinematic_finished() -> void:
 	bezos_drone_encounter.remove_drone()

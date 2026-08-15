@@ -16,3 +16,13 @@ When contributing media:
 - note meaningful modifications when that context helps reviewers.
 
 This notice is a practical repository policy and is not a complete rights audit of every existing file.
+
+## Generated project artwork
+
+The following project-specific battle assets were generated with OpenAI image generation and then locally cropped or chroma-keyed for runtime use:
+
+- `assets/mockups/bezos_fulfillment_cathedral.png`
+- `assets/mockups/bezos_battle_poses.png`
+- `assets/mockups/citizen_battle_poses.png`
+
+They were art-directed for Civic Nightmare and use existing repository artwork only as a style or character-design reference.

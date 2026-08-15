@@ -282,7 +282,7 @@ func process_frame(delta: float) -> void:
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"CITIZEN",
-					"I was just WALKING past a drone!\nThat counts as consent?!",
+					"You time workers to the second, move bridges for yachts,\nand launch rockets while a drone invoices pedestrians.\nI only need a passport signature.",
 					Color(0.4, 0.75, 1.0)
 				)
 		3:
@@ -291,88 +291,18 @@ func process_frame(delta: float) -> void:
 				bezos_escalation_timer = 0.0
 				_set_bezos_escalation_line(
 					"AMZN DRONE",
-					"Proximity within 8 meters of an Amazon device\nconstitutes passive agreement.\nSee Terms of Service §47, clause 'Existence'.",
+					"Complaint summary accepted.\nOwner escalation is mandatory and non-refundable.",
 					Color(1.0, 0.82, 0.3)
 				)
 		4:
 			if advance_pressed:
-				bezos_escalation_step = 5
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"CITIZEN",
-					"Your workers pee in BOTTLES.\nYou timed their toilet breaks to the SECOND\nand fired them for going over.",
-					Color(0.4, 0.75, 1.0)
-				)
-		5:
-			if advance_pressed:
-				bezos_escalation_step = 6
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"BEZOS",
-					"Bladder efficiency is an untapped frontier.\nWe are DISRUPTING hydration logistics.\nThe market demands it.",
-					Color(1.0, 0.92, 0.16)
-				)
-		6:
-			if advance_pressed:
-				bezos_escalation_step = 7
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"CITIZEN",
-					"You had a BRIDGE dismantled in Rotterdam\nto move your $500M megayacht out of port.\nA HISTORIC BRIDGE. For a @#$%ing BOAT.",
-					Color(0.4, 0.75, 1.0)
-				)
-		7:
-			if advance_pressed:
-				bezos_escalation_step = 8
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"BEZOS",
-					"It was structurally non-optimal.\nI liberated it from its original purpose.\nYou're welcome, Rotterdam.",
-					Color(1.0, 0.92, 0.16)
-				)
-		8:
-			if advance_pressed:
-				bezos_escalation_step = 9
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"CITIZEN",
-					"Your ex-wife gave away $17 BILLION to charity\nwhile you were buying a ROCKET\nshaped like a—  ...you know what it looks like.",
-					Color(0.4, 0.75, 1.0)
-				)
-		9:
-			if advance_pressed:
-				bezos_escalation_step = 10
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"BEZOS",
-					"Blue Origin is a LEGACY project for humanity.\nAlso she was slowing down my optimization.\nHer tax write-offs are frankly excessive.",
-					Color(1.0, 0.92, 0.16)
-				)
-		10:
-			if advance_pressed:
-				bezos_escalation_step = 11
-				bezos_escalation_timer = 0.0
-				_set_bezos_escalation_line(
-					"CITIZEN",
-					"Your Ring doorbells helped arrest more\ninnocent people than any spy network.\nYou turned SUBURBIA into a SURVEILLANCE STATE.",
-					Color(0.4, 0.75, 1.0)
-				)
-		11:
-			if advance_pressed:
-				# --- TRANSITION TO CHAT BOX ---
-				# Instead of the floating bubble, we now trigger the high-fidelity Terminator Card chat.
 				bezos_escalation_active = false
 				if bezos_escalation_bubble:
 					bezos_escalation_bubble.visible = false
-
-				# Ensure variables are reset for the post-dialogue cinematic trigger
-				bezos_escalation_step = 12
+				bezos_escalation_step = 5
 				call_deferred("_request_dialogue")
-		12:
+		5:
 			# This step is now handled by the dialogue system's callback
-			pass
-		13:
-			# Cinematic state
 			pass
 
 func _request_dialogue() -> void:
