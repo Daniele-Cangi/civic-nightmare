@@ -11,7 +11,9 @@ const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plat
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
+	"eu_palace": "res://assets/interiors/berlaymont_transparency_maze_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
+	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -82,7 +84,9 @@ func _run() -> void:
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
+		"eu_palace": ["ConsensusPodium", "ProceduralLoop", "GreenTransitionExhibit", "PortableGreenGenerator", "WestGlassCommittee", "EastGlassCommittee", "WestArchiveQueue", "EastArchiveQueue"],
 		"kremlin": ["LongConferenceTable", "BackupGenerator", "ContinuitySupplies"],
+		"vault": ["StabilityDesk", "WestLuxuryTier", "EastLuxuryTier", "WestAusterityMachinery", "EastAusterityMachinery"],
 		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
 	}
 	for room_key in AUTHORED_INTERIOR_PATHS:
