@@ -648,6 +648,15 @@ func _bezos_show_hud() -> void:
 		var nd := bezos_cinematic_frame.get_node_or_null(n) if bezos_cinematic_frame else null
 		if nd: nd.visible = true
 
+
+func _bezos_show_combat_hud() -> void:
+	_bezos_show_hud()
+	bezos_cinematic_timer_label.visible = false
+	for node_name in ["P1Name", "P2Name", "BottomLabel"]:
+		var node := bezos_cinematic_frame.get_node_or_null(node_name) if bezos_cinematic_frame else null
+		if node:
+			node.visible = false
+
 func _begin_bezos_cinematic_state(state: int) -> void:
 	bezos_cinematic_state = state
 	bezos_cinematic_timer = 0.0
@@ -734,7 +743,7 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 		BezosCinematicState.COMBAT:
 			bezos_cinematic_stage.visible = false
 			bezos_cinematic_fight.visible = false
-			_bezos_show_hud()
+			_bezos_show_combat_hud()
 			bezos_cinematic_flash.visible = true
 			bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.6)
 			var tw_combat := create_tween()
