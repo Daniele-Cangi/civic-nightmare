@@ -16,10 +16,12 @@ The answer must be architectural and comic, not a collection of national props. 
 |---|---|---|---|
 | Trump / Oval Studio | Success, attention and executive dominance | A presidential office rebuilt as a gold-plated broadcast set with ratings screens, cameras, mirrors and applause staging | The prestige is laminate, the cameras outnumber the visitors, and every mirror points toward the central chair. |
 | Musk / Permanent Beta | A frictionless interplanetary future | An unfinished private launch room of temporary power, incompatible adapters, prototype debris and demonstrations running before completion | The most expensive console is still powered by a portable generator; the tunnel stops almost immediately. |
+| Ursula / Transparency Chamber | Open, orderly and frictionless European administration | A glass procedural maze of duplicated desks, controlled access, circulating documents and ceremonial consensus | Every wall is transparent and every route is blocked; the plastic green-transition display runs from a portable generator. |
 | Putin / Continuity Command | Total control and permanent readiness | A subterranean wartime command room of redundant surveillance, cables, generators, telephones and sealed files | The conference table is absurdly long for the room; the reassuring sky exists only on fake backlit windows. |
+| Lagarde / Stability Floor | Calm, neutral monetary stability | A luxurious policy salon suspended above exposed belts, pipes, valves and austerity service machinery | The interest-rate dial dominates the room; champagne and locked umbrellas stay upstairs while empty trays travel below. |
 | Macron / Élysée Salon | Restored grandeur and effortless cultural wealth | A reception set held together by braces, extension leads, screens, buckets and deferred restoration | Everything inside the official camera angle is immaculate; the edges disclose the maintenance debt. |
 
-The contrasts are deliberate. Trump manufactures attention, Musk demonstrates unfinished inevitability, Putin hides the outside world, and Macron hides the inside damage.
+The contrasts are deliberate. Trump manufactures attention, Musk demonstrates unfinished inevitability, Ursula makes access visible but impossible, Putin hides the outside world, Lagarde places reassurance above its machinery, and Macron hides the inside damage.
 
 ## Runtime contract
 

@@ -15,7 +15,9 @@ const PROP_GOLD_CUP = preload("res://assets/packs/civic_nightmare/items_props/ni
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
+	"eu_palace": "res://assets/interiors/berlaymont_transparency_maze_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
+	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -198,8 +200,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"eu_palace":
 			return {
-				"title": "THE BERLAYMONT",
-				"subtitle": "Administrative chamber",
+				"title": "TRANSPARENCY CHAMBER",
+				"subtitle": "Access subject to access",
 				"floor_source": SRC_INTERIOR_FLOOR,
 				"floor_tile": IF_PALACE,
 				"accent_source": SRC_INTERIOR_FLOOR,
@@ -215,7 +217,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.1, 0.2, 0.52, 0.92),
 				"rug_glow": Color(0.82, 0.76, 0.44, 0.18),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 30),
+				"npc_position": Vector2(0, -44),
 				"desk_position": Vector2(0, -76),
 				"lights": [
 					{"pos": Vector2(-128, -182), "color": Color(0.82, 0.88, 1.0), "scale": 3.0, "energy": 0.28},
@@ -254,8 +256,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		"vault":
 			return {
-				"title": "ECB VAULT",
-				"subtitle": "Monetary control floor",
+				"title": "STABILITY FLOOR",
+				"subtitle": "Conditions apply below",
 				"floor_source": SRC_INTERIOR_FLOOR,
 				"floor_tile": IF_VAULT,
 				"accent_source": SRC_PROC,
@@ -270,7 +272,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.12, 0.14, 0.18, 0.94),
 				"rug_glow": Color(0.82, 0.74, 0.26, 0.12),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 20),
+				"npc_position": Vector2(0, -42),
 				"desk_position": Vector2(0, -82),
 				"lights": [
 					{"pos": Vector2(-112, -176), "color": Color(0.9, 0.78, 0.36), "scale": 2.8, "energy": 0.24},
@@ -575,10 +577,25 @@ func _build_authored_obstacles() -> void:
 			_create_barrier(Rect2(Vector2(126, -14), Vector2(126, 112)), "PrototypeTable")
 			_create_barrier(Rect2(Vector2(-282, 126), Vector2(120, 100)), "UnfinishedTunnel")
 			_create_barrier(Rect2(Vector2(148, 96), Vector2(134, 136)), "HalfInstalledGlass")
+		"eu_palace":
+			_create_barrier(Rect2(Vector2(-76, -174), Vector2(152, 96)), "ConsensusPodium")
+			_create_barrier(Rect2(Vector2(-278, -208), Vector2(194, 142)), "ProceduralLoop")
+			_create_barrier(Rect2(Vector2(88, -204), Vector2(100, 126)), "GreenTransitionExhibit")
+			_create_barrier(Rect2(Vector2(182, -210), Vector2(102, 136)), "PortableGreenGenerator")
+			_create_barrier(Rect2(Vector2(-296, -74), Vector2(198, 216)), "WestGlassCommittee")
+			_create_barrier(Rect2(Vector2(96, -78), Vector2(200, 220)), "EastGlassCommittee")
+			_create_barrier(Rect2(Vector2(-298, 148), Vector2(210, 92)), "WestArchiveQueue")
+			_create_barrier(Rect2(Vector2(90, 148), Vector2(208, 92)), "EastArchiveQueue")
 		"kremlin":
 			_create_barrier(Rect2(Vector2(-208, -112), Vector2(416, 88)), "LongConferenceTable")
 			_create_barrier(Rect2(Vector2(-280, 24), Vector2(118, 140)), "BackupGenerator")
 			_create_barrier(Rect2(Vector2(150, 18), Vector2(132, 174)), "ContinuitySupplies")
+		"vault":
+			_create_barrier(Rect2(Vector2(-86, -150), Vector2(172, 82)), "StabilityDesk")
+			_create_barrier(Rect2(Vector2(-298, -116), Vector2(202, 136)), "WestLuxuryTier")
+			_create_barrier(Rect2(Vector2(100, -112), Vector2(198, 136)), "EastLuxuryTier")
+			_create_barrier(Rect2(Vector2(-300, 22), Vector2(202, 250)), "WestAusterityMachinery")
+			_create_barrier(Rect2(Vector2(102, 24), Vector2(198, 248)), "EastAusterityMachinery")
 		"elysee":
 			_create_barrier(Rect2(Vector2(-84, -58), Vector2(168, 93)), "CeremonialDesk")
 			_create_barrier(Rect2(Vector2(-280, -126), Vector2(82, 260)), "ConcealedRestoration")
