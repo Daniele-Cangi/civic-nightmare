@@ -137,9 +137,16 @@ func _run() -> void:
 			_check(authored_room.get_node_or_null("CollisionRoot/%s" % obstacle_name) != null, "%s collision follows %s" % [room_key, obstacle_name])
 	var authority_facades := game.get_tree().get_nodes_in_group("authority_facade")
 	_check(authority_facades.size() == 6, "all six authority facades are placed in the overworld")
+	var authority_patches := game.get_tree().get_nodes_in_group("authority_world_patch")
+	_check(authority_patches.size() == 6, "all six authority facades belong to complete world patches")
+	for patch in authority_patches:
+		_check(patch.get_node_or_null("FoundationApron") != null, "%s world patch owns its terrain seam" % patch.name)
+		_check(patch.get_node_or_null("Approach") != null, "%s world patch owns its approach" % patch.name)
+		_check(int(patch.get_meta("collision_cell_count", 0)) > 0, "%s world patch defines its visible collision footprint" % patch.name)
 	var facade_character_ids: Dictionary = {}
 	for facade in authority_facades:
 		facade_character_ids[str(facade.get_meta("character_id", ""))] = true
+		_check(facade.get_parent().is_in_group("authority_world_patch"), "%s facade is composed inside its world patch" % facade.name)
 	for character_id in CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
@@ -168,8 +175,8 @@ func _run() -> void:
 	for facade in authority_facades:
 		var character_id := str(facade.get_meta("character_id", ""))
 		var expected_visual_center: Vector2 = expected_facade_visual_centers[character_id]
-		_check(absf(facade.position.x - expected_visual_center.x) <= 0.1, "%s facade is horizontally centered in its district panel" % character_id)
-		_check(absf(facade.position.y - expected_visual_center.y) <= 12.0, "%s facade is vertically centered in its district panel" % character_id)
+		_check(absf(facade.global_position.x - expected_visual_center.x) <= 0.1, "%s facade is horizontally centered in its district panel" % character_id)
+		_check(absf(facade.global_position.y - expected_visual_center.y) <= 12.0, "%s facade is vertically centered in its district panel" % character_id)
 	var solid_positions: Dictionary = game.get("_solid_positions")
 	var trump_center: Vector2i = expected_authority_centers["oval_office"]
 	var musk_center: Vector2i = expected_authority_centers["spaceship"]
@@ -183,6 +190,14 @@ func _run() -> void:
 	_check(not solid_positions.has(putin_center + Vector2i(0, -5)), "Putin has no invisible legacy collision above the facade")
 	_check(solid_positions.has(putin_center + Vector2i(0, -2)), "Putin retains a collision footprint inside the visible facade")
 	_check(not solid_positions.has(putin_center + Vector2i(0, 6)), "Putin exterior doorway remains accessible")
+	for building_spec in game.get("building_specs"):
+		var center: Vector2i = building_spec["center"]
+		var entrance: Vector2i = building_spec["entrance"]
+		var threshold := entrance - Vector2i.DOWN
+		_check(solid_positions.has(center), "%s world patch blocks its visible architectural mass" % building_spec["key"])
+		_check(not solid_positions.has(center + Vector2i(0, -6)), "%s world patch has no obsolete collision above the facade" % building_spec["key"])
+		_check(not solid_positions.has(threshold), "%s approach remains walkable up to the threshold" % building_spec["key"])
+		_check(not solid_positions.has(entrance), "%s doorway remains walkable" % building_spec["key"])
 	var district_plates := game.get_tree().get_nodes_in_group("world_district_plate")
 	_check(district_plates.size() == 1, "the overworld installs exactly one district ground plate")
 	_check(ground_map.get_cell_source_id(0, Vector2i(8, 12)) == -1, "the ground plate replaces repeated biome field tiles")

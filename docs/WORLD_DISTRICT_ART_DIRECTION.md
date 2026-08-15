@@ -6,8 +6,8 @@
 - Runtime size: 2176×2048 px, exactly matching the overworld bounds.
 - Placement: centered at world origin, nearest-neighbour filtered, `z=-10`.
 - Authority alignment contract: visible facade centers sit near world coordinates `x = ±528` and `y = -683 / 0 / 683`, the centers of the plate's six panels. Logical building centers vary slightly by facade because image heights and doorway offsets differ; runtime placement keeps facade, collision, entrance, NPC, light, and route together.
-- Trump, Musk, and Putin have bespoke collision footprints matched to the visible lower mass of their facade sprites; their obsolete procedural silhouettes are not retained invisibly.
-- The plate is fully opaque and collision-neutral. It supplies visible civic paving; path reservations, props, trees, buildings, triggers, entrances, and collision remain runtime-owned layers.
+- All six authorities have bespoke collision footprints matched to the visible lower mass of their facade sprites; their obsolete procedural silhouettes are not retained invisibly.
+- The plate is fully opaque and collision-neutral. It supplies visible civic paving; `AuthorityWorldPatchBuilder` adds the local terrain seam, approach motif, facade, and collision while the remaining props and triggers stay runtime-owned layers.
 - The field atlas remains a fallback only; its opaque center cells are used if the plate cannot load.
 
 ## Final prompt set

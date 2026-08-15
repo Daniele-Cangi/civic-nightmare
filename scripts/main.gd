@@ -12,6 +12,7 @@ const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
 const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_drone_encounter.gd")
 const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
+const AUTHORITY_WORLD_PATCH_BUILDER_SCRIPT = preload("res://scripts/managers/authority_world_patch_builder.gd")
 const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
 const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
@@ -41,6 +42,7 @@ var door_cooldown_until_ms: int = 0
 var is_room_transition: bool = false
 var environment_effects: Node
 var world_landmark_builder: Node
+var authority_world_patch_builder: Node
 var world_canvas_modulate: CanvasModulate
 var screen_fx_material: ShaderMaterial
 var interior_overlay: ColorRect
@@ -422,6 +424,7 @@ func _setup_dossier_manager() -> void:
 func _ready() -> void:
 	_setup_quest_manager()
 	_setup_dossier_manager()
+	_setup_authority_world_patch_builder()
 	# Remove old dialogue box from scene (if present)
 	var old_box = get_node_or_null("UI/DialogueBox")
 	if old_box:
@@ -469,6 +472,13 @@ func _setup_world_landmark_builder() -> void:
 	world_landmark_builder.name = "WorldLandmarkBuilder"
 	add_child(world_landmark_builder)
 	world_landmark_builder.setup(entities_layer, ground_map)
+
+
+func _setup_authority_world_patch_builder() -> void:
+	authority_world_patch_builder = AUTHORITY_WORLD_PATCH_BUILDER_SCRIPT.new()
+	authority_world_patch_builder.name = "AuthorityWorldPatchBuilder"
+	add_child(authority_world_patch_builder)
+	authority_world_patch_builder.setup(entities_layer)
 
 
 func _setup_ufo_encounter() -> void:
@@ -811,10 +821,16 @@ func _rebuild_path_cache() -> void:
 	var max_y := -9999
 	for spec in building_specs:
 		var entrance: Vector2i = spec["entrance"]
+		var approach_half_width := PATH_HALF_WIDTH
+		if authority_world_patch_builder:
+			approach_half_width = authority_world_patch_builder.get_approach_half_width(str(spec["key"]))
 		min_y = min(min_y, entrance.y)
 		max_y = max(max_y, entrance.y)
-		_mark_path_line(Vector2i(0, entrance.y), entrance, PATH_HALF_WIDTH)
-		_mark_path_rect(entrance - Vector2i(1, 1), entrance + Vector2i(1, 1))
+		_mark_path_line(Vector2i(0, entrance.y), entrance, approach_half_width)
+		_mark_path_rect(
+			entrance - Vector2i(approach_half_width, 1),
+			entrance + Vector2i(approach_half_width, 1)
+		)
 
 	min_y = mini(min_y, GREAT_WALL_APPROACH_TILE.y)
 	_mark_path_line(Vector2i(0, min_y), Vector2i(0, max_y), PATH_HALF_WIDTH)
@@ -949,11 +965,14 @@ func _generate_world_layout() -> void:
 			else:
 				ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
 
-	# Build structures and decorations
+	# Build each authority as one exterior unit. The authored facade, its terrain
+	# seam, approach, and visible collision footprint now share one owner.
 	for spec in building_specs:
-		_build_structure(spec)
-		_decorate_compound(spec)
-		_place_landmark(spec)
+		if not _build_authority_world_patch(spec):
+			# Resource-safe fallback for development builds missing an authored facade.
+			_build_structure(spec)
+			_decorate_compound(spec)
+			_place_landmark(spec)
 
 	# Place nature: biome-aware trees, bushes, flowers, rocks
 	# Densities are kept LOW so the map feels clean and readable
@@ -1102,11 +1121,33 @@ func _place_tree(pos: Vector2i) -> void:
 		ground_map.set_cell(LAYER_DECOR, pos + Vector2i(0, 1), SRC_PROC, TILE_TREE_TRUNK)
 		_create_solid_wall(pos.x, pos.y + 1)
 
+
+func _build_authority_world_patch(spec: Dictionary) -> bool:
+	if authority_world_patch_builder == null:
+		return false
+	var character_id := str(spec.get("npc", ""))
+	var facade_path := str(CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS.get(character_id, ""))
+	if facade_path.is_empty() or not ResourceLoader.exists(facade_path):
+		return false
+	var texture := load(facade_path) as Texture2D
+	if texture == null:
+		return false
+
+	_clear_authority_structure_tiles(spec["center"])
+	var patch: Dictionary = authority_world_patch_builder.create_authority_patch(spec, texture)
+	if patch.is_empty():
+		return false
+	for cell_value in patch.get("collision_cells", []):
+		var cell: Vector2i = cell_value
+		_create_solid_wall(cell.x, cell.y)
+	return true
+
 func _place_landmark(spec: Dictionary) -> void:
 	var cid: String = str(spec["npc"])
 	var facade_path := str(CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS.get(cid, ""))
 	if facade_path != "" and ResourceLoader.exists(facade_path):
-		_place_authority_facade(spec, facade_path)
+		# Authored authority facades are normally placed by the world-patch builder.
+		# Reaching this branch means the patch profile is intentionally unavailable.
 		return
 	if not CHARACTER_VISUAL_CATALOG.LANDMARK_SPRITE_PATHS.has(cid):
 		return
@@ -1142,45 +1183,10 @@ func _place_landmark(spec: Dictionary) -> void:
 	sprite.z_index = 5
 	entities_layer.add_child(sprite)
 
-
-func _place_authority_facade(spec: Dictionary, facade_path: String) -> void:
-	var texture := load(facade_path) as Texture2D
-	if texture == null:
-		return
-
-	var center: Vector2i = spec["center"]
-	var entrance: Vector2i = spec["entrance"]
-	_clear_authority_structure_tiles(center)
-	var entrance_bottom_y := _tile_to_body_position(entrance).y + 16.0
-	var facade_position := Vector2(
-		_tile_to_body_position(center).x,
-		entrance_bottom_y - texture.get_height() * 0.5
-	)
-
-	var shadow := Sprite2D.new()
-	shadow.name = "%sFacadeShadow" % _pascal_case(str(spec["key"]))
-	shadow.texture = texture
-	shadow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	shadow.position = facade_position + Vector2(10, 9)
-	shadow.modulate = Color(0.025, 0.04, 0.07, 0.3)
-	shadow.z_index = 3
-	entities_layer.add_child(shadow)
-
-	var facade := Sprite2D.new()
-	facade.name = "%sFacade" % _pascal_case(str(spec["key"]))
-	facade.texture = texture
-	facade.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	facade.position = facade_position
-	facade.z_index = 4
-	facade.add_to_group("authority_facade")
-	facade.set_meta("character_id", str(spec["npc"]))
-	entities_layer.add_child(facade)
-
-
 func _clear_authority_structure_tiles(center: Vector2i) -> void:
-	# The procedural footprint remains the collision source, but the hero facade
-	# becomes the only visible architecture. This prevents old roof tiles from
-	# leaking through transparent corners of the new sprite.
+	# Clear any fallback roof art before the world patch becomes the exterior's
+	# visual and collision owner. This also keeps hot-reload/development builds
+	# from leaking legacy tiles through transparent facade corners.
 	for x in range(center.x - 6, center.x + 7):
 		for y in range(center.y - 6, center.y + 7):
 			ground_map.erase_cell(LAYER_STRUCT, Vector2i(x, y))
