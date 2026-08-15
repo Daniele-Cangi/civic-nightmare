@@ -270,6 +270,14 @@ func _test_ai_terminal_assets() -> void:
 
 func _test_authority_facades() -> void:
 	_check(CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS.size() == 6, "visual catalog defines six authority facades")
+	var expected_heights := {
+		"donald_trump": 330,
+		"elon_musk": 330,
+		"ursula_von_der_leyen": 320,
+		"vladimir_putin": 320,
+		"christine_lagarde": 298,
+		"emmanuel_macron": 298,
+	}
 	for character_id in CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS:
 		var facade_path: String = CHARACTER_VISUAL_CATALOG.AUTHORITY_FACADE_PATHS[character_id]
 		_check(ResourceLoader.exists(facade_path), "%s authority facade exists" % character_id)
@@ -280,7 +288,7 @@ func _test_authority_facades() -> void:
 		if texture == null:
 			continue
 		_check(texture.get_width() == 352, "%s authority facade uses the shared runtime width" % character_id)
-		_check(texture.get_height() >= 280 and texture.get_height() <= 330, "%s authority facade fits the world footprint" % character_id)
+		_check(texture.get_height() == expected_heights[character_id], "%s authority facade uses its district-row height" % character_id)
 		var image := texture.get_image()
 		_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s authority facade has a transparent corner" % character_id)
 

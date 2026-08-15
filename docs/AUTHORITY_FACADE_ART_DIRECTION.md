@@ -1,31 +1,41 @@
 # Authority facade art direction
 
-The six required-signature exteriors are production hero assets rather than enlarged roof icons. They share one runtime contract:
+The six required-signature exteriors are character portraits expressed through architecture. They depict a recognizable contemporary civic order in managed decline: every authority keeps the system looking functional by denying failure in a different way.
+
+## Narrative contract
+
+| Authority | Official claim | Architectural contradiction |
+| --- | --- | --- |
+| Trump | Everything is magnificent. | Gold, staging, and media lighting cover structural neglect. |
+| Musk | The future is almost ready. | A contemporary factory remains in permanent-beta construction. |
+| Ursula | The procedure is transparent. | Glass entrances multiply until access becomes impossible. |
+| Putin | Everything is under control. | A ceremonial residence has been consumed by wartime defenses. |
+| Lagarde | The situation is stable. | Calm and luxury upstairs depend on moving consequences downstairs. |
+| Macron | The grandeur remains intact. | An expensive official facade conceals unresolved decay. |
+
+The satire must survive without dialogue, signage, or character portraits. At gameplay scale, each building needs one large readable contradiction rather than many tiny jokes.
+
+## Shared runtime contract
 
 - elevated three-quarter frontal/top-down RPG perspective;
-- modern high-detail pixel art with coherent clusters and a limited palette;
-- a strong, symmetrical silhouette at 352 px runtime width;
-- roof visible from above and a readable entrance at the exact bottom center;
+- modern high-detail pixel art with coherent clusters and a restrained material palette;
+- one complete freestanding contemporary building with a readable entrance at the exact bottom center;
+- strong silhouette at 352 px runtime width;
 - upper-left key light with practical lights contained inside the building;
-- transparent background, no cast shadow, text, logo, people, vehicles, or detached scenery.
+- transparent background with no baked cast shadow, people, vehicles, readable text, logos, watermark, or detached scenery;
+- paired canvas heights by district row: 330 px top, 320 px middle, 298 px bottom.
 
-## Generation prompt set
+## Production briefs
 
-The assets were generated with the built-in image generation tool. Trump established the visual reference; the other five prompts used that image strictly as the style, angle, pixel-density, lighting, and silhouette-readability reference.
+- **Trump — spectacle as maintenance:** White House massing fused with a luxury resort and casino entrance. An immaculate gold-and-ivory center is flanked by gold-wrapped scaffold columns, roof tarps, mismatched repairs, overworked utilities, media lights, and one conspicuously renovated wing.
+- **Musk — the present in permanent beta:** a contemporary automotive factory, data center, and launch-company campus. A polished black-glass center sits between unfinished prefab wings, exposed cable trays, patchy solar arrays, and a conventional rocket stage under maintenance. Crossed structural trusses create the dominant `X` silhouette without signage.
+- **Ursula — inaccessible transparency:** a Berlaymont-inspired cobalt-glass headquarters. Nested vestibules, redundant portals, modular annexes, sealed transparent entrances, and barrier corridors turn formal openness into an architectural labyrinth.
+- **Putin — ceremonial siege:** a Kremlin-inspired red-brick residence transformed into a hardened active fortress. Anti-drone cages, armored windows, blast walls, sandbags, cameras, antennae, and bunker systems surround one absurdly pristine gilded entrance and red carpet.
+- **Lagarde — stratified stability:** a contemporary central bank divided vertically. Immaculate warm upper floors sit above patched public infrastructure, narrowed stairs, shuttered services, trapped receipts, and an elegant economic dial mechanically clamped to its calm position.
+- **Macron — grandeur as scenery:** an Élysée-inspired palace whose polished ceremonial center survives between mismatched roof repairs and an entire damaged wing hidden behind a trompe-l'oeil construction scrim on gilded scaffolding.
 
-Common prompt:
+## Generation and preparation
 
-> Create a production-ready hero building sprite for a Godot top-down 16-bit RPG overworld. Use modern high-end pixel art, a coherent 16-bit/32-bit hybrid, crisp deliberate pixel clusters, limited palette, strong readable silhouette, and enough detail to sit beside 32×32 world tiles. Show one complete freestanding building from an elevated three-quarter frontal/top-down perspective, centered with generous padding, roof visible, and a clearly usable entrance at the exact bottom center. Use a perfectly flat solid `#FF00FF` removable background. Do not include ground, scenery, people, vehicles, readable text, logos, watermark, cast shadow, contact shadow, or detached objects.
+Built-in Imagegen generated each facade from a dedicated production brief on a removable `#FF00FF` background. Putin established the new density and camera contract; the remaining images used an approved facade only as a style, angle, scale, crispness, and lighting reference, never as an architectural template.
 
-Architecture briefs:
-
-- **Trump:** neo-baroque courthouse fused with a luxury casino and presidential monument; oval mass, dark layered roof, monumental gold eagle, ivory columns, navy glass, crimson carpet.
-- **Musk:** black-glass rocket hangar fused with an automated headquarters; diamond silhouette, central stainless launch spine, graphite wings, cyan glass, vents and integrated antenna arrays.
-- **Ursula:** monumental European glass bureaucracy palace becoming a regulatory labyrinth; cobalt crescent, formal ivory block, nested wings, gold medallions and integrated turnstile forms.
-- **Putin:** brutalist Kremlin fortress fused with a hardened state bunker; red masonry, concrete core, oxidized green roofs, squat watchtowers, armored vents and sparse amber windows.
-- **Lagarde:** octagonal central-bank temple fused with a precision vault; charcoal stone, stepped roof, brass mechanisms, teal-black windows and a usable circular vault entrance.
-- **Macron:** elegant Élysée palace beginning to decay; pale neoclassical wings, midnight-blue mansard roof, restrained tricolor accents, mismatched repairs and one integrated scaffold.
-
-## Runtime preparation
-
-Generated chroma-key sources are converted to alpha with a soft matte and despill, then resized to 352 px width with nearest-neighbour sampling. Godot uses nearest texture filtering. The facade bottom edge is aligned to the existing doorway, while the procedural footprint continues to provide collision. A dark offset duplicate supplies the world-space shadow.
+The installed chroma-key helper removes flat backgrounds with a soft matte and despill. `scripts/normalize_authority_facade.py` then clears residual key pixels, crops the visible subject, downsamples it with high-quality filtering, centers it horizontally, bottom-aligns its entrance, and writes the correct 352 px runtime canvas. Godot uses nearest texture filtering. A dark offset duplicate supplies the world-space shadow, while procedural footprints remain the collision source.
