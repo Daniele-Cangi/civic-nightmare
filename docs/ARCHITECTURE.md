@@ -32,7 +32,8 @@ scenes/main.tscn
         ├── ufo_encounter.gd        UFO world presentation, trigger, and lab actors
         ├── bezos_drone_encounter.gd
         │                           in-world drone prelude
-        └── bezos_encounter.gd      arcade encounter presentation
+		├── bezos_encounter.gd      arcade encounter sequence and verdict
+		└── bezos_battle_stage.gd   local input, attacks, poses, and battle result
 ```
 
 `main.gd` instantiates these nodes in `_ready()`, supplies their scene dependencies, and handles signals whose consequences span more than one system. The extracted modules do not load or replace `main.tscn`.
@@ -97,7 +98,7 @@ Three optional-content grammars are connected at existing orchestration boundari
 - the hidden bunker is a protocol deviation because its direct warning is part of the evidence;
 - the UFO is an anomaly whose location and time records cannot be reconciled.
 
-Xi, Sam Altman, the Bezos/drone sequence, and historical contamination retain their current behaviour. They should be propagated only after a follow-up pass decides what lasting evidence each encounter genuinely creates. Do not classify every optional scene merely because it exists.
+The Bezos/drone sequence now supplies a fourth optional grammar: a playable commercial contest. `BezosEncounter` coordinates the pre-fight presentation and administrative verdict, while `BezosBattleStage` owns its two-action combat model and emits a semantic result. `DossierManager` retains the method and recognition outcome rather than combat statistics. Xi, Sam Altman, and historical contamination retain their current behaviour until a follow-up pass decides what lasting evidence each genuinely creates. Do not classify every optional scene merely because it exists.
 
 ## Deliberately retained debt
 

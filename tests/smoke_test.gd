@@ -5,6 +5,7 @@ const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager
 const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
+const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
@@ -39,6 +40,7 @@ func _run() -> void:
 	_test_quest_manager_round_trip()
 	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
+	_test_bezos_battle_stage()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -69,6 +71,7 @@ func _run() -> void:
 	var world_landmark_builder: Node = game.get("world_landmark_builder")
 	var ufo_encounter: Node = game.get("ufo_encounter")
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
+	var bezos_encounter: Node = game.get("bezos_encounter")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
 	_check(save_manager != null, "save manager is initialized")
@@ -86,6 +89,7 @@ func _run() -> void:
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
+	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
@@ -314,6 +318,33 @@ func _test_combat_portraits() -> void:
 			_check(portrait.get_size() == Vector2(128, 128), "%s combat portrait is runtime-sized" % character_id)
 
 
+func _test_bezos_battle_stage() -> void:
+	var arena_path := "res://assets/mockups/bezos_fulfillment_cathedral.png"
+	var bezos_poses_path := "res://assets/mockups/bezos_battle_poses.png"
+	var citizen_poses_path := "res://assets/mockups/citizen_battle_poses.png"
+	for asset_path in [arena_path, bezos_poses_path, citizen_poses_path]:
+		_check(ResourceLoader.exists(asset_path), "%s battle asset exists" % asset_path)
+		if ResourceLoader.exists(asset_path):
+			_check(load(asset_path) is Texture2D, "%s battle asset can be loaded" % asset_path)
+	var arena := load(arena_path) as Texture2D
+	_check(arena != null and arena.get_size() == Vector2(1280, 720), "Fulfillment Cathedral matches the battle viewport")
+
+	var stage := BEZOS_BATTLE_STAGE_SCRIPT.new()
+	root.add_child(stage)
+	stage.setup()
+	stage.start()
+	var shield_before := float(stage.get("legal_shield"))
+	_check(stage.perform_contest(), "citizen can actively contest the corporate shield")
+	_check(float(stage.get("legal_shield")) < shield_before, "contest action changes battle state")
+	stage.set("contest_cooldown", 0.0)
+	stage.set("legal_shield", 0.0)
+	stage.set("bezos_hp", 1.0)
+	stage.perform_contest()
+	stage.process_frame(0.01)
+	_check(str(stage.get_result().get("outcome", "")) == "citizen_victory", "a mechanical citizen victory is possible before administrative review")
+	stage.queue_free()
+
+
 func _test_ai_terminal_assets() -> void:
 	var portrait_path: String = CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS["ai_terminal"]
 	var sprite_path := "res://assets/mockups/ai_terminal_sprite_v2.png"
@@ -481,12 +512,30 @@ func _test_dossier_manager_round_trip() -> void:
 	manager.record_investigation("investigation:red_phone", "pyongyang_red_phone", "Private channel remained open.")
 	manager.record_protocol_deviation("protocol_deviation:hidden_bunker", "mountain_bunker", "Direct warning ignored.")
 	manager.record_anomaly("anomaly:ufo_time_discontinuity", "ufo_lab", "Clock records disagree.")
+	_check(manager.record_contest(
+		"contest:bezos_fulfillment",
+		"jeff_bezos",
+		"physical-remedy-invalidated",
+		"Subject obtained a physical victory. Contractual recognition was withheld.",
+		{"contest_count": 12, "objection_count": 4, "intercepted_attacks": 3, "outcome": "citizen_victory"}
+	), "Bezos battle records semantic contest evidence")
+	_check(_has_pattern(manager.derive_patterns(), "remedy_without_recognition"), "invalidated victory derives an administrative pattern")
 	_check(_has_dossier_section(manager, "unresolved_material"), "deviation and anomaly unlock unresolved material")
 	_check((manager.get_pause_summary("unresolved_material").get("lines", []) as Array).size() == 2, "unresolved material distinguishes bunker and UFO evidence")
 	var investigation_only := DOSSIER_MANAGER_SCRIPT.new()
 	root.add_child(investigation_only)
 	investigation_only.record_investigation("investigation:red_phone", "pyongyang_red_phone", "Private channel remained open.")
 	_check(str(investigation_only.claim_claudia_observation().get("id", "")) == "claudia_red_phone", "Red Phone evidence creates a later CLAUDIA callback")
+	var bezos_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(bezos_only)
+	bezos_only.record_contest(
+		"contest:bezos_fulfillment",
+		"jeff_bezos",
+		"physical-remedy-invalidated",
+		"Victory excluded.",
+		{"outcome": "citizen_victory"}
+	)
+	_check(str(bezos_only.claim_claudia_observation().get("id", "")) == "claudia_bezos_invalidated_victory", "invalidated victory creates a sparse CLAUDIA callback")
 
 	var expected_classification: String = manager.derive_classification()
 	var snapshot: Dictionary = manager.get_save_data()
@@ -499,6 +548,7 @@ func _test_dossier_manager_round_trip() -> void:
 	manager.queue_free()
 	restored.queue_free()
 	investigation_only.queue_free()
+	bezos_only.queue_free()
 
 
 func _has_dossier_section(manager: Node, section_id: String) -> bool:

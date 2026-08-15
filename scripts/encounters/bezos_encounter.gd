@@ -2,10 +2,15 @@ extends Node
 
 signal finished
 
+const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
+
 var host: Node
 var player: CharacterBody2D
 var combat_portrait_paths: Dictionary
 var character_colors: Dictionary
+var dossier_manager: Node
+var battle_stage: Control
+var battle_result: Dictionary = {}
 
 var bezos_cinematic_active: bool = false
 var bezos_cinematic_seen: bool = false
@@ -53,7 +58,6 @@ const BEZOS_STAGE_DURATION := 2.0
 const BEZOS_SLIDE_IN_DURATION := 2.1
 const BEZOS_VS_DURATION := 2.0
 const BEZOS_FIGHT_DURATION := 4.2
-const BEZOS_COMBAT_DURATION := 10.0
 const BEZOS_DENIED_DURATION := 13.2
 const BEZOS_ROUND_HOLD := 1.9
 const BEZOS_KO_DELAY := 0.9
@@ -62,17 +66,19 @@ const BEZOS_DENIAL_REVEAL_DELAY := 1.9
 const BEZOS_SUBTITLE_REVEAL_DELAY := 1.6
 
 
-func setup(owner: Node, player_node: CharacterBody2D, portrait_paths: Dictionary, colors: Dictionary) -> void:
+func setup(owner: Node, player_node: CharacterBody2D, portrait_paths: Dictionary, colors: Dictionary, dossier: Node = null) -> void:
 	host = owner
 	player = player_node
 	combat_portrait_paths = portrait_paths
 	character_colors = colors
+	dossier_manager = dossier
 	_create_overlay()
 
 
 func start() -> void:
 	bezos_cinematic_seen = true
 	bezos_cinematic_active = true
+	battle_result.clear()
 	if bezos_cinematic_layer:
 		bezos_cinematic_layer.visible = true
 		if bezos_cinematic_root:
@@ -101,6 +107,7 @@ func _create_overlay() -> void:
 	bezos_cinematic_scanlines = ColorRect.new()
 	bezos_cinematic_scanlines.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bezos_cinematic_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bezos_cinematic_scanlines.z_index = 100
 	var sl_mat := ShaderMaterial.new()
 	var sl_sh := Shader.new()
 	sl_sh.code = "shader_type canvas_item;\nvoid fragment() { COLOR = vec4(0,0,0, step(1.4, mod(FRAGCOORD.y, 3.0)) * 0.15); }\n"
@@ -113,6 +120,13 @@ func _create_overlay() -> void:
 	bezos_cinematic_frame.size = BEZOS_CINEMATIC_FRAME_SIZE
 	bezos_cinematic_root.add_child(bezos_cinematic_frame)
 	bezos_cinematic_root.resized.connect(_layout_bezos_cinematic_frame)
+
+	battle_stage = BEZOS_BATTLE_STAGE_SCRIPT.new()
+	battle_stage.name = "PlayableBattleStage"
+	bezos_cinematic_frame.add_child(battle_stage)
+	battle_stage.call("setup")
+	battle_stage.connect("telemetry_changed", _on_battle_telemetry_changed)
+	battle_stage.connect("resolved", _on_battle_resolved)
 
 	# ═══ TOP HUD: HP bars + names + timer (SF2 style) ═══
 	# Symmetric: bars 480px each, 80px center gap for timer
@@ -244,7 +258,7 @@ func _create_overlay() -> void:
 	# Left Card: Bezos (Default Boss)
 	bezos_cinematic_left_card = _create_sf2_fighter_card(
 		"JEFF BEZOS", "B", Color(1.0, 1.0, 1.0), "FULFILLMENT PRIME",
-		"res://assets/mockups/bezos_combat_portrait.png")
+		"res://assets/mockups/bezos_portrait.png")
 	bezos_cinematic_left_card.visible = false
 	bezos_cinematic_frame.add_child(bezos_cinematic_left_card)
 
@@ -586,6 +600,8 @@ func _create_sf2_fighter_card(fighter_name: String, badge_text: String, accent: 
 	return card
 
 func _bezos_hide_all_ui() -> void:
+	if battle_stage:
+		battle_stage.call("stop")
 	for node in [bezos_cinematic_stage, bezos_cinematic_vs, bezos_cinematic_round,
 			bezos_cinematic_fight, bezos_cinematic_ko, bezos_cinematic_perfect,
 			bezos_cinematic_denial, bezos_cinematic_subtitle, bezos_cinematic_flash,
@@ -718,28 +734,40 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 		BezosCinematicState.COMBAT:
 			bezos_cinematic_stage.visible = false
 			bezos_cinematic_fight.visible = false
+			_bezos_show_hud()
 			bezos_cinematic_flash.visible = true
 			bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.6)
 			var tw_combat := create_tween()
 			tw_combat.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.15)
-			# Popup 1: top-right (doesn't cover HP bars at top, reads clearly)
-			tw_combat.tween_interval(0.5)
-			tw_combat.tween_callback(func(): _show_bezos_error_popup(0, Vector2(890, 80)))
-			# Popup 2: bottom-left, offset to not overlap popup 1
-			tw_combat.tween_interval(1.3)
-			tw_combat.tween_callback(func(): _show_bezos_error_popup(1, Vector2(30, 490)))
+			if battle_stage:
+				battle_stage.modulate = Color.WHITE
+				battle_stage.call("start")
 
 		BezosCinematicState.DENIED:
 			bezos_cinematic_fight.visible = false
+			var citizen_won := str(battle_result.get("outcome", "")) == "citizen_victory"
+			bezos_cinematic_perfect.text = "CITIZEN WINS" if citizen_won else "PERFECT"
+			bezos_cinematic_denial.text = (
+				"RESULT NOT RECOGNIZED\nBY TERMS OF SERVICE"
+				if citizen_won
+				else "DISPUTE RESOLVED\nBY TERMS OF SERVICE"
+			)
+			bezos_cinematic_subtitle.text = (
+				"Physical victory is not an accepted refund method.\nYour successful objection has been converted into account activity.\nEstimated recognition time: 4,700 years."
+				if citizen_won
+				else "Physical conflict has been replaced by fulfillment arbitration.\nYour complaint has been added to the queue.\nEstimated wait: 4,700 years."
+			)
 			# Flash = instant KO
 			bezos_cinematic_flash.visible = true
 			bezos_cinematic_flash.color = Color(1, 1, 1, 1.0)
 			var tw6 := create_tween()
 			tw6.tween_property(bezos_cinematic_flash, "color:a", 0.0, 0.55)
-			# Your HP drains to zero + timer drops to 00
-			# P2 bar: right edge fixed at 1158, left edge sweeps right (SF2 correct)
-			tw6.parallel().tween_property(bezos_cinematic_right_hp, "size:x", 0.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-			tw6.parallel().tween_property(bezos_cinematic_right_hp, "position:x", 1158.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+			# The mechanically defeated fighter drains here; the verdict follows later.
+			if citizen_won:
+				tw6.parallel().tween_property(bezos_cinematic_left_hp, "size:x", 0.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+			else:
+				tw6.parallel().tween_property(bezos_cinematic_right_hp, "size:x", 0.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+				tw6.parallel().tween_property(bezos_cinematic_right_hp, "position:x", 1158.0, 0.75).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 			tw6.parallel().tween_callback(func(): bezos_cinematic_timer_label.text = "00")
 			# Bottom bar (Prime Membership) drains too
 			var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
@@ -768,12 +796,14 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 				var tw8 := create_tween()
 				tw8.tween_property(bezos_cinematic_perfect, "modulate:a", 1.0, 0.35)
 			)
-			# Popup 3: post-PERFECT, center-ish — "Dispute Resolution Complete"
+			# Corporate software opens only after the physical result exists.
 			tw6.tween_interval(0.5)
-			tw6.tween_callback(func(): _show_bezos_error_popup(3, Vector2(460, 200)))
+			tw6.tween_callback(func(): _show_bezos_error_popup(1 if citizen_won else 3, Vector2(460, 200)))
 			# Pause, then dim + show denial
 			tw6.tween_interval(BEZOS_DENIAL_REVEAL_DELAY - 0.5)
 			tw6.tween_callback(func():
+				if battle_stage:
+					battle_stage.modulate.a = 0.24
 				bezos_cinematic_ko.visible = false
 				bezos_cinematic_perfect.visible = false
 				bezos_cinematic_left_bar.modulate.a = 0.15
@@ -829,63 +859,57 @@ func process_frame(delta: float) -> void:
 			if bezos_cinematic_timer >= BEZOS_FIGHT_DURATION:
 				_begin_bezos_cinematic_state(BezosCinematicState.COMBAT)
 		BezosCinematicState.COMBAT:
-			# Fake combat: timer counts down, player HP drains with hit jolts
-			var t := bezos_cinematic_timer
-			var progress := clampf(t / BEZOS_COMBAT_DURATION, 0.0, 1.0)
-			# Timer counts 99 → ~70 during combat
-			var timer_val: int = int(lerpf(99.0, 70.0, progress))
-			if bezos_cinematic_timer_label:
-				bezos_cinematic_timer_label.text = "%02d" % timer_val
-			# Player HP drains: 476px → ~120px (takes heavy hits)
-			# P2 bar drains SF2-correct: right edge fixed at x=1158, left edge advances right
-			if bezos_cinematic_right_hp:
-				var base_hp: float = lerpf(476.0, 120.0, progress)
-				var hit_cycle := fmod(t, 0.5)
-				var jitter := 0.0
-				if hit_cycle < 0.08:
-					jitter = -35.0  # sudden drop = "hit landed"
-				var new_w := maxf(base_hp + jitter, 0.0)
-				bezos_cinematic_right_hp.size.x = new_w
-				bezos_cinematic_right_hp.position.x = 1158.0 - new_w
-			# Bezos HP barely moves (he's untouchable)
-			if bezos_cinematic_left_hp:
-				bezos_cinematic_left_hp.size.x = lerpf(476.0, 468.0, progress)
-			# Hit flash every ~0.5s (offset from jitter)
-			var flash_cycle := fmod(t + 0.02, 0.5)
-			if flash_cycle < 0.06 and bezos_cinematic_flash:
-				bezos_cinematic_flash.visible = true
-				# Alternate flash colors: red (player hit) and yellow (blocked)
-				var hit_count := int(t / 0.5)
-				if hit_count % 2 == 0:
-					bezos_cinematic_flash.color = Color(1.0, 0.15, 0.05, 0.45)
-				else:
-					bezos_cinematic_flash.color = Color(1.0, 0.85, 0.2, 0.3)
-			elif bezos_cinematic_flash and bezos_cinematic_flash.color.a > 0.0:
-				bezos_cinematic_flash.color.a = maxf(bezos_cinematic_flash.color.a - delta * 6.0, 0.0)
-			# Screen shake: offset only the fixed 1280x720 frame
-			if bezos_cinematic_frame and fmod(t, 0.5) < 0.12:
-				var shake_x := randf_range(-3.0, 3.0)
-				var shake_y := randf_range(-2.0, 2.0)
-				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position + Vector2(shake_x, shake_y)
-			elif bezos_cinematic_frame:
-				bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-			# Bottom bar (Prime Membership) also drains slowly
-			if bezos_cinematic_frame:
-				var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP")
-				if bottom_hp:
-					bottom_hp.size.x = lerpf(476.0, 240.0, progress)
-			# Transition to DENIED (the devastating final blow)
-			if bezos_cinematic_timer >= BEZOS_COMBAT_DURATION:
-				if bezos_cinematic_frame:
-					bezos_cinematic_frame.position = bezos_cinematic_frame_base_position
-				_begin_bezos_cinematic_state(BezosCinematicState.DENIED)
+			if battle_stage:
+				battle_stage.call("process_frame", delta)
 		BezosCinematicState.DENIED:
 			# The fake victory and the corporate denial both need a readable pause.
 			if bezos_cinematic_timer >= BEZOS_DENIED_DURATION:
 				_begin_bezos_cinematic_state(BezosCinematicState.OUTRO)
 
+
+func _on_battle_telemetry_changed(citizen_hp: float, bezos_hp: float, legal_shield: float, seconds_left: int) -> void:
+	if bezos_cinematic_left_hp:
+		bezos_cinematic_left_hp.size.x = 476.0 * clampf(bezos_hp / 72.0, 0.0, 1.0)
+	if bezos_cinematic_right_hp:
+		var citizen_width := 476.0 * clampf(citizen_hp / 100.0, 0.0, 1.0)
+		bezos_cinematic_right_hp.size.x = citizen_width
+		bezos_cinematic_right_hp.position.x = 1158.0 - citizen_width
+	if bezos_cinematic_timer_label:
+		bezos_cinematic_timer_label.text = "%02d" % seconds_left
+	var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
+	if bottom_hp:
+		bottom_hp.size.x = 476.0 * clampf(legal_shield / 48.0, 0.0, 1.0)
+
+
+func _on_battle_resolved(result: Dictionary) -> void:
+	if bezos_cinematic_state != BezosCinematicState.COMBAT:
+		return
+	battle_result = result.duplicate(true)
+	if dossier_manager:
+		battle_result["profile_was_known"] = bool(dossier_manager.get("profile_discovered"))
+		var outcome := str(battle_result.get("outcome", "administrative_defeat"))
+		var tag := "physical-remedy-invalidated" if outcome == "citizen_victory" else "automated-dispute-endured"
+		var note := (
+			"Subject obtained a physical victory. Contractual recognition was withheld."
+			if outcome == "citizen_victory"
+			else "Subject remained in an automated dispute until the system declared resolution."
+		)
+		if dossier_manager.has_method("record_contest"):
+			dossier_manager.call(
+				"record_contest",
+				"contest:bezos_fulfillment",
+				"jeff_bezos",
+				tag,
+				note,
+				battle_result
+			)
+	_begin_bezos_cinematic_state(BezosCinematicState.DENIED)
+
 func _finish_bezos_cinematic() -> void:
 	bezos_cinematic_active = false
+	if battle_stage:
+		battle_stage.call("stop")
+		battle_stage.modulate = Color.WHITE
 	if bezos_cinematic_layer:
 		bezos_cinematic_layer.visible = false
 	if bezos_cinematic_root:

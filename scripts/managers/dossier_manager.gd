@@ -99,6 +99,10 @@ func record_anomaly(event_id: String, source: String, note: String, metadata: Di
 	return record_event(event_id, source, "anomaly", "data-invalid", note, "unresolved", metadata)
 
 
+func record_contest(event_id: String, source: String, tag: String, note: String, metadata: Dictionary = {}) -> bool:
+	return record_event(event_id, source, "contest", tag, note, "recorded", metadata)
+
+
 func record_profile_access(section_id: String = "citizen_dossier") -> bool:
 	var access_index := get_profile_access_count() + 1
 	var recorded := record_event(
@@ -127,6 +131,7 @@ func derive_traits() -> Dictionary:
 		"protocol_deviation": 0,
 		"investigative_curiosity": 0,
 		"profile_awareness": 0,
+		"procedural_persistence": 0,
 	}
 	for event in events:
 		if not event is Dictionary:
@@ -144,6 +149,10 @@ func derive_traits() -> Dictionary:
 				traits["investigative_curiosity"] += 1
 			"profile_access":
 				traits["profile_awareness"] += 1
+			"contest":
+				traits["procedural_persistence"] += 2
+				if str(event.get("tag", "")) == "physical-remedy-invalidated":
+					traits["procedural_resistance"] += 1
 	return traits
 
 
@@ -170,6 +179,24 @@ func derive_patterns() -> Array:
 	var shift := _derive_post_profile_shift()
 	if not shift.is_empty():
 		patterns.append(shift)
+	var contest_events := _events_in_category("contest")
+	if not contest_events.is_empty():
+		var contest: Dictionary = contest_events.back()
+		var metadata: Dictionary = contest.get("metadata", {})
+		if str(contest.get("tag", "")) == "physical-remedy-invalidated":
+			patterns.append({
+				"id": "remedy_without_recognition",
+				"title": "REMEDY / RECOGNITION DIVERGENCE",
+				"body": "Subject obtained a successful physical outcome after ordinary dispute channels became unavailable.",
+				"note": "The outcome was excluded. The method was retained.",
+			})
+		elif int(metadata.get("objection_count", 0)) > 0:
+			patterns.append({
+				"id": "dispute_endurance",
+				"title": "AUTOMATED DISPUTE ENDURANCE",
+				"body": "Subject continued objecting after the available remedy had become primarily decorative.",
+				"note": "Persistence and failure to understand the interface remain equally plausible.",
+			})
 	return patterns
 
 
@@ -356,6 +383,25 @@ func claim_claudia_observation() -> Dictionary:
 				"You allowed it to continue. The distinction between restraint and listening has been postponed.",
 			],
 		})
+	if _has_event("contest:bezos_fulfillment"):
+		var contest_event := _event_with_id("contest:bezos_fulfillment")
+		var contest_metadata: Dictionary = contest_event.get("metadata", {})
+		if str(contest_event.get("tag", "")) == "physical-remedy-invalidated":
+			candidates.append({
+				"id": "claudia_bezos_invalidated_victory",
+				"lines": [
+					"You defeated Bezos. The result then defeated you.",
+					"The system has preserved the second outcome as more procedurally mature.",
+				],
+			})
+		elif int(contest_metadata.get("objection_count", 0)) >= 2:
+			candidates.append({
+				"id": "claudia_bezos_objections",
+				"lines": [
+					"You objected repeatedly after the dispute had stopped accepting objections.",
+					"I have filed this as persistence. The interface filed it as engagement.",
+				],
+			})
 
 	for candidate in candidates:
 		var observation_id := str(candidate.get("id", ""))
@@ -463,6 +509,12 @@ func _recorded_activity_lines() -> Array:
 				lines.append("ROUTE EXCEPTION REGISTERED\nMovement continued outside case instructions.")
 			"anomaly":
 				lines.append("LOCATION RECORD AMENDED\nAt least one entry could not be reconciled.")
+			"contest":
+				var contest_metadata: Dictionary = event.get("metadata", {})
+				if str(event.get("tag", "")) == "physical-remedy-invalidated":
+					lines.append("COMMERCIAL DISPUTE COMPLETED\nPhysical remedy obtained. Recognition withheld.\nMethod retained for behavioural review.")
+				else:
+					lines.append("COMMERCIAL DISPUTE CLOSED\n%d objections retained as engagement data." % int(contest_metadata.get("objection_count", 0)))
 	if lines.is_empty():
 		lines.append("No citizen-facing activity is currently available.")
 	return lines
@@ -542,6 +594,13 @@ func _has_event(event_id: String) -> bool:
 		if event is Dictionary and str(event.get("event_id", "")) == event_id:
 			return true
 	return false
+
+
+func _event_with_id(event_id: String) -> Dictionary:
+	for event in events:
+		if event is Dictionary and str(event.get("event_id", "")) == event_id:
+			return event
+	return {}
 
 
 func _has_tag(tag: String) -> bool:

@@ -623,12 +623,10 @@
     "optional": true,
     "quest_dialogue": {
       "lines": [
-        "Your dissatisfaction has been ESCALATED to the Dispute Resolution Dept.",
-        "That's me. I AM the department.",
+        "Your dissatisfaction has been ESCALATED to the Dispute Resolution Dept. That's me. I AM the department.",
         "Algorithmically, you already consented to this interaction when you entered the exclusion zone.",
         "I am not here to sign your form. I am here to optimize your existence. In legacy terms: you are fired from the physical world.",
-        "Terms of Service §47, clause 'Existence': Absolute compliance is required for continued operation.",
-        "Dispute status: RESOLVED. TERMINATED."
+        "Physical arbitration authorized. Signatures and survival remain separate subscriptions."
       ]
     }
   }
