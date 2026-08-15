@@ -14,6 +14,8 @@ const AUTHORED_INTERIOR_PATHS := {
 	"eu_palace": "res://assets/interiors/berlaymont_transparency_maze_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
 	"vault": "res://assets/interiors/ecb_stability_vault_v1.png",
+	"red_command": "res://assets/interiors/red_command_harmonious_observation_v1.png",
+	"pyongyang_command": "res://assets/interiors/pyongyang_supreme_broadcast_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
 
@@ -87,6 +89,8 @@ func _run() -> void:
 		"eu_palace": ["ConsensusPodium", "ProceduralLoop", "GreenTransitionExhibit", "PortableGreenGenerator", "WestGlassCommittee", "EastGlassCommittee", "WestArchiveQueue", "EastArchiveQueue"],
 		"kremlin": ["LongConferenceTable", "BackupGenerator", "ContinuitySupplies"],
 		"vault": ["StabilityDesk", "WestLuxuryTier", "EastLuxuryTier", "WestAusterityMachinery", "EastAusterityMachinery"],
+		"red_command": ["ObservationDesk", "SubjectChair", "WestFirewallModel", "EastFirewallModel", "WestCameraArray", "EastCameraArray", "WestCensoredConsole", "EastCensoredConsole"],
+		"pyongyang_command": ["BroadcastDais", "WestSceneryMissile", "EastSceneryMissile", "WestProductionBank", "EastProductionBank", "WestAudienceBlock", "EastAudienceBlock", "RedPhoneReliquary", "BackstageDressingRoom"],
 		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
 	}
 	for room_key in AUTHORED_INTERIOR_PATHS:

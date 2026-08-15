@@ -23,6 +23,15 @@ The answer must be architectural and comic, not a collection of national props. 
 
 The contrasts are deliberate. Trump manufactures attention, Musk demonstrates unfinished inevitability, Ursula makes access visible but impossible, Putin hides the outside world, Lagarde places reassurance above its machinery, and Macron hides the inside damage.
 
+## Authored optional investigations
+
+Optional interiors use the same gameplay contract but expose a different kind of machine. They must feel consequential without becoming a second checklist of signature rooms.
+
+| Room | Apparent function | Interior machine | Visual joke |
+|---|---|---|---|
+| Xi / Harmonious Observation | A perfectly ordered continuity command | A symmetrical surveillance room in which every camera, cable and firewall model converges on one visitor chair | The screens are expensive and blank; the room gathers more information about its guest than about the outside world. |
+| Kim / Supreme Broadcast Command | A strategic missile-control center | A live television stage of painted mountains, supported missile flats, applause seating, cameras and theatrical wiring | The broadcast equipment is real; the missiles are scenery; the Red Phone is protected better than the command console. |
+
 ## Runtime contract
 
 - Authored backgrounds are opaque full-room images in `assets/interiors/`.
