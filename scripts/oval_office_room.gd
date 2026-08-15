@@ -13,6 +13,8 @@ const PROP_CRATE = preload("res://assets/packs/civic_nightmare/items_props/ninja
 const PROP_GOLD_CUP = preload("res://assets/packs/civic_nightmare/items_props/ninja/Treasure/GoldCup.png")
 
 const AUTHORED_INTERIOR_PATHS := {
+	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
+	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
@@ -169,8 +171,8 @@ func _theme_for_key(key: String) -> Dictionary:
 	match key:
 		"spaceship":
 			return {
-				"title": "STARLINK COMMAND",
-				"subtitle": "Orbital operations wing",
+				"title": "PERMANENT BETA",
+				"subtitle": "Private launch demonstration",
 				"floor_source": SRC_PROC,
 				"floor_tile": TILE_METAL_FLOOR,
 				"accent_source": SRC_PROC,
@@ -185,7 +187,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.04, 0.09, 0.18, 0.96),
 				"rug_glow": Color(0.26, 0.52, 0.88, 0.18),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 24),
+				"npc_position": Vector2(0, 14),
 				"desk_position": Vector2(0, -86),
 				"lights": [
 					{"pos": Vector2(-132, -182), "color": Color(0.48, 0.76, 1.0), "scale": 3.1, "energy": 0.34},
@@ -442,8 +444,8 @@ func _theme_for_key(key: String) -> Dictionary:
 			}
 		_:
 			return {
-				"title": "THE OVAL OFFICE",
-				"subtitle": "Executive residence",
+				"title": "THE OVAL STUDIO",
+				"subtitle": "Executive audience management",
 				"floor_source": SRC_INTERIOR_FLOOR,
 				"floor_tile": IF_OFFICE,
 				"accent_source": SRC_INTERIOR_FLOOR,
@@ -459,7 +461,7 @@ func _theme_for_key(key: String) -> Dictionary:
 				"rug_inner": Color(0.1, 0.17, 0.31, 0.92),
 				"rug_glow": Color(0.76, 0.64, 0.34, 0.2),
 				"spawn_position": Vector2(0, 168),
-				"npc_position": Vector2(0, 28),
+				"npc_position": Vector2(0, 58),
 				"desk_position": Vector2(0, -78),
 				"lights": [
 					{"pos": Vector2(-128, -182), "color": Color(0.72, 0.84, 1.0), "scale": 3.0, "energy": 0.28},
@@ -559,6 +561,20 @@ func _build_authored_background() -> bool:
 
 func _build_authored_obstacles() -> void:
 	match room_key:
+		"oval_office":
+			_create_barrier(Rect2(Vector2(-88, -60), Vector2(176, 102)), "ExecutiveBroadcastDesk")
+			_create_barrier(Rect2(Vector2(-160, -22), Vector2(64, 100)), "WestCameraNorth")
+			_create_barrier(Rect2(Vector2(94, -22), Vector2(68, 100)), "EastCameraNorth")
+			_create_barrier(Rect2(Vector2(-92, 58), Vector2(74, 116)), "WestCameraSouth")
+			_create_barrier(Rect2(Vector2(30, 58), Vector2(76, 116)), "EastCameraSouth")
+			_create_barrier(Rect2(Vector2(-282, -162), Vector2(92, 324)), "WestProductionWall")
+			_create_barrier(Rect2(Vector2(190, -162), Vector2(92, 334)), "EastProductionWall")
+		"spaceship":
+			_create_barrier(Rect2(Vector2(-110, -120), Vector2(220, 100)), "PrototypeCommandConsole")
+			_create_barrier(Rect2(Vector2(-226, -16), Vector2(100, 144)), "TestRocket")
+			_create_barrier(Rect2(Vector2(126, -14), Vector2(126, 112)), "PrototypeTable")
+			_create_barrier(Rect2(Vector2(-282, 126), Vector2(120, 100)), "UnfinishedTunnel")
+			_create_barrier(Rect2(Vector2(148, 96), Vector2(134, 136)), "HalfInstalledGlass")
 		"kremlin":
 			_create_barrier(Rect2(Vector2(-208, -112), Vector2(416, 88)), "LongConferenceTable")
 			_create_barrier(Rect2(Vector2(-280, 24), Vector2(118, 140)), "BackupGenerator")

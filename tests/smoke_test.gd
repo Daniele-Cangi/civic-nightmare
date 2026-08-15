@@ -9,6 +9,8 @@ const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.g
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
+	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
+	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
 	"kremlin": "res://assets/interiors/kremlin_continuity_command_v1.png",
 	"elysee": "res://assets/interiors/elysee_managed_decline_v1.png"
 }
@@ -78,6 +80,8 @@ func _run() -> void:
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	var authored_obstacles := {
+		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
+		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
 		"kremlin": ["LongConferenceTable", "BackupGenerator", "ContinuitySupplies"],
 		"elysee": ["CeremonialDesk", "ConcealedRestoration", "DeferredMaintenance"]
 	}
