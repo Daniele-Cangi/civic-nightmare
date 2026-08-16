@@ -10,6 +10,7 @@ const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
 const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
+const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -257,7 +258,20 @@ func _run() -> void:
 	var world_spawn_points: Dictionary = room_manager.get("world_spawn_points") if room_manager else {}
 	var xi_exit_position: Vector2 = world_spawn_points.get("red_command_exterior", Vector2.ZERO)
 	_check(xi_exit_position.is_equal_approx(Vector2(16.0, -896.0)), "exiting Xi returns the player south of the gate trigger")
-	_check(game.get_node_or_null("Entities/NuclearPlantEntrance") != null, "nuclear plant landmark is created")
+	var inference_reactor := game.get_node_or_null("Entities/NuclearPlantEntrance") as Node2D
+	_check(inference_reactor != null, "inference reactor landmark is created")
+	if inference_reactor:
+		var reactor_sprite := inference_reactor.get_node_or_null("NuclearPlantLandmark") as Sprite2D
+		var reactor_door := inference_reactor.get_node_or_null("NeuralCoreDoor") as Area2D
+		var reactor_collision := inference_reactor.get_node_or_null("InferenceReactorCollision") as StaticBody2D
+		_check(str(inference_reactor.get_meta("asset_path", "")) == INFERENCE_REACTOR_PATH, "Sam uses the authored inference reactor asset")
+		_check(reactor_sprite != null and reactor_sprite.texture != null, "the inference reactor sprite is mounted")
+		if reactor_sprite and reactor_sprite.texture:
+			_check(reactor_sprite.texture.get_size() == Vector2(480.0, 320.0), "the inference reactor asset is runtime-sized")
+			_check(reactor_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the inference reactor retains its HD filtering")
+		_check(reactor_door != null and str(reactor_door.get("destination")) == "neural_core", "the single demonstration entrance enters Sam's neural core")
+		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
+		_check(reactor_collision != null and reactor_collision.get_child_count() == 3, "the inference reactor collision follows its upper mass and service wings")
 	_check(hidden_bunker != null, "hidden bunker landmark is created")
 	_check(game.get_node_or_null("Entities/PyongyangEntrance") != null, "Pyongyang landmark is created")
 	if ufo_encounter:
