@@ -60,7 +60,7 @@ Trump, Musk, Ursula, Lagarde, and Macron currently rely on facade, contact, and 
 
 `scripts/managers/authority_world_patch_builder.gd` owns patch profiles, collision rows, facade composition, ground contact, and optional physical motifs. `main.gd` supplies each existing building specification, registers returned collision cells, and continues to coordinate rooms, NPCs, paths, and story systems.
 
-`WorldLandmarkBuilder` remains responsible for optional static landmarks such as the Great Wall, bunker, nuclear plant, and Pyongyang. Bezos currently enters the overworld as a drone encounter, not a stable landmark; a future Fulfillment Cathedral requires its own world-location decision before it can receive a patch.
+`WorldLandmarkBuilder` remains responsible for optional static landmarks such as the Great Wall, bunker, nuclear plant, and Pyongyang. Xi's wall is the border-scale exception: its transparent raster begins at the north-west world bound, spans the complete map width, owns two physical wall-wing colliders, and exposes one central doorway. Bezos currently enters the overworld as a drone encounter, not a stable landmark; a future Fulfillment Cathedral requires its own world-location decision before it can receive a patch.
 
 ## Adding a patch
 

@@ -98,7 +98,7 @@ const LANDMARK_SPRITE_PATHS := {
 	"christine_lagarde": "res://assets/mockups/landmark_lagarde.png",
 	"vladimir_putin": "res://assets/mockups/landmark_putin.png",
 	"emmanuel_macron": "res://assets/mockups/landmark_macron_ruined.png",
-	"xi_jinping": "res://assets/mockups/landmark_great_wall.png",
+	"xi_jinping": "res://assets/landmarks/northern_great_wall_v1.png",
 	"sam_altman": "res://assets/mockups/landmark_nuclear_plant.png",
 	"pyongyang": "res://assets/mockups/landmark_pyongyang.png"
 }
