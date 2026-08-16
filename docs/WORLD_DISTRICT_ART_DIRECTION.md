@@ -5,7 +5,7 @@
 - Final asset: `assets/backgrounds/world_district_plate_v2.png`.
 - Runtime size: 2176×2048 px, exactly matching the overworld bounds.
 - Placement: centered at world origin, nearest-neighbour filtered, `z=-10`.
-- Authority alignment contract: visible facade centers sit near world coordinates `x = ±528` and `y = -683 / 0 / 683`, the centers of the plate's six panels. Logical building centers vary slightly by facade because image heights and doorway offsets differ; runtime placement keeps facade, collision, entrance, NPC, light, and route together.
+- Authority alignment contract: visible facade centers sit at world coordinates `x = ±592` and `y = -683 / 0 / 683`. The plate's central corridor runs approximately from source `x=976` to `x=1200`, placing the geometric centres of its two columns near world `x=±600`; the tile-aligned runtime positions therefore miss those centres by only 8 px. Runtime placement keeps facade, collision, entrance, NPC, light, and route together.
 - All six authorities have bespoke collision footprints matched to the visible lower mass of their facade sprites; their obsolete procedural silhouettes are not retained invisibly.
 - The plate is fully opaque and collision-neutral. It supplies visible civic paving; `AuthorityWorldPatchBuilder` adds the local terrain seam, approach motif, facade, and collision while the remaining props and triggers stay runtime-owned layers.
 - The field atlas remains a fallback only; its opaque center cells are used if the plate cannot load.
