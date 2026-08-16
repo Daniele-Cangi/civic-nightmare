@@ -5,7 +5,8 @@ const LAYER_DECOR := 1
 const NORTHERN_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const LEGACY_GREAT_WALL_PATH := "res://assets/mockups/landmark_great_wall.png"
 const NORTHERN_WALL_HEIGHT := 448.0
-const NORTHERN_WALL_COLLISION_Y := 396.0
+const NORTHERN_WALL_FRONT_Y := 403.0
+const NORTHERN_GATE_OVERHANG := 48.0
 const NORTHERN_GATE_HALF_WIDTH := 64.0
 
 var entities_layer: Node2D
@@ -28,7 +29,12 @@ func create_great_wall(world_bounds: Rect2, entrance_tile: Vector2i) -> void:
 
 	var root := Node2D.new()
 	root.name = "GreatWallEntrance"
-	root.position = world_bounds.position
+	# Anchor the wall's front line to the north boundary. The wall mass remains
+	# outside the playable map; only the central gate projects into the avenue.
+	root.position = Vector2(
+		world_bounds.position.x,
+		world_bounds.position.y - NORTHERN_WALL_FRONT_Y
+	)
 	root.z_index = 2
 	root.add_to_group("northern_perimeter_landmark")
 	root.set_meta("asset_path", NORTHERN_WALL_PATH)
@@ -46,7 +52,14 @@ func create_great_wall(world_bounds: Rect2, entrance_tile: Vector2i) -> void:
 	)
 	root.add_child(sprite)
 
-	var gate_local := _tile_to_body_position(entrance_tile) - world_bounds.position + Vector2(0.0, 20.0)
+	# The district plate's boulevard is visually centered at world x = 0, while
+	# tile-body positions carry a 16 px cell-center offset. Use the world axis so
+	# the authored arch and its trigger share the exact visible road center.
+	var gate_world := Vector2(
+		world_bounds.position.x + world_bounds.size.x * 0.5,
+		world_bounds.position.y + NORTHERN_GATE_OVERHANG
+	)
+	var gate_local := gate_world - root.position
 	root.set_meta("gate_world_position", root.position + gate_local)
 	_add_northern_wall_collision(root, gate_local.x, world_bounds.size.x)
 	_add_landmark_entry_trigger(
@@ -93,8 +106,8 @@ func _add_northern_wall_collision(parent: Node2D, gate_x: float, wall_width: flo
 	var left_width := maxf(gate_x - NORTHERN_GATE_HALF_WIDTH, 0.0)
 	var right_start := minf(gate_x + NORTHERN_GATE_HALF_WIDTH, wall_width)
 	var right_width := maxf(wall_width - right_start, 0.0)
-	_add_collision_rect(collision, "WestWall", Vector2(left_width * 0.5, NORTHERN_WALL_COLLISION_Y), Vector2(left_width, 48.0))
-	_add_collision_rect(collision, "EastWall", Vector2(right_start + right_width * 0.5, NORTHERN_WALL_COLLISION_Y), Vector2(right_width, 48.0))
+	_add_collision_rect(collision, "WestWall", Vector2(left_width * 0.5, NORTHERN_WALL_FRONT_Y), Vector2(left_width, 48.0))
+	_add_collision_rect(collision, "EastWall", Vector2(right_start + right_width * 0.5, NORTHERN_WALL_FRONT_Y), Vector2(right_width, 48.0))
 
 
 func _add_collision_rect(parent: StaticBody2D, shape_name: String, position: Vector2, size: Vector2) -> void:

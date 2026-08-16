@@ -10,6 +10,7 @@ from PIL import Image
 
 
 CANVAS_SIZE = (2176, 448)
+GATE_ALIGNMENT_SHIFT = 19
 
 
 def _remove_magenta_matte(image: Image.Image) -> Image.Image:
@@ -43,6 +44,20 @@ def normalize(source: Path, destination: Path) -> None:
         CANVAS_SIZE,
         Image.Resampling.LANCZOS,
     ).convert("RGBA")
+    # The generated arch sits 19 px to the right of the district plate's true
+    # boulevard axis. Shift the composition left while stretching only a thin
+    # slice at the far-right wall wing so the perimeter still reaches both map
+    # edges without introducing a transparent seam.
+    width, height = CANVAS_SIZE
+    aligned = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
+    aligned.paste(subject.crop((GATE_ALIGNMENT_SHIFT, 0, width, height)), (0, 0))
+    tail = subject.crop((width - GATE_ALIGNMENT_SHIFT, 0, width, height))
+    tail = tail.convert("RGBa").resize(
+        (GATE_ALIGNMENT_SHIFT * 2, height),
+        Image.Resampling.LANCZOS,
+    ).convert("RGBA")
+    aligned.paste(tail, (width - GATE_ALIGNMENT_SHIFT * 2, 0))
+    subject = aligned
     subject = _remove_magenta_matte(subject)
     subject.putdata([
         (0, 0, 0, 0) if alpha <= 4 else (red, green, blue, alpha)
