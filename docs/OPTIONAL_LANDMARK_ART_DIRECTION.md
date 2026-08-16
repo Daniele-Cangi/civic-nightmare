@@ -2,6 +2,8 @@
 
 Optional landmarks use the same elevated frontal/orthographic camera and modern illustrated finish as the authority facades, but each silhouette must communicate its own joke before the player enters it. They are authored as transparent runtime-sized cutouts with one visually unambiguous entrance and collision shapes derived from the final image.
 
+Kim and Sam now share a dedicated optional exterior rather than floating independently in the main district. Its environmental logic, gate, exact placement and generation prompts are documented in the [Southern Administrative Annex art direction](SOUTHERN_ANNEX_ART_DIRECTION.md).
+
 ## Sam Altman — inference reactor
 
 The public entrance is a tiny, immaculate keynote pavilion. It is overwhelmed by the physical cost of the promise: old generators, improvised cooling, domestic air conditioners, tarped servers, hoses, cables and a single inadequate solar panel. The glowing inference core is staged like an oracle.

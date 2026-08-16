@@ -8,6 +8,7 @@ const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v
 const LEGACY_NUCLEAR_PLANT_PATH := "res://assets/mockups/landmark_nuclear_plant.png"
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const LEGACY_PYONGYANG_PATH := "res://assets/mockups/landmark_pyongyang.png"
+const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
 const NORTHERN_WALL_HEIGHT := 448.0
 const NORTHERN_WALL_FRONT_Y := 403.0
 const NORTHERN_GATE_OVERHANG := 48.0
@@ -159,6 +160,46 @@ func create_nuclear_plant(tile: Vector2i) -> void:
 	_add_collision_rect(collision, "EastCoolingWing", Vector2(151.0, -55.0), Vector2(178.0, 80.0))
 
 	_add_landmark_entry_trigger(root, "NeuralCoreDoor", Vector2(0.0, -42.0), Vector2(92.0, 54.0), "neural_core", "EntryMarker", "Demonstration Entrance")
+
+
+func create_southern_annex_gate(tile: Vector2i) -> void:
+	if not ResourceLoader.exists(SOUTHERN_ANNEX_GATE_PATH):
+		return
+	var texture := load(SOUTHERN_ANNEX_GATE_PATH) as Texture2D
+	if texture == null or texture.get_size() != Vector2(576.0, 288.0):
+		return
+
+	var root := Node2D.new()
+	root.name = "SouthernAnnexGate"
+	# The district plate is centered on x=0. Anchor the gate to that axis and
+	# let its lower edge meet the authored southern boundary.
+	root.position = Vector2(0.0, float(tile.y * 32))
+	root.z_index = 2
+	root.set_meta("asset_path", SOUTHERN_ANNEX_GATE_PATH)
+	entities_layer.add_child(root)
+
+	var sprite := Sprite2D.new()
+	sprite.name = "SouthernAnnexGateLandmark"
+	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.position = Vector2(0.0, -144.0)
+	root.add_child(sprite)
+
+	var collision := StaticBody2D.new()
+	collision.name = "SouthernAnnexGateCollision"
+	root.add_child(collision)
+	_add_collision_rect(collision, "WestCheckpoint", Vector2(-202.0, -72.0), Vector2(172.0, 136.0))
+	_add_collision_rect(collision, "EastCheckpoint", Vector2(202.0, -72.0), Vector2(172.0, 136.0))
+
+	_add_landmark_entry_trigger(
+		root,
+		"SouthernAnnexPassage",
+		Vector2(0.0, -55.0),
+		Vector2(132.0, 72.0),
+		"southern_annex",
+		"NorthEntry",
+		"Southern Administrative Annex"
+	)
 
 
 func _create_legacy_nuclear_plant(tile: Vector2i) -> void:

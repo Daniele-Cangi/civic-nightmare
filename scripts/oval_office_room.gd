@@ -67,6 +67,8 @@ const INTERIOR_NPC_VISIBLE_HEIGHT := 116.0
 @export var room_key := "oval_office"
 @export var character_id := "donald_trump"
 @export var character_name := "Donald Trump"
+@export var exit_destination := "world"
+@export var exit_spawn_marker := ""
 
 @onready var room_map: TileMap = $RoomMap
 @onready var entities: Node2D = $Entities
@@ -1661,8 +1663,8 @@ func _create_exit_door() -> void:
 	door.monitorable = true
 	door.position = Vector2(0, 228)
 	door.set_script(DOORWAY_SCRIPT)
-	door.set("destination", "world")
-	door.set("spawn_marker", "%s_exterior" % room_key)
+	door.set("destination", exit_destination)
+	door.set("spawn_marker", exit_spawn_marker if exit_spawn_marker != "" else "%s_exterior" % room_key)
 	door.set("prompt_name", "Beam Out" if room_key == "ufo_lab" else "Exit")
 	var col = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
