@@ -8,6 +8,8 @@ const PYONGYANG_LANDMARK_POSITION := Vector2(352.0, 640.0)
 const NEURAL_CORE_LANDMARK_POSITION := Vector2(1184.0, 640.0)
 const PYONGYANG_ACCESS_POSITION := Vector2(272.0, 700.0)
 const NEURAL_CORE_ACCESS_POSITION := Vector2(1184.0, 700.0)
+const PYONGYANG_ART_OFFSET := Vector2(-80.0, 95.0)
+const NEURAL_CORE_ART_OFFSET := Vector2(0.0, 102.0)
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var interactables: Node2D = $Interactables
@@ -73,12 +75,18 @@ func _build_landmarks() -> void:
 	var pyongyang := entities.get_node_or_null("PyongyangEntrance") as Node2D
 	if pyongyang:
 		pyongyang.position = PYONGYANG_LANDMARK_POSITION
+		var pyongyang_art := pyongyang.get_node_or_null("PyongyangLandmark") as Sprite2D
+		if pyongyang_art:
+			pyongyang_art.position += PYONGYANG_ART_OFFSET
 		var pyongyang_door := pyongyang.get_node_or_null("PyongyangCannonDoor") as Area2D
 		if pyongyang_door:
 			pyongyang_door.position = PYONGYANG_ACCESS_POSITION - PYONGYANG_LANDMARK_POSITION
 	var neural_core := entities.get_node_or_null("NuclearPlantEntrance") as Node2D
 	if neural_core:
 		neural_core.position = NEURAL_CORE_LANDMARK_POSITION
+		var neural_core_art := neural_core.get_node_or_null("NuclearPlantLandmark") as Sprite2D
+		if neural_core_art:
+			neural_core_art.position += NEURAL_CORE_ART_OFFSET
 		var neural_core_door := neural_core.get_node_or_null("NeuralCoreDoor") as Area2D
 		if neural_core_door:
 			neural_core_door.position = NEURAL_CORE_ACCESS_POSITION - NEURAL_CORE_LANDMARK_POSITION
