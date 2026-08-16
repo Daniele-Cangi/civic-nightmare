@@ -9,6 +9,7 @@
 - The complete compound moves as one unit: facade, contact shadow, collision footprint, entrance, NPC, light, and optional physical motif.
 - The plate is fully opaque and collision-neutral. It supplies flat traversable civic surfaces and the visible perimeter treatment; runtime systems continue to own navigation and collision.
 - Legacy 32 px trees, bushes, flowers, rocks, and border tiles are suppressed whenever the HD plate loads. Invisible edge collision remains active, and the legacy decoration path remains available only as the missing-asset fallback.
+- The north edge is intentionally no longer neutral ground: Xi's full-width Great Wall begins exactly at the map boundary and converts the central boulevard into its only visible administrative gate.
 - No procedural carpet, runway, queue, or colored route is painted over the authored plazas.
 
 ## Visual standard

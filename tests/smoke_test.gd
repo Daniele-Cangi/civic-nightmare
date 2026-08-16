@@ -9,6 +9,7 @@ const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
+const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -222,9 +223,31 @@ func _run() -> void:
 			_check(str(configured_scenes[10]) == "\"still here\"", "final credits include the margin note")
 		ending_sequence.call("configure_final_credits", 0, "")
 		_check(str((ending_sequence.get("ending_scenes") as Array)[10]) == "[left blank]", "final credits preserve a blank margin")
-	_check(game.get_node_or_null("Entities/GreatWallEntrance") != null, "Great Wall landmark is created")
+	var great_wall := game.get_node_or_null("Entities/GreatWallEntrance") as Node2D
+	_check(great_wall != null, "Great Wall landmark is created")
+	if great_wall:
+		var wall_sprite := great_wall.get_node_or_null("NorthernGreatWall") as Sprite2D
+		var central_gate := great_wall.get_node_or_null("GreatWallCentralGate") as Area2D
+		var wall_collision := great_wall.get_node_or_null("NorthernWallCollision") as StaticBody2D
+		var wall_bounds: Rect2 = great_wall.get_meta("world_bounds", Rect2())
+		var gate_world_position: Vector2 = great_wall.get_meta("gate_world_position", Vector2.ZERO)
+		_check(str(great_wall.get_meta("asset_path", "")) == NORTHERN_GREAT_WALL_PATH, "Xi uses the authored northern perimeter asset")
+		_check(great_wall.position.is_equal_approx(Vector2(-1088.0, -1024.0)), "the Great Wall begins at the north-west map boundary")
+		_check(wall_bounds.size.is_equal_approx(Vector2(2176.0, 2048.0)), "the Great Wall owns the complete overworld width contract")
+		_check(wall_sprite != null and wall_sprite.texture != null, "the full-width northern wall sprite is mounted")
+		if wall_sprite and wall_sprite.texture:
+			_check(wall_sprite.texture.get_size() == Vector2(2176.0, 448.0), "the northern wall asset is runtime-sized")
+			_check(not wall_sprite.centered, "the northern wall is top-left anchored to the map boundary")
+		_check(central_gate != null and str(central_gate.get("destination")) == "red_command", "the single central gate enters Xi's command room")
+		_check(wall_collision != null and wall_collision.get_child_count() == 2, "wall wings are solid while the central passage remains open")
+		_check(gate_world_position.is_equal_approx(Vector2(16.0, -604.0)), "the Xi entrance is aligned to the central boulevard")
+	var hidden_bunker := game.get_node_or_null("Entities/HiddenBunkerEntrance") as Node2D
+	_check(hidden_bunker != null and hidden_bunker.position.y > -576.0, "the classified bunker no longer interrupts the northern perimeter")
+	var world_spawn_points: Dictionary = room_manager.get("world_spawn_points") if room_manager else {}
+	var xi_exit_position: Vector2 = world_spawn_points.get("red_command_exterior", Vector2.ZERO)
+	_check(xi_exit_position.is_equal_approx(Vector2(16.0, -544.0)), "exiting Xi returns the player south of the gate trigger")
 	_check(game.get_node_or_null("Entities/NuclearPlantEntrance") != null, "nuclear plant landmark is created")
-	_check(game.get_node_or_null("Entities/HiddenBunkerEntrance") != null, "hidden bunker landmark is created")
+	_check(hidden_bunker != null, "hidden bunker landmark is created")
 	_check(game.get_node_or_null("Entities/PyongyangEntrance") != null, "Pyongyang landmark is created")
 	if ufo_encounter:
 		_check(ufo_encounter.get("ufo_root") != null, "UFO world node is created")

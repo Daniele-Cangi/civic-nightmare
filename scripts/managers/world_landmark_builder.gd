@@ -2,6 +2,11 @@ extends Node
 
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const LAYER_DECOR := 1
+const NORTHERN_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
+const LEGACY_GREAT_WALL_PATH := "res://assets/mockups/landmark_great_wall.png"
+const NORTHERN_WALL_HEIGHT := 448.0
+const NORTHERN_WALL_COLLISION_Y := 396.0
+const NORTHERN_GATE_HALF_WIDTH := 64.0
 
 var entities_layer: Node2D
 var ground_map: TileMap
@@ -12,11 +17,52 @@ func setup(world_entities_layer: Node2D, world_ground_map: TileMap) -> void:
 	ground_map = world_ground_map
 
 
-func create_great_wall(tile: Vector2i) -> void:
-	_clear_decor_patch(tile, 4, 3)
+func create_great_wall(world_bounds: Rect2, entrance_tile: Vector2i) -> void:
+	if not ResourceLoader.exists(NORTHERN_WALL_PATH):
+		_create_legacy_great_wall(entrance_tile + Vector2i(0, -4))
+		return
+	var texture := load(NORTHERN_WALL_PATH) as Texture2D
+	if texture == null or texture.get_width() <= 0 or texture.get_height() <= 0:
+		_create_legacy_great_wall(entrance_tile + Vector2i(0, -4))
+		return
 
-	var tex_path = "res://assets/mockups/landmark_great_wall.png"
-	if not ResourceLoader.exists(tex_path):
+	var root := Node2D.new()
+	root.name = "GreatWallEntrance"
+	root.position = world_bounds.position
+	root.z_index = 2
+	root.add_to_group("northern_perimeter_landmark")
+	root.set_meta("asset_path", NORTHERN_WALL_PATH)
+	root.set_meta("world_bounds", world_bounds)
+	entities_layer.add_child(root)
+
+	var sprite := Sprite2D.new()
+	sprite.name = "NorthernGreatWall"
+	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.centered = false
+	sprite.scale = Vector2(
+		world_bounds.size.x / float(texture.get_width()),
+		NORTHERN_WALL_HEIGHT / float(texture.get_height())
+	)
+	root.add_child(sprite)
+
+	var gate_local := _tile_to_body_position(entrance_tile) - world_bounds.position + Vector2(0.0, 20.0)
+	root.set_meta("gate_world_position", root.position + gate_local)
+	_add_northern_wall_collision(root, gate_local.x, world_bounds.size.x)
+	_add_landmark_entry_trigger(
+		root,
+		"GreatWallCentralGate",
+		gate_local,
+		Vector2(96.0, 56.0),
+		"red_command",
+		"EntryMarker",
+		"Harmonious Gate"
+	)
+
+
+func _create_legacy_great_wall(tile: Vector2i) -> void:
+	_clear_decor_patch(tile, 4, 3)
+	if not ResourceLoader.exists(LEGACY_GREAT_WALL_PATH):
 		return
 
 	var root := Node2D.new()
@@ -25,19 +71,40 @@ func create_great_wall(tile: Vector2i) -> void:
 	root.z_index = 2
 	entities_layer.add_child(root)
 
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
+	var texture := load(LEGACY_GREAT_WALL_PATH) as Texture2D
+	var sprite := Sprite2D.new()
 	sprite.name = "GreatWallLandmark"
-	sprite.texture = tex
+	sprite.texture = texture
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.5)
+	sprite.offset = Vector2(0, -texture.get_height() * 0.5)
 	sprite.scale = Vector2(0.38, 0.38)
 	root.add_child(sprite)
 
 	_add_landmark_entry_trigger(root, "GreatWallDoorLeft", Vector2(-82, -40), Vector2(92, 86), "red_command", "EntryMarker", "Wall Gate")
 	_add_landmark_entry_trigger(root, "GreatWallDoorCenter", Vector2(2, -156), Vector2(72, 62), "red_command", "EntryMarker", "Wall Gate")
 	_add_landmark_entry_trigger(root, "GreatWallDoorRight", Vector2(76, -106), Vector2(92, 96), "red_command", "EntryMarker", "Wall Gate")
+
+
+func _add_northern_wall_collision(parent: Node2D, gate_x: float, wall_width: float) -> void:
+	var collision := StaticBody2D.new()
+	collision.name = "NorthernWallCollision"
+	parent.add_child(collision)
+
+	var left_width := maxf(gate_x - NORTHERN_GATE_HALF_WIDTH, 0.0)
+	var right_start := minf(gate_x + NORTHERN_GATE_HALF_WIDTH, wall_width)
+	var right_width := maxf(wall_width - right_start, 0.0)
+	_add_collision_rect(collision, "WestWall", Vector2(left_width * 0.5, NORTHERN_WALL_COLLISION_Y), Vector2(left_width, 48.0))
+	_add_collision_rect(collision, "EastWall", Vector2(right_start + right_width * 0.5, NORTHERN_WALL_COLLISION_Y), Vector2(right_width, 48.0))
+
+
+func _add_collision_rect(parent: StaticBody2D, shape_name: String, position: Vector2, size: Vector2) -> void:
+	var shape_node := CollisionShape2D.new()
+	shape_node.name = shape_name
+	shape_node.position = position
+	var rectangle := RectangleShape2D.new()
+	rectangle.size = size
+	shape_node.shape = rectangle
+	parent.add_child(shape_node)
 
 
 func create_nuclear_plant(tile: Vector2i) -> void:

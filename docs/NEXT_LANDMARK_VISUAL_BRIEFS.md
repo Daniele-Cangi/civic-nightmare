@@ -35,7 +35,7 @@ Keep the strong factory/launch silhouette, but make its unfinished present infec
 
 ### Xi — harmonious access control
 
-Replace the current small isometric wall cutout with a frontal/orthographic border-and-observation complex authored for the world plate. A monumental gate, repeated screening arches, cameras, red ceremonial rhythm, perfectly clipped landscaping, and lanes that appear welcoming while routing every visitor through inspection should form one coherent patch. The joke is frictionless harmony implemented as total observation.
+Implemented as the complete north perimeter rather than a landmark placed inside the map. A continuous historic wall now meets both world edges; cameras, scanners, cable conduits and controlled lighting convert it into a literal administrative firewall. A Tiananmen-inspired red state gate sits on the exact central boulevard, with one open passage into `red_command`. The joke is frictionless harmony implemented as total observation.
 
 ### Kim Jong Un — supreme production value
 
@@ -45,12 +45,10 @@ Preserve the barbecue-cannon as the hero joke, but give it a theatrical military
 
 Reframe the nuclear plant as an inference reactor whose immaculate demonstration entrance hides improvised infrastructure. Fiber bundles feed old industrial pipes, redundant cooling units sit beside presentation lighting, emergency equipment remains packaged for investors, and the safe public route is clearly staged over a denser operational mess. The joke is confident alignment language powered by a system assembled faster than its consequences can be understood.
 
-## Production order
+## Remaining production order
 
-1. Putin proves the raster-prop world-patch grammar.
-2. Lagarde and Musk apply it to existing required-signature facades.
-3. Sam proves the grammar on an optional investigation structure.
-4. Kim expands one strong hero prop into a complete location.
-5. Xi receives the only full projection and asset rebuild in this batch.
+1. Sam proves the updated grammar on an optional investigation structure.
+2. Kim expands one strong hero prop into a complete location.
+3. Review those two against Xi's completed border-scale rebuild before propagating further.
 
 Each step receives an in-game screenshot review before the next one inherits its visual rules.

@@ -240,14 +240,13 @@ const WORLD_MAX_Y := 32
 const BUILDING_CLEARANCE := 10
 const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
-const GREAT_WALL_TILE := Vector2i(0, -24)
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -20)
 const NUCLEAR_PLANT_TILE := Vector2i(0, 28)
 const UFO_TILE := Vector2i(30, -6)
 const UFO_FLOAT_OFFSET := Vector2(0, -24)
 const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
-const HIDDEN_BUNKER_TILE := Vector2i(-29, -27)
+const HIDDEN_BUNKER_TILE := Vector2i(-30, -11)
 const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
 const PYONGYANG_TILE := Vector2i(-31, 16)
 
@@ -439,7 +438,13 @@ func _ready() -> void:
 	_setup_interiors()
 	_remove_world_npcs()
 	_setup_world_landmark_builder()
-	world_landmark_builder.create_great_wall(GREAT_WALL_TILE)
+	world_landmark_builder.create_great_wall(
+		Rect2(
+			Vector2(WORLD_MIN_X * 32, WORLD_MIN_Y * 32),
+			Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, (WORLD_MAX_Y - WORLD_MIN_Y) * 32)
+		),
+		GREAT_WALL_APPROACH_TILE
+	)
 	world_landmark_builder.create_nuclear_plant(NUCLEAR_PLANT_TILE)
 	_setup_ufo_encounter()
 	_setup_bezos_drone_encounter()
@@ -643,7 +648,7 @@ func _setup_interiors() -> void:
 			"character_id": "xi_jinping",
 			"character_name": "Xi Jinping",
 			"spawn_marker": "red_command_exterior",
-			"world_position": _tile_to_actor_position(GREAT_WALL_TILE + Vector2i(0, 3))
+			"world_position": _tile_to_actor_position(GREAT_WALL_APPROACH_TILE + Vector2i(0, 3))
 		},
 		{
 			"key": "pyongyang_command",
