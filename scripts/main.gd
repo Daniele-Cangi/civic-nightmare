@@ -19,6 +19,7 @@ const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const ADMINISTRATIVE_HOLD_SCRIPT = preload("res://scripts/sequences/administrative_hold.gd")
+const SOUTHERN_ANNEX_SCENE = preload("res://scenes/areas/southern_annex.tscn")
 
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
 
@@ -175,6 +176,7 @@ var start_menu_active: bool:
 var autosave_enabled: bool = true
 var autosave_pending: bool = false
 var last_safe_world_position := Vector2(64, 80)
+var last_safe_area_id := ""
 
 # --- Ending sequence ---
 var ending_triggered: bool = false
@@ -241,14 +243,14 @@ const BUILDING_CLEARANCE := 10
 const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -31)
-const NUCLEAR_PLANT_TILE := Vector2i(0, 28)
+const SOUTHERN_ANNEX_GATE_TILE := Vector2i(0, 32)
+const SOUTHERN_ANNEX_WORLD_OFFSET := Vector2(4096.0, 0.0)
 const UFO_TILE := Vector2i(30, -6)
 const UFO_FLOAT_OFFSET := Vector2(0, -24)
 const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
 const HIDDEN_BUNKER_TILE := Vector2i(-30, -11)
 const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
-const PYONGYANG_TILE := Vector2i(-31, 16)
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -445,11 +447,11 @@ func _ready() -> void:
 		),
 		GREAT_WALL_APPROACH_TILE
 	)
-	world_landmark_builder.create_nuclear_plant(NUCLEAR_PLANT_TILE)
+	_setup_southern_annex()
+	world_landmark_builder.create_southern_annex_gate(SOUTHERN_ANNEX_GATE_TILE)
 	_setup_ufo_encounter()
 	_setup_bezos_drone_encounter()
 	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
-	world_landmark_builder.create_pyongyang(PYONGYANG_TILE)
 	_ensure_contamination_figure()
 	CHARACTER_VISUAL_CATALOG.assign_npc_textures(get_tree().get_nodes_in_group("npc"))
 	_create_ai_terminal()
@@ -477,6 +479,18 @@ func _setup_world_landmark_builder() -> void:
 	world_landmark_builder.name = "WorldLandmarkBuilder"
 	add_child(world_landmark_builder)
 	world_landmark_builder.setup(entities_layer, ground_map)
+
+
+func _setup_southern_annex() -> void:
+	var annex = SOUTHERN_ANNEX_SCENE.instantiate()
+	annex.name = "SouthernAdministrativeAnnex"
+	annex.position = SOUTHERN_ANNEX_WORLD_OFFSET
+	add_child(annex)
+	room_manager.register_room_instance("southern_annex", annex)
+	room_manager.world_spawn_points["southern_annex_exterior"] = Vector2(
+		0.0,
+		float((SOUTHERN_ANNEX_GATE_TILE.y - 4) * 32)
+	)
 
 
 func _setup_authority_world_patch_builder() -> void:
@@ -622,6 +636,10 @@ func _ensure_room_manager() -> void:
 	room_manager.name = "RoomManager"
 	add_child(room_manager)
 	room_manager.setup(self, entities_layer, player)
+	room_manager.set_world_camera_bounds(Rect2(
+		Vector2(WORLD_MIN_X * 32, WORLD_MIN_Y * 32),
+		Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, (WORLD_MAX_Y - WORLD_MIN_Y) * 32)
+	))
 
 func _setup_interiors() -> void:
 	_ensure_room_manager()
@@ -655,16 +673,16 @@ func _setup_interiors() -> void:
 			"node_name": "PyongyangCommandInterior",
 			"character_id": "kim_jong_un",
 			"character_name": "Kim Jong-un",
-			"spawn_marker": "pyongyang_command_exterior",
-			"world_position": _tile_to_actor_position(PYONGYANG_TILE + Vector2i(0, 3))
+			"exit_destination": "southern_annex",
+			"exit_spawn_marker": "PyongyangExterior"
 		},
 		{
 			"key": "neural_core",
 			"node_name": "NeuralCoreInterior",
 			"character_id": "sam_altman",
 			"character_name": "Sam Altman",
-			"spawn_marker": "neural_core_exterior",
-			"world_position": _tile_to_actor_position(NUCLEAR_PLANT_TILE + Vector2i(0, -3))
+			"exit_destination": "southern_annex",
+			"exit_spawn_marker": "NeuralCoreExterior"
 		}
 	]
 	room_manager.setup_interiors(building_specs, special_specs, Callable(self, "_character_display_name"))
@@ -693,7 +711,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		_exit_room(spawn_marker)
 	else:
 		_enter_room(destination, spawn_marker)
-	_set_room_presentation(active_room_id != "")
+	_set_room_presentation(room_manager.is_room_indoor(active_room_id))
 	if destination != "world":
 		var room = room_registry.get(destination)
 		var title := _pascal_case(destination).to_upper()
@@ -719,6 +737,7 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		call_deferred("_try_open_optional_ai_followup")
 	if destination == "world":
 		call_deferred("_maybe_queue_contamination_event", contamination_source)
+	if active_room_id == "" or not room_manager.is_room_indoor(active_room_id):
 		_request_autosave()
 
 func _enter_room(room_id: String, spawn_marker: String) -> void:
@@ -726,6 +745,13 @@ func _enter_room(room_id: String, spawn_marker: String) -> void:
 		return
 	active_room_id = room_id
 	var room = room_registry.get(room_id)
+	if room_id == "southern_annex" and dossier_manager.record_investigation(
+		"investigation:southern_annex",
+		"southern_annex",
+		"Subject entered a jurisdiction declared irrelevant to the passport procedure.",
+		{"profile_was_known": dossier_manager.profile_discovered}
+	):
+		_request_autosave()
 	if room_id == "red_command" and not xi_pre_scene_seen and not xi_pre_scene_active:
 		if room.has_method("set_npc_interaction_enabled"):
 			room.set_npc_interaction_enabled(false)
@@ -2377,6 +2403,7 @@ func _setup_save_manager() -> void:
 	add_child(save_manager)
 	save_manager.setup()
 	last_safe_world_position = player.global_position
+	last_safe_area_id = ""
 
 
 func _setup_start_menu() -> void:
@@ -2454,7 +2481,8 @@ func _build_save_snapshot() -> Dictionary:
 		"quest": quest_manager.get_save_data(),
 		"dossier": dossier_manager.get_save_data(),
 		"world": {
-			"safe_position": [last_safe_world_position.x, last_safe_world_position.y]
+			"safe_position": [last_safe_world_position.x, last_safe_world_position.y],
+			"area_id": last_safe_area_id
 		},
 		"story": {
 			"seen_hidden_bunker_scene": seen_hidden_bunker_scene,
@@ -2551,7 +2579,16 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	var safe_position = world.get("safe_position", []) if world is Dictionary else []
 	if safe_position is Array and safe_position.size() >= 2:
 		last_safe_world_position = Vector2(float(safe_position[0]), float(safe_position[1]))
+	last_safe_area_id = str(world.get("area_id", "")) if world is Dictionary else ""
+	if last_safe_area_id != "":
+		var saved_area = room_registry.get(last_safe_area_id)
+		if saved_area and not room_manager.is_room_indoor(last_safe_area_id):
+			room_manager.enter_room(last_safe_area_id, "", "NorthEntry")
+			active_room_id = last_safe_area_id
+		else:
+			last_safe_area_id = ""
 	player.global_position = last_safe_world_position
+	_set_room_presentation(room_manager.is_room_indoor(active_room_id))
 
 	if seen_hidden_bunker_scene:
 		_prepare_hidden_bunker_actors()
@@ -2586,6 +2623,7 @@ func _restore_contamination_presentation() -> void:
 func _track_safe_world_checkpoint() -> void:
 	if _is_world_checkpoint_safe():
 		last_safe_world_position = player.global_position
+		last_safe_area_id = active_room_id
 
 
 func _is_autosave_safe() -> bool:
@@ -2605,7 +2643,14 @@ func _is_autosave_safe() -> bool:
 
 
 func _is_world_checkpoint_safe() -> bool:
-	return _is_autosave_safe() and active_room_id == "" and player.get_parent() == entities_layer
+	if not _is_autosave_safe():
+		return false
+	if active_room_id == "":
+		return player.get_parent() == entities_layer
+	if room_manager.is_room_indoor(active_room_id):
+		return false
+	var room = room_registry.get(active_room_id)
+	return room and room.has_method("get_entity_container") and player.get_parent() == room.get_entity_container()
 
 
 func _request_autosave() -> void:
@@ -2627,6 +2672,7 @@ func _write_save_checkpoint(force: bool = false) -> void:
 		return
 	if _is_world_checkpoint_safe():
 		last_safe_world_position = player.global_position
+		last_safe_area_id = active_room_id
 	var save_error: Error = save_manager.save_game(_build_save_snapshot())
 	if save_error == OK:
 		autosave_pending = false

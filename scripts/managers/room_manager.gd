@@ -10,6 +10,7 @@ var player: CharacterBody2D
 var interiors_layer: Node2D
 var room_registry: Dictionary = {}
 var world_spawn_points: Dictionary = {}
+var world_camera_bounds := Rect2()
 
 var interior_overlay: ColorRect
 var transition_overlay: ColorRect
@@ -22,6 +23,11 @@ func setup(owner: Node, world_entities: Node2D, player_node: CharacterBody2D) ->
 	host = owner
 	entities_layer = world_entities
 	player = player_node
+
+
+func set_world_camera_bounds(bounds: Rect2) -> void:
+	world_camera_bounds = bounds
+	_apply_camera_contract(null)
 
 
 func create_transition_ui(ui_layer: CanvasLayer) -> void:
@@ -115,27 +121,56 @@ func setup_interiors(building_specs: Array, special_specs: Array, display_name_r
 
 	for offset in range(special_specs.size()):
 		var spec: Dictionary = special_specs[offset]
-		_register_room(
+		var room := _register_room(
 			str(spec["key"]),
 			str(spec["character_id"]),
 			str(spec["character_name"]),
 			building_specs.size() + offset,
-			str(spec["node_name"])
+			str(spec["node_name"]),
+			str(spec.get("exit_destination", "world")),
+			str(spec.get("exit_spawn_marker", spec.get("spawn_marker", "")))
 		)
-		world_spawn_points[str(spec["spawn_marker"])] = spec["world_position"]
+		if spec.has("spawn_marker") and spec.has("world_position"):
+			world_spawn_points[str(spec["spawn_marker"])] = spec["world_position"]
 
 
-func _register_room(room_key: String, character_id: String, character_name: String, index: int, node_name: String = "") -> void:
+func _register_room(
+	room_key: String,
+	character_id: String,
+	character_name: String,
+	index: int,
+	node_name: String = "",
+	exit_destination: String = "world",
+	exit_spawn_marker: String = ""
+) -> Node:
 	var room = ROOM_SCENE.instantiate()
 	room.name = node_name if node_name != "" else "%sInterior" % _pascal_case(room_key)
 	room.position = Vector2(0, 3200 + index * 960)
 	room.set("room_key", room_key)
 	room.set("character_id", character_id)
 	room.set("character_name", character_name)
+	room.set("exit_destination", exit_destination)
+	room.set("exit_spawn_marker", exit_spawn_marker)
 	interiors_layer.add_child(room)
 	room_registry[room_key] = room
 	if room.has_method("set_room_active"):
 		room.set_room_active(false)
+	return room
+
+
+func register_room_instance(room_key: String, room: Node) -> void:
+	room_registry[room_key] = room
+	if room.has_method("set_room_active"):
+		room.set_room_active(false)
+
+
+func is_room_indoor(room_id: String) -> bool:
+	if room_id == "":
+		return false
+	var room = room_registry.get(room_id)
+	if room and room.has_method("is_indoor"):
+		return bool(room.is_indoor())
+	return true
 
 
 func create_world_doorway(door_name: String, tile_pos: Vector2i, destination: String, spawn_marker: String) -> void:
@@ -176,6 +211,7 @@ func enter_room(room_id: String, current_room_id: String, spawn_marker: String) 
 	if room.has_method("get_spawn_position"):
 		player.velocity = Vector2.ZERO
 		player.global_position = room.get_spawn_position(spawn_marker)
+	_apply_camera_contract(room)
 	return true
 
 
@@ -191,6 +227,27 @@ func exit_room(current_room_id: String, spawn_marker: String) -> void:
 
 	if world_spawn_points.has(spawn_marker):
 		player.global_position = world_spawn_points[spawn_marker]
+	_apply_camera_contract(null)
+
+
+func _apply_camera_contract(room: Node) -> void:
+	var camera := player.get_node_or_null("Camera2D") as Camera2D
+	if camera == null:
+		return
+	camera.limit_left = -10000000
+	camera.limit_top = -10000000
+	camera.limit_right = 10000000
+	camera.limit_bottom = 10000000
+	if room == null and world_camera_bounds.size.x > 0.0 and world_camera_bounds.size.y > 0.0:
+		camera.limit_left = int(world_camera_bounds.position.x)
+		camera.limit_top = int(world_camera_bounds.position.y)
+		camera.limit_right = int(world_camera_bounds.end.x)
+		camera.limit_bottom = int(world_camera_bounds.end.y)
+		camera.reset_smoothing()
+	elif room and room.has_method("apply_camera_limits"):
+		room.apply_camera_limits(camera)
+	else:
+		camera.reset_smoothing()
 
 
 func fade_transition(target_alpha: float, duration: float) -> void:

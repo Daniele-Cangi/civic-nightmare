@@ -12,6 +12,8 @@ const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plat
 const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
+const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
+const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -92,6 +94,8 @@ func _run() -> void:
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
 	var overworld_camera := game.get_node_or_null("Entities/Player/Camera2D") as Camera2D
 	_check(overworld_camera != null and overworld_camera.zoom.is_equal_approx(Vector2(1.35, 1.35)), "the overworld camera reveals slightly more of each district")
+	_check(overworld_camera != null and overworld_camera.limit_left == -1088 and overworld_camera.limit_right == 1088, "the overworld camera cannot reveal beyond the authored horizontal plate")
+	_check(overworld_camera != null and overworld_camera.limit_top == -1024 and overworld_camera.limit_bottom == 1024, "the overworld camera cannot reveal beyond the authored vertical plate")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
@@ -259,9 +263,32 @@ func _run() -> void:
 	var world_spawn_points: Dictionary = room_manager.get("world_spawn_points") if room_manager else {}
 	var xi_exit_position: Vector2 = world_spawn_points.get("red_command_exterior", Vector2.ZERO)
 	_check(xi_exit_position.is_equal_approx(Vector2(16.0, -896.0)), "exiting Xi returns the player south of the gate trigger")
-	var inference_reactor := game.get_node_or_null("Entities/NuclearPlantEntrance") as Node2D
+	var southern_gate := game.get_node_or_null("Entities/SouthernAnnexGate") as Node2D
+	_check(southern_gate != null, "the main district installs the southern annex gate")
+	if southern_gate:
+		var gate_sprite := southern_gate.get_node_or_null("SouthernAnnexGateLandmark") as Sprite2D
+		var gate_passage := southern_gate.get_node_or_null("SouthernAnnexPassage") as Area2D
+		var gate_collision := southern_gate.get_node_or_null("SouthernAnnexGateCollision") as StaticBody2D
+		_check(str(southern_gate.get_meta("asset_path", "")) == SOUTHERN_ANNEX_GATE_PATH, "the annex gate uses the approved raster asset")
+		_check(southern_gate.position.is_equal_approx(Vector2(0.0, 1024.0)), "the annex gate meets the southern map boundary")
+		_check(gate_sprite != null and gate_sprite.texture != null and gate_sprite.texture.get_size() == Vector2(576.0, 288.0), "the annex gate is runtime-sized")
+		_check(gate_passage != null and str(gate_passage.get("destination")) == "southern_annex", "the clear central gate passage enters the annex")
+		_check(gate_collision != null and gate_collision.get_child_count() == 2, "the gate wings are solid while its center stays open")
+	_check(game.get_node_or_null("Entities/NuclearPlantEntrance") == null, "Sam is no longer mounted in the main district")
+	_check(game.get_node_or_null("Entities/PyongyangEntrance") == null, "Kim is no longer mounted in the main district")
+
+	var southern_annex: Node = registry.get("southern_annex")
+	_check(southern_annex != null and southern_annex.has_method("is_indoor") and not southern_annex.is_indoor(), "the southern annex is registered as an exterior area")
+	var annex_background := southern_annex.get_node_or_null("Background") as Sprite2D if southern_annex else null
+	_check(annex_background != null and annex_background.texture != null, "the southern annex mounts its authored background")
+	if annex_background and annex_background.texture:
+		_check(annex_background.texture.resource_path == SOUTHERN_ANNEX_BACKGROUND_PATH, "the annex uses the approved environmental plate")
+		_check(annex_background.texture.get_size() == Vector2(1536.0, 1024.0), "the annex environmental plate is runtime-sized")
+	var annex_entities := southern_annex.get_node_or_null("Entities") as Node2D if southern_annex else null
+	var inference_reactor := annex_entities.get_node_or_null("NuclearPlantEntrance") as Node2D if annex_entities else null
 	_check(inference_reactor != null, "inference reactor landmark is created")
 	if inference_reactor:
+		_check(inference_reactor.position.is_equal_approx(Vector2(1056.0, 710.0)), "Sam is centered in the eastern demonstration bay")
 		var reactor_sprite := inference_reactor.get_node_or_null("NuclearPlantLandmark") as Sprite2D
 		var reactor_door := inference_reactor.get_node_or_null("NeuralCoreDoor") as Area2D
 		var reactor_collision := inference_reactor.get_node_or_null("InferenceReactorCollision") as StaticBody2D
@@ -274,9 +301,10 @@ func _run() -> void:
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
 		_check(reactor_collision != null and reactor_collision.get_child_count() == 3, "the inference reactor collision follows its upper mass and service wings")
 	_check(hidden_bunker != null, "hidden bunker landmark is created")
-	var broadcast_artillery := game.get_node_or_null("Entities/PyongyangEntrance") as Node2D
+	var broadcast_artillery := annex_entities.get_node_or_null("PyongyangEntrance") as Node2D if annex_entities else null
 	_check(broadcast_artillery != null, "Pyongyang broadcast artillery landmark is created")
 	if broadcast_artillery:
+		_check(broadcast_artillery.position.is_equal_approx(Vector2(480.0, 710.0)), "Kim is centered in the western propaganda bay")
 		var artillery_sprite := broadcast_artillery.get_node_or_null("PyongyangLandmark") as Sprite2D
 		var artillery_door := broadcast_artillery.get_node_or_null("PyongyangCannonDoor") as Area2D
 		var artillery_collision := broadcast_artillery.get_node_or_null("BroadcastArtilleryCollision") as StaticBody2D
@@ -288,6 +316,15 @@ func _run() -> void:
 		_check(artillery_door != null and str(artillery_door.get("destination")) == "pyongyang_command", "the single artillery hatch enters Kim's broadcast room")
 		_check(broadcast_artillery.get_node_or_null("PyongyangCannonDoorLeft") == null, "the obsolete overlapping artillery triggers are absent")
 		_check(artillery_collision != null and artillery_collision.get_child_count() == 3, "the broadcast artillery collision follows its carriage and production wings")
+	var annex_exit := southern_annex.get_node_or_null("Interactables/ReturnToMainDistrict") as Area2D if southern_annex else null
+	_check(annex_exit != null and str(annex_exit.get("destination")) == "world", "the annex gate returns to the main district")
+	_check(world_spawn_points.get("southern_annex_exterior", Vector2.ZERO).is_equal_approx(Vector2(0.0, 896.0)), "returning from the annex lands north of its gate trigger")
+	var pyongyang_room: Node = registry.get("pyongyang_command")
+	var neural_room: Node = registry.get("neural_core")
+	var pyongyang_exit := pyongyang_room.get_node_or_null("Interactables/ExitDoor") as Area2D if pyongyang_room else null
+	var neural_exit := neural_room.get_node_or_null("Interactables/ExitDoor") as Area2D if neural_room else null
+	_check(pyongyang_exit != null and str(pyongyang_exit.get("destination")) == "southern_annex" and str(pyongyang_exit.get("spawn_marker")) == "PyongyangExterior", "Kim's interior returns to his annex bay")
+	_check(neural_exit != null and str(neural_exit.get("destination")) == "southern_annex" and str(neural_exit.get("spawn_marker")) == "NeuralCoreExterior", "Sam's interior returns to his annex bay")
 	if ufo_encounter:
 		_check(ufo_encounter.get("ufo_root") != null, "UFO world node is created")
 		var ufo_room: Node = registry.get("ufo_lab")
@@ -371,6 +408,30 @@ func _run() -> void:
 	var entities: Node = game.get("entities_layer")
 	_check(player.get_parent() == entities, "player is reparented into the world")
 
+	game.call("_enter_room", "southern_annex", "NorthEntry")
+	await process_frame
+	_check(str(game.get("active_room_id")) == "southern_annex", "the southern gate enters the annex exterior")
+	_check(player.get_parent() == annex_entities, "the player is reparented into the annex exterior")
+	_check((dossier_manager.get("events") as Array).size() == 2, "the first annex visit leaves one optional-investigation record")
+	game.call("_enter_room", "neural_core", "EntryMarker")
+	await process_frame
+	_check(str(game.get("active_room_id")) == "neural_core", "the annex can enter Sam's interior")
+	game.call("_enter_room", "southern_annex", "NeuralCoreExterior")
+	await process_frame
+	_check(str(game.get("active_room_id")) == "southern_annex", "Sam's interior returns to the annex")
+	var neural_return := southern_annex.get_node_or_null("Markers/NeuralCoreExterior") as Marker2D
+	_check(neural_return != null and player.global_position.is_equal_approx(neural_return.global_position), "Sam's return marker prevents a doorway loop")
+	game.call("_track_safe_world_checkpoint")
+	var annex_resume_snapshot: Dictionary = game.call("_build_save_snapshot")
+	game.call("_exit_room", "southern_annex_exterior")
+	game.call("_apply_save_snapshot", annex_resume_snapshot)
+	await process_frame
+	_check(str(game.get("active_room_id")) == "southern_annex" and player.get_parent() == annex_entities, "Continue resumes inside the annex exterior")
+	_check(str(annex_resume_snapshot["world"].get("area_id", "")) == "southern_annex", "the checkpoint persists its exterior area identity")
+	game.call("_exit_room", "southern_annex_exterior")
+	await process_frame
+	game.call("_track_safe_world_checkpoint")
+
 	game.call("_start_bezos_escalation")
 	await process_frame
 	_check(bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude starts")
@@ -388,7 +449,7 @@ func _run() -> void:
 	await process_frame
 	_check(player.global_position.is_equal_approx(Vector2(160, 224)), "Continue restores the safe overworld checkpoint")
 	_check(int(game.get("quest_index")) == 2, "Continue restores quest progression")
-	_check((dossier_manager.get("events") as Array).size() == 1, "Continue restores integrated behavioural evidence")
+	_check((dossier_manager.get("events") as Array).size() == 2, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 
 	_finish()
@@ -570,7 +631,7 @@ func _test_save_manager_round_trip() -> void:
 			"quest_order": ["a", "b"],
 			"quest_completed": {"a": true}
 		},
-		"world": {"safe_position": [12.5, -8.0]},
+		"world": {"safe_position": [12.5, -8.0], "area_id": "southern_annex"},
 		"story": {"final_mission_done": false},
 		"dossier": {
 			"events": [{"event_id": "choice:a", "source": "a", "category": "choice", "tag": "manual-routing", "note": "Manual route", "order": 0, "visibility": "recorded", "metadata": {}}],
@@ -582,6 +643,7 @@ func _test_save_manager_round_trip() -> void:
 	var restored: Dictionary = manager.load_game()
 	_check(not restored.is_empty(), "versioned dossier can be loaded")
 	_check(float(restored["world"]["safe_position"][0]) == 12.5, "dossier preserves checkpoint coordinates")
+	_check(str(restored["world"]["area_id"]) == "southern_annex", "dossier preserves checkpoint area identity")
 	_check((restored["dossier"]["events"] as Array).size() == 1, "versioned save preserves behavioural evidence")
 	_check(int(manager.get_save_summary().get("signatures", 0)) == 1, "dossier summary reports signatures")
 	_check(manager.clear_save() == OK, "smoke dossier can be removed")
