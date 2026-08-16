@@ -143,6 +143,11 @@ func _run() -> void:
 		_check(patch.get_node_or_null("FoundationApron") != null, "%s world patch owns its terrain seam" % patch.name)
 		_check(patch.get_node_or_null("Approach") != null, "%s world patch owns its approach" % patch.name)
 		_check(int(patch.get_meta("collision_cell_count", 0)) > 0, "%s world patch defines its visible collision footprint" % patch.name)
+	var kremlin_patch := game.get_node_or_null("Entities/KremlinWorldPatch")
+	var siege_forecourt := kremlin_patch.get_node_or_null("SiegeForecourt") as Sprite2D if kremlin_patch else null
+	_check(siege_forecourt != null and siege_forecourt.texture != null, "Putin world patch installs its physical siege forecourt")
+	if siege_forecourt and siege_forecourt.texture:
+		_check(siege_forecourt.texture.resource_path == "res://assets/landmarks/authority_putin_siege_forecourt_v1.png", "Putin siege forecourt uses the approved raster asset")
 	var facade_character_ids: Dictionary = {}
 	for facade in authority_facades:
 		facade_character_ids[str(facade.get_meta("character_id", ""))] = true
@@ -189,6 +194,9 @@ func _run() -> void:
 	_check(not solid_positions.has(musk_center + Vector2i(0, 6)), "Musk exterior doorway remains accessible")
 	_check(not solid_positions.has(putin_center + Vector2i(0, -5)), "Putin has no invisible legacy collision above the facade")
 	_check(solid_positions.has(putin_center + Vector2i(0, -2)), "Putin retains a collision footprint inside the visible facade")
+	_check(solid_positions.has(putin_center + Vector2i(-5, 6)), "Putin left checkpoint blocks its visible fortification mass")
+	_check(solid_positions.has(putin_center + Vector2i(5, 6)), "Putin right checkpoint blocks its visible fortification mass")
+	_check(not solid_positions.has(putin_center + Vector2i(0, 5)), "Putin siege corridor remains clear before the doorway")
 	_check(not solid_positions.has(putin_center + Vector2i(0, 6)), "Putin exterior doorway remains accessible")
 	for building_spec in game.get("building_specs"):
 		var center: Vector2i = building_spec["center"]
