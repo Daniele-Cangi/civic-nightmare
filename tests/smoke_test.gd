@@ -297,10 +297,11 @@ func _run() -> void:
 		if reactor_sprite and reactor_sprite.texture:
 			_check(reactor_sprite.texture.get_size() == Vector2(480.0, 320.0), "the inference reactor asset is runtime-sized")
 			_check(reactor_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the inference reactor retains its HD filtering")
+			_check(reactor_sprite.position.is_equal_approx(Vector2(0.0, -58.0)), "Sam's artwork aligns its drawn entrance to the demonstration stairs")
 		_check(reactor_door != null and str(reactor_door.get("destination")) == "neural_core", "the single demonstration entrance enters Sam's neural core")
 		_check(reactor_door != null and (inference_reactor.position + reactor_door.position).is_equal_approx(Vector2(1184.0, 700.0)), "Sam's access trigger follows the authored demonstration stairs")
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
-		_check(reactor_collision != null and reactor_collision.get_child_count() == 3, "the inference reactor collision follows its upper mass and service wings")
+		_check(reactor_collision != null and reactor_collision.position.is_equal_approx(Vector2.ZERO) and reactor_collision.get_child_count() == 3, "Sam's existing collision remains fixed while only its artwork moves")
 	_check(hidden_bunker != null, "hidden bunker landmark is created")
 	var broadcast_artillery := annex_entities.get_node_or_null("PyongyangEntrance") as Node2D if annex_entities else null
 	_check(broadcast_artillery != null, "Pyongyang broadcast artillery landmark is created")
@@ -314,10 +315,11 @@ func _run() -> void:
 		if artillery_sprite and artillery_sprite.texture:
 			_check(artillery_sprite.texture.get_size() == Vector2(448.0, 352.0), "the broadcast artillery asset is runtime-sized")
 			_check(artillery_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the broadcast artillery retains its HD filtering")
+			_check(artillery_sprite.position.is_equal_approx(Vector2(-80.0, -81.0)), "Kim's artwork aligns its drawn hatch to the red security threshold")
 		_check(artillery_door != null and str(artillery_door.get("destination")) == "pyongyang_command", "the single artillery hatch enters Kim's broadcast room")
 		_check(artillery_door != null and (broadcast_artillery.position + artillery_door.position).is_equal_approx(Vector2(272.0, 700.0)), "Kim's access trigger follows the authored red security threshold")
 		_check(broadcast_artillery.get_node_or_null("PyongyangCannonDoorLeft") == null, "the obsolete overlapping artillery triggers are absent")
-		_check(artillery_collision != null and artillery_collision.get_child_count() == 3, "the broadcast artillery collision follows its carriage and production wings")
+		_check(artillery_collision != null and artillery_collision.position.is_equal_approx(Vector2.ZERO) and artillery_collision.get_child_count() == 3, "Kim's existing collision remains fixed while only its artwork moves")
 	var annex_exit := southern_annex.get_node_or_null("Interactables/ReturnToMainDistrict") as Area2D if southern_annex else null
 	_check(annex_exit != null and str(annex_exit.get("destination")) == "world", "the annex gate returns to the main district")
 	_check(world_spawn_points.get("southern_annex_exterior", Vector2.ZERO).is_equal_approx(Vector2(0.0, 896.0)), "returning from the annex lands north of its gate trigger")
