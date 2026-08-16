@@ -33,10 +33,16 @@ def _remove_magenta_key(image: Image.Image) -> Image.Image:
         recovered_red = round((red - (255 - alpha)) * 255 / alpha)
         recovered_green = round(green * 255 / alpha)
         recovered_blue = round((blue - (255 - alpha)) * 255 / alpha)
+        # JPEG-like colour noise in generated chroma keys can otherwise turn
+        # low-alpha dark edges into luminous green pixels after unmatting.
+        edge_red = max(0, min(255, recovered_red))
+        edge_blue = max(0, min(255, recovered_blue))
+        if alpha < 180 and recovered_green > max(edge_red, edge_blue) + 30:
+            recovered_green = max(edge_red, edge_blue) + 30
         output.append((
-            max(0, min(255, recovered_red)),
+            edge_red,
             max(0, min(255, recovered_green)),
-            max(0, min(255, recovered_blue)),
+            edge_blue,
             alpha,
         ))
 
@@ -44,8 +50,19 @@ def _remove_magenta_key(image: Image.Image) -> Image.Image:
     return keyed
 
 
-def normalize(source: Path, destination: Path, width: int, height: int) -> None:
+def normalize(
+    source: Path,
+    destination: Path,
+    width: int,
+    height: int,
+    hard_alpha: bool = False,
+) -> None:
     image = _remove_magenta_key(Image.open(source))
+    if hard_alpha:
+        # The authored landmarks are opaque props. Threshold at source
+        # resolution, then let the final resize rebuild a clean antialiased
+        # edge without retaining chroma-compression colour noise.
+        image.putalpha(image.getchannel("A").point(lambda value: 255 if value >= 96 else 0))
     bounds = image.getchannel("A").point(lambda value: 255 if value > 6 else 0).getbbox()
     if bounds is None:
         raise ValueError(f"{source} contains no visible pixels")
@@ -78,8 +95,9 @@ def main() -> None:
     parser.add_argument("destination", type=Path)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
+    parser.add_argument("--hard-alpha", action="store_true")
     args = parser.parse_args()
-    normalize(args.source, args.destination, args.width, args.height)
+    normalize(args.source, args.destination, args.width, args.height, args.hard_alpha)
 
 
 if __name__ == "__main__":

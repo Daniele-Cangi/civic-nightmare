@@ -11,6 +11,7 @@ const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
 const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
+const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -273,7 +274,20 @@ func _run() -> void:
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
 		_check(reactor_collision != null and reactor_collision.get_child_count() == 3, "the inference reactor collision follows its upper mass and service wings")
 	_check(hidden_bunker != null, "hidden bunker landmark is created")
-	_check(game.get_node_or_null("Entities/PyongyangEntrance") != null, "Pyongyang landmark is created")
+	var broadcast_artillery := game.get_node_or_null("Entities/PyongyangEntrance") as Node2D
+	_check(broadcast_artillery != null, "Pyongyang broadcast artillery landmark is created")
+	if broadcast_artillery:
+		var artillery_sprite := broadcast_artillery.get_node_or_null("PyongyangLandmark") as Sprite2D
+		var artillery_door := broadcast_artillery.get_node_or_null("PyongyangCannonDoor") as Area2D
+		var artillery_collision := broadcast_artillery.get_node_or_null("BroadcastArtilleryCollision") as StaticBody2D
+		_check(str(broadcast_artillery.get_meta("asset_path", "")) == PYONGYANG_ARTILLERY_PATH, "Kim uses the authored broadcast artillery asset")
+		_check(artillery_sprite != null and artillery_sprite.texture != null, "the broadcast artillery sprite is mounted")
+		if artillery_sprite and artillery_sprite.texture:
+			_check(artillery_sprite.texture.get_size() == Vector2(448.0, 352.0), "the broadcast artillery asset is runtime-sized")
+			_check(artillery_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the broadcast artillery retains its HD filtering")
+		_check(artillery_door != null and str(artillery_door.get("destination")) == "pyongyang_command", "the single artillery hatch enters Kim's broadcast room")
+		_check(broadcast_artillery.get_node_or_null("PyongyangCannonDoorLeft") == null, "the obsolete overlapping artillery triggers are absent")
+		_check(artillery_collision != null and artillery_collision.get_child_count() == 3, "the broadcast artillery collision follows its carriage and production wings")
 	if ufo_encounter:
 		_check(ufo_encounter.get("ufo_root") != null, "UFO world node is created")
 		var ufo_room: Node = registry.get("ufo_lab")
