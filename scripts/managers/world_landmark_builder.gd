@@ -6,6 +6,8 @@ const NORTHERN_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const LEGACY_GREAT_WALL_PATH := "res://assets/mockups/landmark_great_wall.png"
 const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
 const LEGACY_NUCLEAR_PLANT_PATH := "res://assets/mockups/landmark_nuclear_plant.png"
+const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
+const LEGACY_PYONGYANG_PATH := "res://assets/mockups/landmark_pyongyang.png"
 const NORTHERN_WALL_HEIGHT := 448.0
 const NORTHERN_WALL_FRONT_Y := 403.0
 const NORTHERN_GATE_OVERHANG := 48.0
@@ -230,9 +232,43 @@ func create_hidden_bunker(tile: Vector2i, world_offset: Vector2) -> void:
 
 func create_pyongyang(tile: Vector2i) -> void:
 	_clear_decor_patch(tile, 4, 3)
+	if not ResourceLoader.exists(PYONGYANG_ARTILLERY_PATH):
+		_create_legacy_pyongyang(tile)
+		return
+	var texture := load(PYONGYANG_ARTILLERY_PATH) as Texture2D
+	if texture == null or texture.get_size() != Vector2(448.0, 352.0):
+		_create_legacy_pyongyang(tile)
+		return
 
-	var tex_path = "res://assets/mockups/landmark_pyongyang.png"
-	if not ResourceLoader.exists(tex_path):
+	var root := Node2D.new()
+	root.name = "PyongyangEntrance"
+	root.position = _tile_to_body_position(tile)
+	root.z_index = 2
+	root.add_to_group("optional_world_landmark")
+	root.set_meta("asset_path", PYONGYANG_ARTILLERY_PATH)
+	entities_layer.add_child(root)
+
+	var sprite := Sprite2D.new()
+	sprite.name = "PyongyangLandmark"
+	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.position = Vector2(0.0, -176.0)
+	root.add_child(sprite)
+
+	var collision := StaticBody2D.new()
+	collision.name = "BroadcastArtilleryCollision"
+	root.add_child(collision)
+	# The gun carriage is solid above the access hatch. Cameras and parade
+	# scenery form two lower wings with a deliberate centre passage.
+	_add_collision_rect(collision, "ArtilleryCarriage", Vector2(0.0, -174.0), Vector2(330.0, 168.0))
+	_add_collision_rect(collision, "WestBroadcastWing", Vector2(-151.0, -51.0), Vector2(142.0, 74.0))
+	_add_collision_rect(collision, "EastBroadcastWing", Vector2(151.0, -51.0), Vector2(142.0, 74.0))
+
+	_add_landmark_entry_trigger(root, "PyongyangCannonDoor", Vector2(0.0, -35.0), Vector2(86.0, 48.0), "pyongyang_command", "EntryMarker", "Broadcast Artillery Hatch")
+
+
+func _create_legacy_pyongyang(tile: Vector2i) -> void:
+	if not ResourceLoader.exists(LEGACY_PYONGYANG_PATH):
 		return
 
 	var root := Node2D.new()
@@ -241,13 +277,12 @@ func create_pyongyang(tile: Vector2i) -> void:
 	root.z_index = 2
 	entities_layer.add_child(root)
 
-	var tex = load(tex_path)
-	var sprite = Sprite2D.new()
+	var texture := load(LEGACY_PYONGYANG_PATH) as Texture2D
+	var sprite := Sprite2D.new()
 	sprite.name = "PyongyangLandmark"
-	sprite.texture = tex
+	sprite.texture = texture
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var tex_h = tex.get_height()
-	sprite.offset = Vector2(0, -tex_h * 0.45)
+	sprite.offset = Vector2(0, -texture.get_height() * 0.45)
 	sprite.scale = Vector2(0.2, 0.2)
 	root.add_child(sprite)
 
