@@ -4,8 +4,8 @@ const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_land
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 
 const AREA_SIZE := Vector2(1536.0, 1024.0)
-const PYONGYANG_LANDMARK_POSITION := Vector2(480.0, 710.0)
-const NEURAL_CORE_LANDMARK_POSITION := Vector2(1056.0, 710.0)
+const PYONGYANG_LANDMARK_POSITION := Vector2(352.0, 640.0)
+const NEURAL_CORE_LANDMARK_POSITION := Vector2(1184.0, 640.0)
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var interactables: Node2D = $Interactables

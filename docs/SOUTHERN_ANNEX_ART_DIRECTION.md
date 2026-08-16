@@ -7,8 +7,8 @@ Kim Jong-un and Sam Altman no longer occupy unrelated corners of the main distri
 - Main-map gate: `res://assets/landmarks/southern_annex_gate_v1.png`, 576×288 RGBA, bottom-centred at world `y = 1024`.
 - Area plate: `res://assets/backgrounds/southern_administrative_annex_v1.png`, 1536×1024 opaque RGBA.
 - Area scene: `res://scenes/areas/southern_annex.tscn`, positioned away from the main world and registered through `RoomManager` as an exterior travel container.
-- West bay: Kim's existing 448×352 broadcast-artillery landmark, centred at local `(480, 710)`.
-- East bay: Sam's existing 480×320 inference-reactor landmark, centred at local `(1056, 710)`.
+- West bay: Kim's existing 448×352 broadcast-artillery landmark, centred on the authored medallion at local `(352, 640)`.
+- East bay: Sam's existing 480×320 inference-reactor landmark, centred on the authored medallion at local `(1184, 640)`.
 - The central gate passage is open; its two checkpoint wings are solid.
 - Both interiors return to named markers in the annex. The annex returns north of the main-map gate trigger.
 - Camera limits follow each opaque plate so no unauthored void appears at an edge.
