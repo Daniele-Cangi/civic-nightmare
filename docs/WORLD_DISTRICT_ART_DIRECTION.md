@@ -2,22 +2,34 @@
 
 ## Runtime contract
 
-- Final asset: `assets/backgrounds/world_district_plate_v2.png`.
+- Final asset: `assets/backgrounds/world_district_plate_v3.png`.
 - Runtime size: 2176×2048 px, exactly matching the overworld bounds.
-- Placement: centered at world origin, nearest-neighbour filtered, `z=-10`.
-- Authority alignment contract: visible facade centers sit at world coordinates `x = ±592` and `y = -683 / 0 / 683`. The plate's central corridor runs approximately from source `x=976` to `x=1200`, placing the geometric centres of its two columns near world `x=±600`; the tile-aligned runtime positions therefore miss those centres by only 8 px. Runtime placement keeps facade, collision, entrance, NPC, light, and route together.
-- All six authorities have bespoke collision footprints matched to the visible lower mass of their facade sprites; their obsolete procedural silhouettes are not retained invisibly.
-- The plate is fully opaque and collision-neutral. It supplies visible civic paving; `AuthorityWorldPatchBuilder` adds the local terrain seam, approach motif, facade, and collision while the remaining props and triggers stay runtime-owned layers.
-- The field atlas remains a fallback only; its opaque center cells are used if the plate cannot load.
+- Placement: centered at world origin, linearly filtered, `z=-10`.
+- Authority centers: `x = ±528` and `y = -683 / 0 / 683`. These are the nearest symmetric tile-centred positions to the plate's two quarter-width axes.
+- The complete compound moves as one unit: facade, contact shadow, collision footprint, entrance, NPC, light, and optional physical motif.
+- The plate is fully opaque and collision-neutral. It supplies flat traversable civic surfaces and the visible perimeter treatment; runtime systems continue to own navigation and collision.
+- Legacy 32 px trees, bushes, flowers, rocks, and border tiles are suppressed whenever the HD plate loads. Invisible edge collision remains active, and the legacy decoration path remains available only as the missing-asset fallback.
+- No procedural carpet, runway, queue, or colored route is painted over the authored plazas.
 
-## Final prompt set
+## Visual standard
 
-Built-in Imagegen was used with the six authority facades as style references. The generation prompt requested one orthographic, edge-to-edge, modern pixel-art civic ground map arranged as two columns by three rows, with quiet landmark clearings connected by a restrained central administrative corridor. District briefs were graphite/cyan launch campus for Musk, manicured ivory/lawn grounds for Trump, snow/red-stone security grounds for Putin, cobalt institutional plaza for Ursula, dusty-rose repaired civic garden for Macron, and dark-green/brass financial paving for Lagarde.
+The overworld no longer imitates the low-resolution structure tiles that originally supplied the game. The authority facades established a different technical level: high-detail pre-rendered 2D illustration with convincing materials, controlled depth, and contemporary production density. The ground now belongs to that same layer.
 
-The selected second pass preserved that layout and palette while removing every raised or obstacle-like element. Trees, walls, railings, lamps, machinery, and props were converted to walkable inlaid paving, painted edging, drainage lines, surface repairs, and subtle ground mosaics. It also softened hard horizontal transitions with shared grey-blue municipal paving.
+The plate uses one coherent municipal material system across a two-column/three-row plan: large-format stone, civic concrete, dark asphalt, brushed metal seams, inset glass, drainage, restrained flush accents, and believable repair. District identity comes from material and palette rather than six disconnected biomes.
 
-Negative constraints for both passes: no buildings, characters, vehicles, readable text, flags, logos, UI, watermarks, perspective horizon, isometric camera, transparent gaps, horizontal banding, tile-grid seams, or collectible-looking details.
+The six plaza accents remain restrained:
 
-## Processing
+- graphite, steel, and sparse cyan for Musk;
+- ivory stone and warm brass for Trump;
+- cold gray with dark-red security seams for Putin;
+- pale institutional stone and cobalt inlays for Ursula;
+- weathered warm limestone and dusty-rose repair for Macron;
+- charcoal-green stone and quiet brass for Lagarde.
 
-The selected square source was normalized to a 1088×1088 pixel-art working grid, enlarged with nearest-neighbour sampling, and cropped symmetrically to the exact 2176×2048 world ratio. The source remains a visual layer only; it does not redefine navigation geometry.
+Large calm facade footprints, the central boulevard, and the three east-west connections remain visually open. Building approaches are implied by continuous paving joints; nothing resembling UI tells the player where to walk.
+
+## Generation and preparation
+
+Built-in Imagegen generated the selected plate from the authority facades as rendering-quality references, without reusing the old plate as a style target. The prompt required a near-square 17:16 orthographic ground plane, six empty plaza pads on a strict 2×3 grid, one central boulevard, flat traversable materials, and no buildings, characters, freestanding props, text, route carpets, visible tile repetition, coarse 16-bit treatment, or photoreal aerial perspective.
+
+The selected 1293×1217 source already matched the exact world ratio. It was resampled with high-quality bicubic filtering to 2176×2048, converted to an opaque RGB PNG, and retained as a new version rather than overwriting the previous plate.

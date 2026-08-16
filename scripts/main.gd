@@ -20,7 +20,7 @@ const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const ADMINISTRATIVE_HOLD_SCRIPT = preload("res://scripts/sequences/administrative_hold.gd")
 
-const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
+const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
@@ -360,49 +360,49 @@ var building_specs: Array = [
 	{
 		"key": "oval_office",
 		"npc": "donald_trump",
-		"center": Vector2i(18, -23),
-		"npc_spawn": Vector2i(18, -16),
-		"entrance": Vector2i(18, -17),
+		"center": Vector2i(16, -23),
+		"npc_spawn": Vector2i(16, -16),
+		"entrance": Vector2i(16, -17),
 		"light_color": Color(1.0, 0.85, 0.6)
 	},
 	{
 		"key": "spaceship",
 		"npc": "elon_musk",
-		"center": Vector2i(-19, -23),
-		"npc_spawn": Vector2i(-19, -15),
-		"entrance": Vector2i(-19, -17),
+		"center": Vector2i(-17, -23),
+		"npc_spawn": Vector2i(-17, -15),
+		"entrance": Vector2i(-17, -17),
 		"light_color": Color(0.6, 0.8, 1.0)
 	},
 	{
 		"key": "eu_palace",
 		"npc": "ursula_von_der_leyen",
-		"center": Vector2i(18, -2),
-		"npc_spawn": Vector2i(18, 6),
-		"entrance": Vector2i(18, 4),
+		"center": Vector2i(16, -2),
+		"npc_spawn": Vector2i(16, 6),
+		"entrance": Vector2i(16, 4),
 		"light_color": Color(0.7, 0.75, 1.0)
 	},
 	{
 		"key": "kremlin",
 		"npc": "vladimir_putin",
-		"center": Vector2i(-19, -2),
-		"npc_spawn": Vector2i(-19, 6),
-		"entrance": Vector2i(-19, 4),
+		"center": Vector2i(-17, -2),
+		"npc_spawn": Vector2i(-17, 6),
+		"entrance": Vector2i(-17, 4),
 		"light_color": Color(0.9, 0.7, 0.5)
 	},
 	{
 		"key": "vault",
 		"npc": "christine_lagarde",
-		"center": Vector2i(18, 19),
-		"npc_spawn": Vector2i(18, 27),
-		"entrance": Vector2i(18, 25),
+		"center": Vector2i(16, 19),
+		"npc_spawn": Vector2i(16, 27),
+		"entrance": Vector2i(16, 25),
 		"light_color": Color(1.0, 0.9, 0.6)
 	},
 	{
 		"key": "elysee",
 		"npc": "emmanuel_macron",
-		"center": Vector2i(-19, 20),
-		"npc_spawn": Vector2i(-19, 27),
-		"entrance": Vector2i(-19, 25),
+		"center": Vector2i(-17, 20),
+		"npc_spawn": Vector2i(-17, 27),
+		"entrance": Vector2i(-17, 25),
 		"light_color": Color(0.75, 0.8, 1.0)
 	}
 ]
@@ -966,13 +966,20 @@ func _generate_world_layout() -> void:
 				ground_map.set_cell(LAYER_GROUND, path_pos, path_source, TILE_PATH)
 
 	# Build each authority as one exterior unit. The authored facade, its terrain
-	# seam, approach, and visible collision footprint now share one owner.
+	# contact, entrance axis, and visible collision footprint share one owner.
 	for spec in building_specs:
 		if not _build_authority_world_patch(spec):
 			# Resource-safe fallback for development builds missing an authored facade.
 			_build_structure(spec)
 			_decorate_compound(spec)
 			_place_landmark(spec)
+
+	# The HD plate already owns the visible landscaping and perimeter language.
+	# Preserve the impassable boundary, but do not layer legacy 32 px nature art
+	# over the modern ground. The old decorations remain a complete fallback.
+	if district_plate_ready:
+		_build_world_border(false)
+		return
 
 	# Place nature: biome-aware trees, bushes, flowers, rocks
 	# Densities are kept LOW so the map feels clean and readable
@@ -1035,7 +1042,7 @@ func _generate_world_layout() -> void:
 						_place_bush(pos)
 
 	# Dense tree border around the world edge
-	_build_world_border()
+	_build_world_border(true)
 
 
 func _install_world_district_plate() -> bool:
@@ -1048,7 +1055,7 @@ func _install_world_district_plate() -> bool:
 	var plate := Sprite2D.new()
 	plate.name = "WorldDistrictPlate"
 	plate.texture = texture
-	plate.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	plate.position = Vector2(
 		float(WORLD_MIN_X + WORLD_MAX_X) * 16.0,
 		float(WORLD_MIN_Y + WORLD_MAX_Y) * 16.0
@@ -1064,8 +1071,9 @@ func _place_cactus(pos: Vector2i) -> void:
 	var atlas: Vector2i = cactus_tiles[_tile_roll(pos.x + 7, pos.y - 3) % cactus_tiles.size()]
 	ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, atlas)
 
-func _build_world_border() -> void:
-	# Fill border ring with dense trees (impassable)
+func _build_world_border(draw_legacy_tiles: bool) -> void:
+	# The border is always impassable. Its old tree tiles are fallback visuals
+	# only; the HD ground plate supplies its authored perimeter treatment.
 	for x in range(WORLD_MIN_X, WORLD_MAX_X):
 		for y in range(WORLD_MIN_Y, WORLD_MAX_Y):
 			var on_border: bool = (
@@ -1079,8 +1087,7 @@ func _build_world_border() -> void:
 			var pos := Vector2i(x, y)
 			if _is_on_path(pos.x, pos.y):
 				continue
-			# Place a solid tree tile on every border cell
-			if _pack_ready:
+			if draw_legacy_tiles and _pack_ready:
 				# Alternate between dense bush and tree trunk for a wall look
 				var roll := _tile_roll(x, y)
 				if roll % 3 == 0:
@@ -1089,7 +1096,7 @@ func _build_world_border() -> void:
 					# Use bottom-half of a green tree (trunk area) for density
 					var trunk_tiles: Array = [Vector2i(0, 1), Vector2i(1, 1), Vector2i(8, 1), Vector2i(9, 1)]
 					ground_map.set_cell(LAYER_DECOR, pos, SRC_NATURE, trunk_tiles[roll % trunk_tiles.size()])
-			else:
+			elif draw_legacy_tiles:
 				ground_map.set_cell(LAYER_DECOR, pos, SRC_PROC, TILE_BUSH)
 			_create_solid_wall(x, y)
 

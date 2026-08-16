@@ -4,12 +4,12 @@
 
 The next exterior pass does not add six interchangeable futuristic buildings. It shows six different forms of contemporary power contaminating the public ground around them. Each location must communicate its joke before dialogue begins and must remain readable at the real 1.5 gameplay zoom.
 
-The approved visual baseline is the physical integration already established by Trump, Ursula, and Macron: elevated front/orthographic projection, high-detail pixel art, a clear bottom-centre entrance, a restrained palette, and a world patch that connects image, ground, route, and collision.
+The approved visual baseline is the physical integration established by the authority facades over the HD district plate: elevated front/orthographic projection, high-detail illustrated 2D game art, a clear bottom-centre entrance, a restrained palette, and a world patch that connects image, ground, entrance axis, and collision.
 
 ## Shared contract
 
 - Give each location one dominant contradiction, readable at a glance.
-- Express the contradiction with physical raster props and terrain scars, not abstract lines that resemble UI.
+- Express the contradiction with physical raster props and terrain scars, not abstract lines or painted route strips that resemble UI.
 - Preserve a continuous approach corridor and an unmistakable interaction threshold.
 - Keep the hero landmark denser than its apron; the ground supports the joke instead of becoming a prop catalogue.
 - Match character scale, projection, pixel density, upper-left lighting, and the material wear of the current world plate.
