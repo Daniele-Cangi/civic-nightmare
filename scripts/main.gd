@@ -243,6 +243,7 @@ const BUILDING_CLEARANCE := 10
 const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -31)
+const NORTHERN_WALL_CAMERA_EXTENSION := 403
 const SOUTHERN_ANNEX_GATE_TILE := Vector2i(0, 32)
 const SOUTHERN_ANNEX_WORLD_OFFSET := Vector2(4096.0, 0.0)
 const UFO_TILE := Vector2i(30, -6)
@@ -636,9 +637,10 @@ func _ensure_room_manager() -> void:
 	room_manager.name = "RoomManager"
 	add_child(room_manager)
 	room_manager.setup(self, entities_layer, player)
+	var camera_top := WORLD_MIN_Y * 32 - NORTHERN_WALL_CAMERA_EXTENSION
 	room_manager.set_world_camera_bounds(Rect2(
-		Vector2(WORLD_MIN_X * 32, WORLD_MIN_Y * 32),
-		Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, (WORLD_MAX_Y - WORLD_MIN_Y) * 32)
+		Vector2(WORLD_MIN_X * 32, camera_top),
+		Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, WORLD_MAX_Y * 32 - camera_top)
 	))
 
 func _setup_interiors() -> void:
