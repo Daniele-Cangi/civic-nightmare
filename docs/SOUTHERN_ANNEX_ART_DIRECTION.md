@@ -10,7 +10,7 @@ Kim Jong-un and Sam Altman no longer occupy unrelated corners of the main distri
 - West bay: Kim's existing 448×352 broadcast-artillery landmark keeps its gameplay root at local `(352, 640)`.
 - East bay: Sam's existing 480×320 inference-reactor landmark keeps its gameplay root at local `(1184, 640)`.
 - Access thresholds are independent from landmark centres: Kim uses the red security threshold at `(272, 700)` and Sam uses the demonstration stairs at `(1184, 700)`. Return markers sit south of both triggers to prevent transition loops.
-- The landmark roots, access triggers and collisions retain those gameplay coordinates. Only the rendered sprites receive plate-registration offsets: Kim `(-48, 32)` and Sam `(8, 16)`. Their visual centres land at `(304, 496)` and `(1192, 496)`, matching the medallions at the centres of the west and east bays; each painted door remains on the axis of its corresponding background approach.
+- The landmark roots, access triggers and collisions retain those gameplay coordinates. Only the rendered sprites receive plate-registration offsets: Kim `(-48, 32)` and Sam `(0, 16)`. Kim's visual centre lands at `(304, 496)`; Sam's canvas lands at `(1184, 496)` so the slightly off-centre doorway painted into the asset sits over the background stairs. Gameplay geometry remains independent.
 - The central gate passage is open; its two checkpoint wings are solid.
 - Both interiors return to named markers in the annex. The annex returns north of the main-map gate trigger.
 - Camera limits follow each opaque plate so no unauthored void appears at an edge.

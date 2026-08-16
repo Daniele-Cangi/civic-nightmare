@@ -297,8 +297,8 @@ func _run() -> void:
 		if reactor_sprite and reactor_sprite.texture:
 			_check(reactor_sprite.texture.get_size() == Vector2(480.0, 320.0), "the inference reactor asset is runtime-sized")
 			_check(reactor_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the inference reactor retains its HD filtering")
-			_check(reactor_sprite.position.is_equal_approx(Vector2(8.0, -144.0)), "Sam's artwork keeps its local plate-registration offset")
-			_check((inference_reactor.position + reactor_sprite.position).is_equal_approx(Vector2(1192.0, 496.0)), "Sam's artwork is centred in the eastern bay and aligned with its approach")
+			_check(reactor_sprite.position.is_equal_approx(Vector2(0.0, -144.0)), "Sam's artwork keeps its local plate-registration offset")
+			_check((inference_reactor.position + reactor_sprite.position).is_equal_approx(Vector2(1184.0, 496.0)), "Sam's painted entrance is centred over the eastern stairs")
 		_check(reactor_door != null and str(reactor_door.get("destination")) == "neural_core", "the single demonstration entrance enters Sam's neural core")
 		_check(reactor_door != null and (inference_reactor.position + reactor_door.position).is_equal_approx(Vector2(1184.0, 700.0)), "Sam's access trigger follows the authored demonstration stairs")
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
