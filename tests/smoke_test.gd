@@ -88,6 +88,8 @@ func _run() -> void:
 	_check(ending_sequence != null, "ending sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
+	var overworld_camera := game.get_node_or_null("Entities/Player/Camera2D") as Camera2D
+	_check(overworld_camera != null and overworld_camera.zoom.is_equal_approx(Vector2(1.35, 1.35)), "the overworld camera reveals slightly more of each district")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
@@ -150,6 +152,7 @@ func _run() -> void:
 	_check(siege_forecourt != null and siege_forecourt.texture != null, "Putin world patch installs its physical siege forecourt")
 	if siege_forecourt and siege_forecourt.texture:
 		_check(siege_forecourt.texture.resource_path == "res://assets/landmarks/authority_putin_siege_forecourt_v1.png", "Putin siege forecourt uses the approved raster asset")
+		_check(is_equal_approx(siege_forecourt.position.x, -24.0), "Putin facade and later siege layer share the stronger visual correction")
 	var facade_character_ids: Dictionary = {}
 	for facade in authority_facades:
 		facade_character_ids[str(facade.get_meta("character_id", ""))] = true
@@ -169,21 +172,22 @@ func _run() -> void:
 		var building_center: Vector2i = building_spec["center"]
 		_check(ground_map.get_cell_source_id(2, building_center) == -1, "%s old roof tiles are hidden behind the hero facade" % building_spec["key"])
 		_check(building_center == expected_authority_centers[building_spec["key"]], "%s is centered on its authored district clearing" % building_spec["key"])
-		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
-		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
+		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its physical patch" % building_spec["key"])
+		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its physical patch" % building_spec["key"])
 	var expected_facade_visual_centers := {
-		"donald_trump": Vector2(528.0, -683.0),
-		"elon_musk": Vector2(-528.0, -683.0),
-		"ursula_von_der_leyen": Vector2(528.0, 0.0),
-		"vladimir_putin": Vector2(-528.0, 0.0),
-		"christine_lagarde": Vector2(528.0, 683.0),
-		"emmanuel_macron": Vector2(-528.0, 683.0)
+		"donald_trump": Vector2(544.0, -683.0),
+		"elon_musk": Vector2(-544.0, -683.0),
+		"ursula_von_der_leyen": Vector2(544.0, 0.0),
+		"vladimir_putin": Vector2(-552.0, 0.0),
+		"christine_lagarde": Vector2(544.0, 683.0),
+		"emmanuel_macron": Vector2(-544.0, 683.0)
 	}
 	for facade in authority_facades:
 		var character_id := str(facade.get_meta("character_id", ""))
 		var expected_visual_center: Vector2 = expected_facade_visual_centers[character_id]
 		_check(absf(facade.global_position.x - expected_visual_center.x) <= 0.1, "%s facade is horizontally centered in its district panel" % character_id)
 		_check(absf(facade.global_position.y - expected_visual_center.y) <= 12.0, "%s facade is vertically centered in its district panel" % character_id)
+		_check(is_equal_approx(absf((facade.get_parent() as Node2D).global_position.x), 528.0), "%s visual calibration does not move its physical patch" % character_id)
 	var solid_positions: Dictionary = game.get("_solid_positions")
 	var trump_center: Vector2i = expected_authority_centers["oval_office"]
 	var musk_center: Vector2i = expected_authority_centers["spaceship"]

@@ -13,6 +13,7 @@ const PATCH_PROFILES := {
 			[1, -5, 5], [2, -4, 4], [3, -4, 4], [4, -3, 3]
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(16.0, 0.0),
 		"foundation": Color(0.55, 0.43, 0.24, 0.3),
 		"edge": Color(1.0, 0.75, 0.24, 0.58),
 		"motif": "spectacle"
@@ -23,6 +24,7 @@ const PATCH_PROFILES := {
 			[1, -4, 4], [2, -5, 5], [3, -4, 4], [4, -3, 3]
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(-16.0, 0.0),
 		"foundation": Color(0.08, 0.13, 0.16, 0.38),
 		"edge": Color(0.16, 0.82, 0.92, 0.55),
 		"motif": "prototype"
@@ -33,6 +35,7 @@ const PATCH_PROFILES := {
 			[0, -5, 5], [1, -5, 5], [2, -5, 5], [3, -5, 5], [4, -4, 4]
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(16.0, 0.0),
 		"foundation": Color(0.16, 0.27, 0.43, 0.3),
 		"edge": Color(0.43, 0.68, 1.0, 0.62),
 		"motif": "procedure"
@@ -50,6 +53,7 @@ const PATCH_PROFILES := {
 			Vector2i(-6, 7), Vector2i(-5, 7), Vector2i(5, 7), Vector2i(6, 7)
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(-24.0, 0.0),
 		"foundation": Color(0.19, 0.18, 0.12, 0.36),
 		"edge": Color(0.76, 0.22, 0.12, 0.58),
 		"motif": "siege",
@@ -64,6 +68,7 @@ const PATCH_PROFILES := {
 			[0, -5, 5], [1, -5, 5], [2, -5, 5], [3, -4, 4], [4, -3, 3]
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(16.0, 0.0),
 		"foundation": Color(0.16, 0.21, 0.16, 0.36),
 		"edge": Color(0.91, 0.68, 0.25, 0.58),
 		"motif": "stability"
@@ -74,6 +79,7 @@ const PATCH_PROFILES := {
 			[-1, -3, 3], [0, -3, 3], [1, -3, 3], [2, -3, 3], [3, -3, 3]
 		],
 		"approach_half_width": 2,
+		"visual_offset": Vector2(-16.0, 0.0),
 		"foundation": Color(0.3, 0.25, 0.22, 0.3),
 		"edge": Color(0.88, 0.68, 0.35, 0.56),
 		"motif": "managed_decline"
@@ -121,6 +127,7 @@ func create_authority_patch(spec: Dictionary, texture: Texture2D) -> Dictionary:
 	var center: Vector2i = spec["center"]
 	var entrance: Vector2i = spec["entrance"]
 	var profile: Dictionary = PATCH_PROFILES[building_key]
+	var visual_offset: Vector2 = profile.get("visual_offset", Vector2.ZERO)
 	var root := Node2D.new()
 	root.name = "%sWorldPatch" % _pascal_case(building_key)
 	root.position = Vector2(
@@ -136,13 +143,13 @@ func create_authority_patch(spec: Dictionary, texture: Texture2D) -> Dictionary:
 	entities_layer.add_child(root)
 
 	_build_ground_contact(root, profile)
-	_build_raster_motif(root, profile)
+	_build_raster_motif(root, profile, visual_offset)
 
 	var facade := Sprite2D.new()
 	facade.name = "%sFacade" % _pascal_case(building_key)
 	facade.texture = texture
 	facade.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	facade.position = Vector2(0.0, -texture.get_height() * 0.5)
+	facade.position = visual_offset + Vector2(0.0, -texture.get_height() * 0.5)
 	facade.z_index = 4
 	facade.add_to_group("authority_facade")
 	facade.set_meta("character_id", str(spec.get("npc", "")))
@@ -157,7 +164,7 @@ func create_authority_patch(spec: Dictionary, texture: Texture2D) -> Dictionary:
 	}
 
 
-func _build_raster_motif(root: Node2D, profile: Dictionary) -> bool:
+func _build_raster_motif(root: Node2D, profile: Dictionary, visual_offset: Vector2) -> bool:
 	var texture_path := str(profile.get("motif_asset", ""))
 	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
 		return false
@@ -169,7 +176,8 @@ func _build_raster_motif(root: Node2D, profile: Dictionary) -> bool:
 	motif.name = "SiegeForecourt"
 	motif.texture = texture
 	motif.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	motif.position = profile.get("motif_position", Vector2.ZERO)
+	var motif_position: Vector2 = profile.get("motif_position", Vector2.ZERO)
+	motif.position = visual_offset + motif_position
 	var display_width := float(profile.get("motif_display_width", texture.get_width()))
 	var motif_scale := display_width / float(texture.get_width())
 	motif.scale = Vector2(motif_scale, motif_scale)
