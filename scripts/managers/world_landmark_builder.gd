@@ -4,6 +4,8 @@ const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const LAYER_DECOR := 1
 const NORTHERN_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1.png"
 const LEGACY_GREAT_WALL_PATH := "res://assets/mockups/landmark_great_wall.png"
+const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
+const LEGACY_NUCLEAR_PLANT_PATH := "res://assets/mockups/landmark_nuclear_plant.png"
 const NORTHERN_WALL_HEIGHT := 448.0
 const NORTHERN_WALL_FRONT_Y := 403.0
 const NORTHERN_GATE_OVERHANG := 48.0
@@ -122,9 +124,43 @@ func _add_collision_rect(parent: StaticBody2D, shape_name: String, position: Vec
 
 func create_nuclear_plant(tile: Vector2i) -> void:
 	_clear_decor_patch(tile, 4, 3)
+	if not ResourceLoader.exists(INFERENCE_REACTOR_PATH):
+		_create_legacy_nuclear_plant(tile)
+		return
+	var texture := load(INFERENCE_REACTOR_PATH) as Texture2D
+	if texture == null or texture.get_size() != Vector2(480.0, 320.0):
+		_create_legacy_nuclear_plant(tile)
+		return
 
-	var tex_path = "res://assets/mockups/landmark_nuclear_plant.png"
-	if not ResourceLoader.exists(tex_path):
+	var root := Node2D.new()
+	root.name = "NuclearPlantEntrance"
+	root.position = _tile_to_body_position(tile)
+	root.z_index = 2
+	root.add_to_group("optional_world_landmark")
+	root.set_meta("asset_path", INFERENCE_REACTOR_PATH)
+	entities_layer.add_child(root)
+
+	var plant := Sprite2D.new()
+	plant.name = "NuclearPlantLandmark"
+	plant.texture = texture
+	plant.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	plant.position = Vector2(0.0, -160.0)
+	root.add_child(plant)
+
+	var collision := StaticBody2D.new()
+	collision.name = "InferenceReactorCollision"
+	root.add_child(collision)
+	# The upper mass prevents walking through the machinery. Two lower wings
+	# follow the facade while leaving the pristine keynote doorway accessible.
+	_add_collision_rect(collision, "UpperInfrastructure", Vector2(0.0, -174.0), Vector2(444.0, 158.0))
+	_add_collision_rect(collision, "WestServiceWing", Vector2(-151.0, -55.0), Vector2(178.0, 80.0))
+	_add_collision_rect(collision, "EastCoolingWing", Vector2(151.0, -55.0), Vector2(178.0, 80.0))
+
+	_add_landmark_entry_trigger(root, "NeuralCoreDoor", Vector2(0.0, -42.0), Vector2(92.0, 54.0), "neural_core", "EntryMarker", "Demonstration Entrance")
+
+
+func _create_legacy_nuclear_plant(tile: Vector2i) -> void:
+	if not ResourceLoader.exists(LEGACY_NUCLEAR_PLANT_PATH):
 		return
 
 	var root := Node2D.new()
@@ -133,12 +169,12 @@ func create_nuclear_plant(tile: Vector2i) -> void:
 	root.z_index = 2
 	entities_layer.add_child(root)
 
-	var tex = load(tex_path)
-	var plant = Sprite2D.new()
+	var texture := load(LEGACY_NUCLEAR_PLANT_PATH) as Texture2D
+	var plant := Sprite2D.new()
 	plant.name = "NuclearPlantLandmark"
-	plant.texture = tex
+	plant.texture = texture
 	plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	plant.offset = Vector2(0, -tex.get_height() * 0.5)
+	plant.offset = Vector2(0, -texture.get_height() * 0.5)
 	plant.scale = Vector2(0.38, 0.38)
 	root.add_child(plant)
 
