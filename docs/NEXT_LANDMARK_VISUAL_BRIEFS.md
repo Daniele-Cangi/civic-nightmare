@@ -2,7 +2,7 @@
 
 ## Direction
 
-The next exterior pass does not add six interchangeable futuristic buildings. It shows six different forms of contemporary power contaminating the public ground around them. Each location must communicate its joke before dialogue begins and must remain readable at the real 1.5 gameplay zoom.
+The next exterior pass does not add six interchangeable futuristic buildings. It shows six different forms of contemporary power contaminating the public ground around them. Each location must communicate its joke before dialogue begins and must remain readable at the real 1.35 gameplay zoom.
 
 The approved visual baseline is the physical integration established by the authority facades over the HD district plate: elevated front/orthographic projection, high-detail illustrated 2D game art, a clear bottom-centre entrance, a restrained palette, and a world patch that connects image, ground, entrance axis, and collision.
 

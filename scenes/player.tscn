@@ -20,7 +20,7 @@ position = Vector2(0, -6)
 shape = SubResource("CapsuleShape2D_1")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(1.5, 1.5)
+zoom = Vector2(1.35, 1.35)
 position_smoothing_enabled = true
 
 [node name="InteractionRay" type="RayCast2D" parent="."]
