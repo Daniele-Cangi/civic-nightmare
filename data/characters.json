@@ -486,7 +486,7 @@
     "id": "hidden_bunker_scene",
     "name": "Hidden Bunker",
     "optional": true,
-    "post_ai_line": "I told you not to go there. The protocol prefers the dying to remain off-menu. It keeps the interface clean and the conscience abstract.",
+    "post_ai_line": "I told you not to go there. You crossed incoming fire and outgoing funding anyway. The system is unsure which one you avoided more deliberately.",
     "sequence": [
       {
         "speaker": "ZELENSKY",

@@ -383,6 +383,14 @@ func claim_claudia_observation() -> Dictionary:
 				"You allowed it to continue. The distinction between restraint and listening has been postponed.",
 			],
 		})
+	if _has_event("investigation:bunker_access_corridor"):
+		candidates.append({
+			"id": "claudia_bunker_access_corridor",
+			"lines": [
+				"You avoided the incoming explosives and the outgoing funding.",
+				"The system recorded both as transfer traffic. It considers the distinction emotional.",
+			],
+		})
 	if _has_event("contest:bezos_fulfillment"):
 		var contest_event := _event_with_id("contest:bezos_fulfillment")
 		var contest_metadata: Dictionary = contest_event.get("metadata", {})
@@ -504,7 +512,20 @@ func _recorded_activity_lines() -> Array:
 				var choice_note := str(event.get("note", "")).strip_edges()
 				lines.append("AUTHORITY INTERACTION COMPLETED\nSignature obtained.%s" % ("\n%s." % choice_note if choice_note != "" else ""))
 			"investigation":
-				lines.append("UNSCHEDULED COMMUNICATION RETAINED\n%s" % str(event.get("note", "The material remained present after the meeting.")))
+				if str(event.get("event_id", "")) == "investigation:bunker_access_corridor":
+					var metadata: Dictionary = event.get("metadata", {})
+					var ordnance_contact := int(metadata.get("bomb_hits", 0)) > 0
+					var funding_contact := int(metadata.get("funding_contacts", 0)) > 0
+					var interpretation := "Subject avoided both incoming ordnance and outgoing disbursement."
+					if ordnance_contact and funding_contact:
+						interpretation = "Subject made contact with both incoming ordnance and outgoing disbursement. Distinction retained."
+					elif ordnance_contact:
+						interpretation = "Subject accepted contact with incoming ordnance while avoiding outgoing disbursement."
+					elif funding_contact:
+						interpretation = "Subject avoided incoming ordnance but failed to avoid outgoing disbursement."
+					lines.append("TRANSFER CORRIDOR TRAVERSED\n%s\nAccess survived." % interpretation)
+				else:
+					lines.append("UNSCHEDULED COMMUNICATION RETAINED\n%s" % str(event.get("note", "The material remained present after the meeting.")))
 			"protocol_deviation":
 				lines.append("ROUTE EXCEPTION REGISTERED\nMovement continued outside case instructions.")
 			"anomaly":

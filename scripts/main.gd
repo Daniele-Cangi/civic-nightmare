@@ -7,6 +7,7 @@ const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
 const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 const BEZOS_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_encounter.gd")
+const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
 const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.gd")
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
@@ -132,6 +133,7 @@ var hidden_bunker_scene_active: bool = false
 var hidden_bunker_exit_acknowledged: bool = false
 var hidden_bunker_ai_ack_pending: bool = false
 var hidden_bunker_ai_ack_active: bool = false
+var bunker_access_complete: bool = false
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
 var contamination_appearance_count: int = 0
@@ -200,6 +202,12 @@ var bezos_cinematic_active: bool:
 var bezos_cinematic_seen: bool:
 	get:
 		return bool(bezos_encounter.get("bezos_cinematic_seen")) if bezos_encounter else false
+
+# --- Hidden bunker access gauntlet ---
+var bunker_access_gauntlet: Node
+var bunker_access_active: bool:
+	get:
+		return bool(bunker_access_gauntlet.get("active")) if bunker_access_gauntlet else false
 
 
 # --- Final Mission ---
@@ -461,6 +469,7 @@ func _ready() -> void:
 	environment_effects.create_atmosphere_particles()
 	_create_ending_overlay()
 	_create_bezos_cinematic_overlay()
+	_setup_bunker_access_gauntlet()
 	_setup_mk_sequence()
 	_setup_save_manager()
 	_setup_start_menu()
@@ -692,7 +701,10 @@ func _setup_interiors() -> void:
 
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active:
+		return
+	if destination == "mountain_bunker" and not bunker_access_complete:
+		_start_bunker_access_gauntlet()
 		return
 	var now := Time.get_ticks_msec()
 	if now < door_cooldown_until_ms:
@@ -813,6 +825,9 @@ func _process(delta: float) -> void:
 		return
 	if intro_active:
 		intro_sequence.process_frame(delta)
+		return
+	if bunker_access_active:
+		bunker_access_gauntlet.process_frame(delta)
 		return
 	if ending_active:
 		ending_sequence.process_frame(delta)
@@ -2436,6 +2451,7 @@ func _can_open_administrative_hold() -> bool:
 		and not hidden_bunker_scene_active
 		and not contamination_active
 		and not bezos_cinematic_active
+		and not bunker_access_active
 		and not ufo_abduction_active
 		and not final_mission_awaiting_input
 	)
@@ -2453,6 +2469,9 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	autosave_pending = false
 	if dossier_manager:
 		dossier_manager.reset()
+	bunker_access_complete = false
+	if bunker_access_gauntlet:
+		bunker_access_gauntlet.stop()
 	_close_start_menu()
 	_setup_intro_sequence()
 
@@ -2488,6 +2507,7 @@ func _build_save_snapshot() -> Dictionary:
 		},
 		"story": {
 			"seen_hidden_bunker_scene": seen_hidden_bunker_scene,
+			"bunker_access_complete": bunker_access_complete,
 			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
 			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
 			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
@@ -2547,6 +2567,11 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	if not story is Dictionary:
 		story = {}
 	seen_hidden_bunker_scene = bool(story.get("seen_hidden_bunker_scene", false))
+	bunker_access_complete = bool(story.get("bunker_access_complete", seen_hidden_bunker_scene))
+	if seen_hidden_bunker_scene:
+		bunker_access_complete = true
+	if bunker_access_gauntlet:
+		bunker_access_gauntlet.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
 	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
 	hidden_bunker_ai_ack_active = false
@@ -2638,6 +2663,7 @@ func _is_autosave_safe() -> bool:
 		and not hidden_bunker_scene_active
 		and not contamination_active
 		and not bezos_cinematic_active
+		and not bunker_access_active
 		and not ufo_abduction_active
 		and not (administrative_hold and bool(administrative_hold.get("opened")))
 		and not final_mission_awaiting_input
@@ -3061,6 +3087,47 @@ func _create_bezos_cinematic_overlay() -> void:
 		CHARACTER_VISUAL_CATALOG.CHARACTER_COLORS,
 		dossier_manager
 	)
+
+
+func _setup_bunker_access_gauntlet() -> void:
+	bunker_access_gauntlet = BUNKER_ACCESS_GAUNTLET_SCRIPT.new()
+	bunker_access_gauntlet.name = "BunkerAccessGauntlet"
+	add_child(bunker_access_gauntlet)
+	bunker_access_gauntlet.completed.connect(_on_bunker_access_completed)
+	bunker_access_gauntlet.cancelled.connect(_on_bunker_access_cancelled)
+	bunker_access_gauntlet.setup(self)
+
+
+func _start_bunker_access_gauntlet() -> void:
+	if bunker_access_complete or bunker_access_active or active_room_id != "":
+		return
+	_write_save_checkpoint(true)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	bunker_access_gauntlet.start()
+
+
+func _on_bunker_access_cancelled() -> void:
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(true)
+	door_cooldown_until_ms = Time.get_ticks_msec() + 550
+
+
+func _on_bunker_access_completed(result: Dictionary) -> void:
+	bunker_access_complete = true
+	dossier_manager.record_investigation(
+		"investigation:bunker_access_corridor",
+		"mountain_bunker_access",
+		"Subject crossed an active transfer corridor while avoiding both ordnance and disbursement.",
+		result
+	)
+	_write_save_checkpoint(true)
+	door_cooldown_until_ms = 0
+	call_deferred("_enter_cleared_hidden_bunker")
+
+
+func _enter_cleared_hidden_bunker() -> void:
+	use_door("mountain_bunker", "EntryMarker")
 
 func _on_bezos_cinematic_finished() -> void:
 	bezos_drone_encounter.remove_drone()

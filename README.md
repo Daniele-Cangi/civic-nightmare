@@ -51,7 +51,7 @@ Navigate a procedurally detailed overworld and interact with the "Architects of 
 - **The Southern Sanctuary**: Find **Sam Altman** searching for trillion-dollar funding near an unstable Nuclear Plant (and its Neural Core).
 - **Intercepted Channels**: Meet **Xi Jinping** at the Great Wall, or overhear **Kim Jong-un** using the Red Phone to negotiate grocery deliveries with **Russia**, **Iran (Mojtaba)**, and **Sweden**.
 - **The Quantum UFO**: Get abducted into an observation deck where **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg** debate the monetization of the universe—and where the case clock stops making sense.
-- **The Hidden Bunker**: Ignore a direct protocol warning and find **Zelensky** making a final plea while **Death** waits to void the paperwork.
+- **The Hidden Bunker**: Ignore a direct protocol warning, survive a one-minute transfer corridor where bombs arrive and funding departs, then find **Zelensky** making a final plea while **Death** waits to void the paperwork.
 - **The Drone Escalation**: Follow an unsolicited delivery system into the Fulfillment Cathedral, contest a cybernetic Bezos with paperwork and objections, then discover whether a physical victory is contractually recognizable.
 
 ### 🤖 C.L.A.U.D.I.A. Assistant
@@ -84,6 +84,7 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 - **Optional Investigations**: Xi, Kim, and Altman use the same authored-room contract to turn surveillance, the Red Phone, and the nuclear AI demonstration into environmental consequences rather than generic bonus rooms.
 - **Southern Administrative Annex**: A dedicated optional exterior makes Kim's televised strategic spectacle and Altman's immaculate AI demo visibly depend on the same failing municipal utility layer. The [area art direction](docs/SOUTHERN_ANNEX_ART_DIRECTION.md) records its gate, layout and travel contract.
 - **Classified and Anomalous Interiors**: The bunker now visualizes war as prohibited administrative routine, while the UFO gives the evidence system a room whose clocks, objects, shadows, and geometry cannot agree.
+- **Bunker Access Gauntlet**: The classified route becomes a controls-first dodge encounter with telegraphed ordnance, funding traffic, instant retry, persistent access clearance, and a later dossier interpretation. Its runtime and visual contract are documented in the [gauntlet brief](docs/BUNKER_ACCESS_GAUNTLET.md).
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 

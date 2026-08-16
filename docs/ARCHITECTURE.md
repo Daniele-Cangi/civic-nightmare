@@ -35,7 +35,9 @@ scenes/main.tscn
         ├── bezos_drone_encounter.gd
         │                           in-world drone prelude
 		├── bezos_encounter.gd      arcade encounter sequence and verdict
-		└── bezos_battle_stage.gd   local input, attacks, poses, and battle result
+		├── bezos_battle_stage.gd   local input, attacks, poses, and battle result
+		└── bunker_access_gauntlet.gd
+		                            classified-route dodge encounter and result
 ```
 
 `main.gd` instantiates these nodes in `_ready()`, supplies their scene dependencies, and handles signals whose consequences span more than one system. The extracted modules do not load or replace `main.tscn`.
@@ -83,6 +85,7 @@ scenes/main.tscn
 - `assets/backgrounds/world_district_plate_v3.png` is a single opaque, collision-neutral HD ground plate matching the 2176×2048 overworld bounds. `main.gd` mounts it below the TileMap at `z=-10` with linear filtering; path reservations, structures, triggers, and collision remain generated runtime layers. The plate supplies broad contemporary civic materials and authored landscaping without the repeated 32 px visual grammar of the fallback atlas. Legacy nature and border tiles are suppressed while the plate is active, but the invisible world-edge collision remains. If the plate cannot load, the generator still falls back to the original ground, path, decoration, and border rendering.
 - `assets/landmarks/northern_great_wall_v1.png` replaces Xi's isolated isometric cutout with a 2176×448 transparent northern perimeter. `WorldLandmarkBuilder` anchors its visible frontage to the north world boundary while the wall mass remains outside the playable map, keeps one open central gate aligned to the boulevard, adds two solid wall wings, and retains the former wall asset only as a missing-resource fallback. The hidden bunker now occupies the western margin between rows so it cannot interrupt the northern silhouette. See [Northern Great Wall Art Direction](NORTHERN_GREAT_WALL_ART_DIRECTION.md).
 - `assets/landmarks/southern_annex_gate_v1.png` turns the main map's southern edge into a travel boundary. The gate leads to `assets/backgrounds/southern_administrative_annex_v1.png`, where the existing Kim and Sam landmarks are mounted in dedicated west/east bays over one shared municipal utility layer. Their interiors return to local area markers. Safe checkpoints persist the current exterior area so Continue reconstructs the same travel container deterministically. See [Southern Administrative Annex Art Direction](SOUTHERN_ANNEX_ART_DIRECTION.md).
+- The hidden-bunker door now starts `BunkerAccessGauntlet` before ordinary room travel. The encounter owns its overlay, movement, authored bomb/funding timeline, retry loop, and semantic result; `main.gd` only freezes the world, archives the result, and resumes the existing door transition. The cleared-access bit is persisted while mid-gauntlet state is deliberately not resumable. See [Bunker Access Gauntlet](BUNKER_ACCESS_GAUNTLET.md).
 - The six main compounds follow the authored plate's two-column/three-row visual grid. Their physical roots remain tile-centred at world `x = ±528`; presentation offsets place five facade rasters at `x = ±544` and Putin at `x = -552`, without moving doorway, collision, NPC, or lighting. Row centers remain `y = -683 / 0 / 683`. Facades use shared row heights (330 px top, 320 px middle, 298 px bottom), so paired landmarks align predictably with their doorway rows.
 - All six authorities use facade-specific collision masks rather than legacy procedural silhouettes. Each mask follows the visible lower building mass and stops before the exterior threshold; the doorway trigger remains owned by `RoomManager`.
 
@@ -101,7 +104,7 @@ The current slice records the first three signature choices from their existing 
 Three optional-content grammars are connected at existing orchestration boundaries:
 
 - the Red Phone is an optional investigation;
-- the hidden bunker is a protocol deviation because its direct warning is part of the evidence;
+- the hidden bunker is a protocol deviation because its direct warning is part of the evidence; reaching it now also retains the result of crossing the ordnance/funding transfer corridor;
 - the UFO is an anomaly whose location and time records cannot be reconciled.
 
 The Bezos/drone sequence now supplies a fourth optional grammar: a playable commercial contest. `BezosEncounter` coordinates the pre-fight presentation and administrative verdict, while `BezosBattleStage` owns its two-action combat model and emits a semantic result. `DossierManager` retains the method and recognition outcome rather than combat statistics. Xi, Sam Altman, and historical contamination retain their current behaviour until a follow-up pass decides what lasting evidence each genuinely creates. Do not classify every optional scene merely because it exists.
