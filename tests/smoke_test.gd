@@ -6,6 +6,7 @@ const QUEST_MANAGER_SCRIPT = preload("res://scripts/managers/quest_manager.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
+const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
@@ -14,6 +15,7 @@ const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
+const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -46,6 +48,7 @@ func _run() -> void:
 	_test_dossier_manager_round_trip()
 	_test_combat_portraits()
 	_test_bezos_battle_stage()
+	_test_bunker_access_gauntlet()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -77,6 +80,7 @@ func _run() -> void:
 	var ufo_encounter: Node = game.get("ufo_encounter")
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	var bezos_encounter: Node = game.get("bezos_encounter")
+	var bunker_access_gauntlet: Node = game.get("bunker_access_gauntlet")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
 	_check(save_manager != null, "save manager is initialized")
@@ -99,6 +103,7 @@ func _run() -> void:
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
+	_check(bunker_access_gauntlet != null and bunker_access_gauntlet.get("layer") != null, "hidden bunker owns a modular access gauntlet")
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
@@ -445,6 +450,7 @@ func _run() -> void:
 	_check(not bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude hands off cleanly")
 
 	var resume_snapshot: Dictionary = game.call("_build_save_snapshot")
+	resume_snapshot["story"]["bunker_access_complete"] = true
 	resume_snapshot["world"]["safe_position"] = [160.0, 224.0]
 	resume_snapshot["quest"]["quest_index"] = 2
 	resume_snapshot["quest"]["quest_completed"] = {
@@ -457,6 +463,7 @@ func _run() -> void:
 	_check(int(game.get("quest_index")) == 2, "Continue restores quest progression")
 	_check((dossier_manager.get("events") as Array).size() == 2, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
+	_check(bool(game.get("bunker_access_complete")), "Continue preserves cleared bunker access without resuming the gauntlet")
 
 	_finish()
 
@@ -538,6 +545,52 @@ func _test_bezos_battle_stage() -> void:
 	_check(is_equal_approx(float(timeout_stage.get("citizen_hp")), 80.0), "letting the action bar expire removes one energy segment")
 	_check(timeout_stage.get_result().is_empty(), "one expired prompt does not end the fight")
 	timeout_stage.queue_free()
+
+
+func _test_bunker_access_gauntlet() -> void:
+	_check(ResourceLoader.exists(BUNKER_ACCESS_BACKGROUND_PATH), "bunker access corridor background exists")
+	if ResourceLoader.exists(BUNKER_ACCESS_BACKGROUND_PATH):
+		var corridor := load(BUNKER_ACCESS_BACKGROUND_PATH) as Texture2D
+		_check(corridor != null, "bunker access corridor background can be loaded")
+		if corridor:
+			_check(absf(float(corridor.get_width()) / float(corridor.get_height()) - 16.0 / 9.0) < 0.01, "bunker corridor uses a widescreen gameplay composition")
+
+	var gauntlet := BUNKER_ACCESS_GAUNTLET_SCRIPT.new()
+	root.add_child(gauntlet)
+	gauntlet.setup(root)
+	gauntlet.start({"duration": 3.0, "intro_duration": 0.0, "hazards_enabled": true})
+	gauntlet.process_frame(0.01)
+	gauntlet.process_frame(0.45)
+	var hazard_counts: Dictionary = gauntlet.get_hazard_counts()
+	_check(int(hazard_counts.get("bombs", 0)) > 0, "bunker corridor authors deterministic bomb pressure")
+	gauntlet.process_frame(0.40)
+	_check(int((gauntlet.get("bombs") as Array)[0].get("phase", -1)) == 1, "bomb telegraph deterministically advances into its falling phase")
+	gauntlet.process_frame(0.35)
+	_check(int((gauntlet.get("bombs") as Array)[0].get("phase", -1)) == 2, "falling bomb deterministically advances into its blast phase")
+	_check(int(gauntlet.get_hazard_counts().get("funding", 0)) > 0, "second corridor phase introduces lateral funding traffic")
+	_check(gauntlet.get("citizen_sprite") != null and gauntlet.get("citizen_sprite").texture != null, "bunker corridor reuses the Fantozzi-style citizen poses")
+	_check(str(gauntlet.get("dash_label").text) == "SPACE", "bunker corridor exposes only the dash key during play")
+	gauntlet.set("health", 1)
+	var lethal_impact := Node2D.new()
+	gauntlet.get("hazard_layer").add_child(lethal_impact)
+	gauntlet.call("_bomb_impact", lethal_impact, gauntlet.get("citizen_position"))
+	_check(str(gauntlet.get("prompt_label").text) == "PROCESS RETURNED", "losing every case sheet immediately returns the process")
+	gauntlet.process_frame(1.2)
+	_check(int(gauntlet.get("attempt_count")) == 2 and int(gauntlet.get("health")) == 4, "returned access attempts restart automatically with a complete case")
+	gauntlet.stop()
+
+	gauntlet.start({
+		"duration": 0.05,
+		"intro_duration": 0.0,
+		"outro_duration": 0.0,
+		"hazards_enabled": false,
+	})
+	gauntlet.process_frame(0.01)
+	gauntlet.process_frame(0.06)
+	gauntlet.process_frame(0.01)
+	_check(not bool(gauntlet.get("active")), "surviving the authored interval closes the corridor cleanly")
+	_check(str(gauntlet.get_result().get("outcome", "")) == "access_granted", "bunker corridor emits a semantic access result")
+	gauntlet.queue_free()
 
 
 func _test_ai_terminal_assets() -> void:
@@ -732,6 +785,17 @@ func _test_dossier_manager_round_trip() -> void:
 		{"outcome": "citizen_victory"}
 	)
 	_check(str(bezos_only.claim_claudia_observation().get("id", "")) == "claudia_bezos_invalidated_victory", "invalidated victory creates a sparse CLAUDIA callback")
+	var corridor_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(corridor_only)
+	corridor_only.record_investigation(
+		"investigation:bunker_access_corridor",
+		"mountain_bunker_access",
+		"Transfer corridor crossed.",
+		{"bomb_hits": 1, "funding_contacts": 0}
+	)
+	var corridor_activity: Array = corridor_only.get_pause_summary("recorded_activity").get("lines", [])
+	_check(not corridor_activity.is_empty() and str(corridor_activity[0]).contains("incoming ordnance"), "Administrative Hold interprets corridor evidence without exposing a score")
+	_check(str(corridor_only.claim_claudia_observation().get("id", "")) == "claudia_bunker_access_corridor", "bunker access evidence creates a sparse CLAUDIA callback")
 
 	var expected_classification: String = manager.derive_classification()
 	var snapshot: Dictionary = manager.get_save_data()
@@ -745,6 +809,7 @@ func _test_dossier_manager_round_trip() -> void:
 	restored.queue_free()
 	investigation_only.queue_free()
 	bezos_only.queue_free()
+	corridor_only.queue_free()
 
 
 func _has_dossier_section(manager: Node, section_id: String) -> bool:
