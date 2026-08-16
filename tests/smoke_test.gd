@@ -151,12 +151,12 @@ func _run() -> void:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
 	var expected_authority_centers := {
-		"oval_office": Vector2i(16, -23),
-		"spaceship": Vector2i(-17, -23),
-		"eu_palace": Vector2i(16, -2),
-		"kremlin": Vector2i(-17, -2),
-		"vault": Vector2i(16, 19),
-		"elysee": Vector2i(-17, 20)
+		"oval_office": Vector2i(18, -23),
+		"spaceship": Vector2i(-19, -23),
+		"eu_palace": Vector2i(18, -2),
+		"kremlin": Vector2i(-19, -2),
+		"vault": Vector2i(18, 19),
+		"elysee": Vector2i(-19, 20)
 	}
 	for building_spec in game.get("building_specs"):
 		var building_center: Vector2i = building_spec["center"]
@@ -165,12 +165,12 @@ func _run() -> void:
 		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
 		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
 	var expected_facade_visual_centers := {
-		"donald_trump": Vector2(528.0, -683.0),
-		"elon_musk": Vector2(-528.0, -683.0),
-		"ursula_von_der_leyen": Vector2(528.0, 0.0),
-		"vladimir_putin": Vector2(-528.0, 0.0),
-		"christine_lagarde": Vector2(528.0, 683.0),
-		"emmanuel_macron": Vector2(-528.0, 683.0)
+		"donald_trump": Vector2(592.0, -683.0),
+		"elon_musk": Vector2(-592.0, -683.0),
+		"ursula_von_der_leyen": Vector2(592.0, 0.0),
+		"vladimir_putin": Vector2(-592.0, 0.0),
+		"christine_lagarde": Vector2(592.0, 683.0),
+		"emmanuel_macron": Vector2(-592.0, 683.0)
 	}
 	for facade in authority_facades:
 		var character_id := str(facade.get_meta("character_id", ""))
