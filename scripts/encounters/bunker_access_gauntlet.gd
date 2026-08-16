@@ -337,7 +337,7 @@ func _reset_attempt(first_attempt: bool) -> void:
 	invulnerability_remaining = 0.0
 	pose_hold_remaining = 0.0
 	bomb_spawn_timer = 0.38
-	money_spawn_timer = 0.72
+	money_spawn_timer = 0.28
 	bomb_sequence = 0
 	money_sequence = 0
 	_clear_hazards()
@@ -409,22 +409,23 @@ func _process_movement(delta: float) -> void:
 
 func _process_spawns(delta: float) -> void:
 	bomb_spawn_timer -= delta
-	money_spawn_timer -= delta
 	var progress := elapsed / run_duration
 	var bomb_interval := 1.55
 	var money_interval := 99.0
 	if progress >= 0.36 and progress < 0.73:
 		bomb_interval = 1.85
-		money_interval = 1.24
+		money_interval = 0.62
 	elif progress >= 0.73:
 		bomb_interval = 1.08
-		money_interval = 0.88
+		money_interval = 0.44
 	if bomb_spawn_timer <= 0.0:
 		_spawn_bomb(progress)
 		bomb_spawn_timer += bomb_interval
-	if progress >= 0.34 and money_spawn_timer <= 0.0:
-		_spawn_money(progress)
-		money_spawn_timer += money_interval
+	if progress >= 0.34:
+		money_spawn_timer -= delta
+		if money_spawn_timer <= 0.0:
+			_spawn_money(progress)
+			money_spawn_timer += money_interval
 
 
 func _spawn_bomb(progress: float) -> void:
@@ -446,12 +447,81 @@ func _spawn_bomb(progress: float) -> void:
 	outer.width = 4.0
 	outer.default_color = Color(1.0, 0.22, 0.12, 0.94)
 	node.add_child(outer)
-	var cross := Line2D.new()
-	cross.points = PackedVector2Array([Vector2(-18, 0), Vector2(18, 0), Vector2.ZERO, Vector2(0, -18), Vector2(0, 18)])
-	cross.width = 3.0
-	cross.default_color = Color(1.0, 0.75, 0.2, 0.88)
-	node.add_child(cross)
+	_create_bureaucratic_target(node)
 	bombs.append({"node": node, "target": target, "age": 0.0, "phase": 0})
+
+
+func _create_bureaucratic_target(parent: Node2D) -> void:
+	var docket := Node2D.new()
+	docket.name = "ImpactDocket"
+	docket.z_index = 1
+	parent.add_child(docket)
+
+	var paper_shadow := Polygon2D.new()
+	paper_shadow.position = Vector2(3, 4)
+	paper_shadow.polygon = PackedVector2Array([
+		Vector2(-21, -27), Vector2(14, -27), Vector2(24, -17),
+		Vector2(24, 27), Vector2(-21, 27),
+	])
+	paper_shadow.color = Color(0.0, 0.0, 0.0, 0.38)
+	docket.add_child(paper_shadow)
+
+	var paper := Polygon2D.new()
+	paper.polygon = PackedVector2Array([
+		Vector2(-22, -28), Vector2(13, -28), Vector2(23, -18),
+		Vector2(23, 28), Vector2(-22, 28),
+	])
+	paper.color = Color(0.94, 0.88, 0.70, 0.94)
+	docket.add_child(paper)
+
+	var folded_corner := Polygon2D.new()
+	folded_corner.polygon = PackedVector2Array([
+		Vector2(13, -28), Vector2(13, -18), Vector2(23, -18),
+	])
+	folded_corner.color = Color(0.70, 0.64, 0.48, 0.96)
+	docket.add_child(folded_corner)
+
+	for row in range(3):
+		var checkbox := Line2D.new()
+		var box_y := -15.0 + row * 11.0
+		checkbox.points = PackedVector2Array([
+			Vector2(-15, box_y - 3), Vector2(-9, box_y - 3),
+			Vector2(-9, box_y + 3), Vector2(-15, box_y + 3),
+			Vector2(-15, box_y - 3),
+		])
+		checkbox.width = 1.5
+		checkbox.default_color = Color(0.18, 0.20, 0.19, 0.82)
+		docket.add_child(checkbox)
+		var form_line := Line2D.new()
+		form_line.points = PackedVector2Array([Vector2(-5, box_y), Vector2(15, box_y)])
+		form_line.width = 1.5
+		form_line.default_color = Color(0.28, 0.29, 0.25, 0.72)
+		docket.add_child(form_line)
+
+	var seal := Line2D.new()
+	seal.points = PackedVector2Array(_circle_points(9.0, 18, true))
+	seal.position = Vector2(7, 17)
+	seal.width = 2.5
+	seal.default_color = Color(0.72, 0.06, 0.06, 0.92)
+	docket.add_child(seal)
+	var approval_mark := Line2D.new()
+	approval_mark.points = PackedVector2Array([
+		Vector2(1, 17), Vector2(5, 21), Vector2(13, 12),
+	])
+	approval_mark.width = 2.5
+	approval_mark.default_color = Color(0.72, 0.06, 0.06, 0.92)
+	docket.add_child(approval_mark)
+
+	for index in range(8):
+		var angle := TAU * float(index) / 8.0
+		var inward_marker := Polygon2D.new()
+		inward_marker.position = Vector2(cos(angle), sin(angle)) * 45.0
+		inward_marker.rotation = angle + PI
+		inward_marker.polygon = PackedVector2Array([
+			Vector2(-6, -3), Vector2(6, 0), Vector2(-6, 3),
+		])
+		inward_marker.color = Color(0.95, 0.12, 0.08, 0.88)
+		docket.add_child(inward_marker)
 
 
 func _spawn_money(progress: float) -> void:
@@ -480,9 +550,13 @@ func _update_bombs(delta: float) -> void:
 		var age := float(item["age"])
 		if phase == 0:
 			var warning := node.get_node_or_null("WarningRing") as Line2D
+			var docket := node.get_node_or_null("ImpactDocket") as Node2D
 			if warning:
 				warning.modulate.a = 0.35 + 0.65 * absf(sin(age * 14.0))
 				warning.scale = Vector2.ONE * (0.86 + 0.12 * sin(age * 9.0))
+			if docket:
+				docket.rotation = sin(age * 8.0) * 0.045
+				docket.modulate.a = 0.68 + 0.32 * absf(sin(age * 10.0))
 			if age >= BOMB_WARNING_DURATION:
 				item["phase"] = 1
 				item["age"] = 0.0
@@ -564,6 +638,9 @@ func _bomb_impact(parent: Node2D, target: Vector2) -> void:
 	for child in parent.get_children():
 		if child is Line2D:
 			child.visible = false
+	var docket := parent.get_node_or_null("ImpactDocket") as Node2D
+	if docket:
+		docket.visible = false
 	var blast := Node2D.new()
 	blast.name = "Blast"
 	blast.z_index = 9
