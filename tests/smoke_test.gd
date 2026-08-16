@@ -200,10 +200,16 @@ func _run() -> void:
 	_check(not solid_positions.has(musk_center + Vector2i(0, 6)), "Musk exterior doorway remains accessible")
 	_check(not solid_positions.has(putin_center + Vector2i(0, -5)), "Putin has no invisible legacy collision above the facade")
 	_check(solid_positions.has(putin_center + Vector2i(0, -2)), "Putin retains a collision footprint inside the visible facade")
-	_check(solid_positions.has(putin_center + Vector2i(-5, 6)), "Putin left checkpoint blocks its visible fortification mass")
-	_check(solid_positions.has(putin_center + Vector2i(5, 6)), "Putin right checkpoint blocks its visible fortification mass")
+	_check(solid_positions.has(putin_center + Vector2i(-5, 6)), "Putin left checkpoint blocks its upper visible mass")
+	_check(solid_positions.has(putin_center + Vector2i(4, 6)), "Putin right checkpoint blocks its upper visible mass")
+	_check(solid_positions.has(putin_center + Vector2i(-7, 8)), "Putin left anti-tank barrier blocks its front edge")
+	_check(solid_positions.has(putin_center + Vector2i(5, 8)), "Putin right anti-tank barrier blocks its front edge")
+	_check(solid_positions.has(putin_center + Vector2i(-4, 9)), "Putin left concrete base blocks its lowest visible mass")
+	_check(solid_positions.has(putin_center + Vector2i(3, 9)), "Putin right concrete base blocks its lowest visible mass")
 	_check(not solid_positions.has(putin_center + Vector2i(0, 5)), "Putin siege corridor remains clear before the doorway")
 	_check(not solid_positions.has(putin_center + Vector2i(0, 6)), "Putin exterior doorway remains accessible")
+	_check(not solid_positions.has(putin_center + Vector2i(-1, 8)), "Putin shifted siege corridor remains clear on the left")
+	_check(not solid_positions.has(putin_center + Vector2i(0, 9)), "Putin shifted siege corridor remains clear at its front edge")
 	for building_spec in game.get("building_specs"):
 		var center: Vector2i = building_spec["center"]
 		var entrance: Vector2i = building_spec["entrance"]

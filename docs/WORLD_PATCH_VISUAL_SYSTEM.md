@@ -60,7 +60,7 @@ Trump, Musk, Ursula, Lagarde, and Macron currently rely on facade, contact, and 
 
 `scripts/managers/authority_world_patch_builder.gd` owns patch profiles, collision rows, facade composition, ground contact, and optional physical motifs. `main.gd` supplies each existing building specification, registers returned collision cells, and continues to coordinate rooms, NPCs, paths, and story systems.
 
-The authored plate's left and right panel centers sit half a tile beyond the tile-centered physical patch roots. Five facades therefore receive a 16 px outward presentation correction. Putin receives 24 px, applied to both the facade and siege forecourt raster, while its doorway and barrier collision contract remains unchanged.
+The authored plate's left and right panel centers sit half a tile beyond the tile-centered physical patch roots. Five facades therefore receive a 16 px outward presentation correction. Putin receives 24 px, applied to both the facade and siege forecourt raster. Its independent collision mask follows the shifted fortification masses across four occupied rows while preserving a two-cell central corridor to the unchanged doorway.
 
 `WorldLandmarkBuilder` remains responsible for optional static landmarks such as the Great Wall, bunker, nuclear plant, and Pyongyang. Xi's wall is the border-scale exception: its visible front line meets the north world bound while the wall mass remains outside the playable terrain, spans the complete map width, owns two physical wall-wing colliders, and exposes one central doorway. Bezos currently enters the overworld as a drone encounter, not a stable landmark; a future Fulfillment Cathedral requires its own world-location decision before it can receive a patch.
 

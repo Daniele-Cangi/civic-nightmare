@@ -45,12 +45,11 @@ const PATCH_PROFILES := {
 			[-2, -2, 2], [-1, -2, 2], [0, -2, 2],
 			[1, -5, 5], [2, -5, 5], [3, -5, 5], [4, -5, 5]
 		],
-		"prop_collision_cells": [
-			Vector2i(-6, 5), Vector2i(-5, 5), Vector2i(-4, 5), Vector2i(-3, 5),
-			Vector2i(3, 5), Vector2i(4, 5), Vector2i(5, 5), Vector2i(6, 5),
-			Vector2i(-6, 6), Vector2i(-5, 6), Vector2i(-4, 6),
-			Vector2i(4, 6), Vector2i(5, 6), Vector2i(6, 6),
-			Vector2i(-6, 7), Vector2i(-5, 7), Vector2i(5, 7), Vector2i(6, 7)
+		"prop_collision_rows": [
+			[6, -5, -2], [6, 1, 4],
+			[7, -6, -2], [7, 1, 4],
+			[8, -7, -2], [8, 1, 5],
+			[9, -5, -3], [9, 2, 4]
 		],
 		"approach_half_width": 2,
 		"visual_offset": Vector2(-24.0, 0.0),
@@ -110,9 +109,11 @@ func get_collision_cells(building_key: String, center: Vector2i) -> Array[Vector
 		var local_y := int(row[0])
 		for local_x in range(int(row[1]), int(row[2]) + 1):
 			cells.append(center + Vector2i(local_x, local_y))
-	for local_cell_value in profile.get("prop_collision_cells", []):
-		var local_cell: Vector2i = local_cell_value
-		cells.append(center + local_cell)
+	for row_value in profile.get("prop_collision_rows", []):
+		var row: Array = row_value
+		var local_y := int(row[0])
+		for local_x in range(int(row[1]), int(row[2]) + 1):
+			cells.append(center + Vector2i(local_x, local_y))
 	return cells
 
 
