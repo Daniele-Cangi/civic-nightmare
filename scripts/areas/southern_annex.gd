@@ -9,7 +9,7 @@ const NEURAL_CORE_LANDMARK_POSITION := Vector2(1184.0, 640.0)
 const PYONGYANG_ACCESS_POSITION := Vector2(272.0, 700.0)
 const NEURAL_CORE_ACCESS_POSITION := Vector2(1184.0, 700.0)
 const PYONGYANG_ART_OFFSET := Vector2(-48.0, 32.0)
-const NEURAL_CORE_ART_OFFSET := Vector2(8.0, 16.0)
+const NEURAL_CORE_ART_OFFSET := Vector2(0.0, 16.0)
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var interactables: Node2D = $Interactables
