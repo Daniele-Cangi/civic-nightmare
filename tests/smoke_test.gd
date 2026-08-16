@@ -297,7 +297,8 @@ func _run() -> void:
 		if reactor_sprite and reactor_sprite.texture:
 			_check(reactor_sprite.texture.get_size() == Vector2(480.0, 320.0), "the inference reactor asset is runtime-sized")
 			_check(reactor_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the inference reactor retains its HD filtering")
-			_check(reactor_sprite.position.is_equal_approx(Vector2(0.0, -58.0)), "Sam's artwork aligns its drawn entrance to the demonstration stairs")
+			_check(reactor_sprite.position.is_equal_approx(Vector2(8.0, -144.0)), "Sam's artwork keeps its local plate-registration offset")
+			_check((inference_reactor.position + reactor_sprite.position).is_equal_approx(Vector2(1192.0, 496.0)), "Sam's artwork is centred in the eastern bay and aligned with its approach")
 		_check(reactor_door != null and str(reactor_door.get("destination")) == "neural_core", "the single demonstration entrance enters Sam's neural core")
 		_check(reactor_door != null and (inference_reactor.position + reactor_door.position).is_equal_approx(Vector2(1184.0, 700.0)), "Sam's access trigger follows the authored demonstration stairs")
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
@@ -315,7 +316,8 @@ func _run() -> void:
 		if artillery_sprite and artillery_sprite.texture:
 			_check(artillery_sprite.texture.get_size() == Vector2(448.0, 352.0), "the broadcast artillery asset is runtime-sized")
 			_check(artillery_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the broadcast artillery retains its HD filtering")
-			_check(artillery_sprite.position.is_equal_approx(Vector2(-80.0, -81.0)), "Kim's artwork aligns its drawn hatch to the red security threshold")
+			_check(artillery_sprite.position.is_equal_approx(Vector2(-48.0, -144.0)), "Kim's artwork keeps its local plate-registration offset")
+			_check((broadcast_artillery.position + artillery_sprite.position).is_equal_approx(Vector2(304.0, 496.0)), "Kim's artwork is centred in the western bay and aligned with its approach")
 		_check(artillery_door != null and str(artillery_door.get("destination")) == "pyongyang_command", "the single artillery hatch enters Kim's broadcast room")
 		_check(artillery_door != null and (broadcast_artillery.position + artillery_door.position).is_equal_approx(Vector2(272.0, 700.0)), "Kim's access trigger follows the authored red security threshold")
 		_check(broadcast_artillery.get_node_or_null("PyongyangCannonDoorLeft") == null, "the obsolete overlapping artillery triggers are absent")
