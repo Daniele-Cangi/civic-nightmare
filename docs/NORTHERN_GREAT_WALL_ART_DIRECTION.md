@@ -10,10 +10,10 @@ The central Tiananmen-inspired gate communicates the encounter before dialogue. 
 
 - Asset: `assets/landmarks/northern_great_wall_v1.png`.
 - Canvas: 2176×448 transparent RGBA, exactly the overworld width.
-- Placement: top-left anchored at world `(-1088, -1024)` with linear filtering.
+- Placement: the raster origin is `(-1088, -1427)` so its visible front line lands exactly on the playable north boundary at `y = -1024`; the wall mass remains outside the map.
 - Layering: the wall remains behind the two northern authority facades; the central gate occupies the open boulevard between them.
-- Gate: one traversable opening at world `x = 16`, with its `red_command` trigger centered at `y = -604`.
-- Return point: exiting Xi places the player at `(16, -544)`, south of the trigger, preventing an immediate re-entry loop.
+- Gate: one traversable opening on the boulevard's exact visual axis at world `x = 0`, with its `red_command` trigger centered at `y = -976`. The normalization pass shifts the generated arch 19 px left to match that axis.
+- Return point: exiting Xi places the player at `(16, -896)`, south of the trigger, preventing an immediate re-entry loop.
 - Collision: two shallow solid wings follow the visible wall front while a 128 px central channel remains open.
 - Fallback: the former `landmark_great_wall.png` cutout is created only if the full-width asset is unavailable.
 
