@@ -8,7 +8,7 @@ const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.g
 const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
-const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v2.png"
+const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -140,8 +140,9 @@ func _run() -> void:
 	var authority_patches := game.get_tree().get_nodes_in_group("authority_world_patch")
 	_check(authority_patches.size() == 6, "all six authority facades belong to complete world patches")
 	for patch in authority_patches:
-		_check(patch.get_node_or_null("FoundationApron") != null, "%s world patch owns its terrain seam" % patch.name)
-		_check(patch.get_node_or_null("Approach") != null, "%s world patch owns its approach" % patch.name)
+		_check(patch.get_node_or_null("ContactShadow") != null, "%s world patch owns a soft terrain contact" % patch.name)
+		_check(patch.get_node_or_null("FoundationApron") == null, "%s world patch does not place a hard-edged platform over the plaza" % patch.name)
+		_check(patch.get_node_or_null("Approach") == null, "%s world patch does not paint a route carpet over the authored plaza" % patch.name)
 		_check(int(patch.get_meta("collision_cell_count", 0)) > 0, "%s world patch defines its visible collision footprint" % patch.name)
 	var kremlin_patch := game.get_node_or_null("Entities/KremlinWorldPatch")
 	var siege_forecourt := kremlin_patch.get_node_or_null("SiegeForecourt") as Sprite2D if kremlin_patch else null
@@ -156,12 +157,12 @@ func _run() -> void:
 		_check(facade_character_ids.has(character_id), "%s receives its authority facade" % character_id)
 	var ground_map: TileMap = game.get("ground_map")
 	var expected_authority_centers := {
-		"oval_office": Vector2i(18, -23),
-		"spaceship": Vector2i(-19, -23),
-		"eu_palace": Vector2i(18, -2),
-		"kremlin": Vector2i(-19, -2),
-		"vault": Vector2i(18, 19),
-		"elysee": Vector2i(-19, 20)
+		"oval_office": Vector2i(16, -23),
+		"spaceship": Vector2i(-17, -23),
+		"eu_palace": Vector2i(16, -2),
+		"kremlin": Vector2i(-17, -2),
+		"vault": Vector2i(16, 19),
+		"elysee": Vector2i(-17, 20)
 	}
 	for building_spec in game.get("building_specs"):
 		var building_center: Vector2i = building_spec["center"]
@@ -170,12 +171,12 @@ func _run() -> void:
 		_check((building_spec["entrance"] as Vector2i).x == building_center.x, "%s entrance stays aligned with its facade" % building_spec["key"])
 		_check((building_spec["npc_spawn"] as Vector2i).x == building_center.x, "%s NPC spawn stays aligned with its facade" % building_spec["key"])
 	var expected_facade_visual_centers := {
-		"donald_trump": Vector2(592.0, -683.0),
-		"elon_musk": Vector2(-592.0, -683.0),
-		"ursula_von_der_leyen": Vector2(592.0, 0.0),
-		"vladimir_putin": Vector2(-592.0, 0.0),
-		"christine_lagarde": Vector2(592.0, 683.0),
-		"emmanuel_macron": Vector2(-592.0, 683.0)
+		"donald_trump": Vector2(528.0, -683.0),
+		"elon_musk": Vector2(-528.0, -683.0),
+		"ursula_von_der_leyen": Vector2(528.0, 0.0),
+		"vladimir_putin": Vector2(-528.0, 0.0),
+		"christine_lagarde": Vector2(528.0, 683.0),
+		"emmanuel_macron": Vector2(-528.0, 683.0)
 	}
 	for facade in authority_facades:
 		var character_id := str(facade.get_meta("character_id", ""))
@@ -210,6 +211,8 @@ func _run() -> void:
 	_check(district_plates.size() == 1, "the overworld installs exactly one district ground plate")
 	_check(ground_map.get_cell_source_id(0, Vector2i(8, 12)) == -1, "the ground plate replaces repeated biome field tiles")
 	_check(ground_map.get_cell_source_id(0, Vector2i.ZERO) == -1, "legacy path tiles do not band the authored civic corridor")
+	_check(ground_map.get_cell_source_id(1, Vector2i(-34, -32)) == -1, "the HD plate is not overlaid with a legacy 16-bit tree border")
+	_check(solid_positions.has(Vector2i(-34, -32)), "the invisible world boundary remains solid without legacy border art")
 	if ending_sequence:
 		for final_case in [[0, "wouldn't matter"], [1, "almost didn't"], [-1, "only honest"]]:
 			ending_sequence.call("configure_final_credits", final_case[0], "still here")

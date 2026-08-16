@@ -18,7 +18,7 @@ The satire must survive without dialogue, signage, or character portraits. At ga
 ## Shared runtime contract
 
 - elevated three-quarter frontal/top-down RPG perspective;
-- modern high-detail pixel art with coherent clusters and a restrained material palette;
+- modern high-detail illustrated 2D game art with crisp material definition and a restrained palette;
 - one complete freestanding contemporary building with a readable entrance at the exact bottom center;
 - strong silhouette at 352 px runtime width;
 - upper-left key light with practical lights contained inside the building;
@@ -38,4 +38,4 @@ The satire must survive without dialogue, signage, or character portraits. At ga
 
 Built-in Imagegen generated each facade from a dedicated production brief on a removable `#FF00FF` background. Putin established the new density and camera contract; the remaining images used an approved facade only as a style, angle, scale, crispness, and lighting reference, never as an architectural template.
 
-The installed chroma-key helper removes flat backgrounds with a soft matte and despill. `scripts/normalize_authority_facade.py` then clears residual key pixels, crops the visible subject, downsamples it with high-quality filtering, centers it horizontally, bottom-aligns its entrance, and writes the correct 352 px runtime canvas. Godot uses nearest texture filtering. A dark offset duplicate supplies the world-space shadow, while procedural footprints remain the collision source.
+The installed chroma-key helper removes flat backgrounds with a soft matte and despill. `scripts/normalize_authority_facade.py` then clears residual key pixels, crops the visible subject, downsamples it with high-quality filtering, centers it horizontally, bottom-aligns its entrance, and writes the correct 352 px runtime canvas. Exterior facades now use linear texture filtering so their pre-rendered material detail shares one visual scale with the HD district plate. Procedural footprints remain the collision source.
