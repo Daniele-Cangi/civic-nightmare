@@ -54,8 +54,9 @@ The facade is therefore not a collectible sprite placed at a coordinate. It is o
 - **Trump — spectacle:** a red-carpet funnel and excessive gold access markers convert a civic entrance into an event.
 - **Ursula — procedure:** one short walk is divided into formal queue lanes and gates; access is visible and unnecessarily mediated.
 - **Macron — managed decline:** a ceremonial inlay remains polished while repair seams and temporary barriers occupy its edges.
+- **Putin — control under siege:** a physical raster forecourt of blast walls, sandbags, searchlights, and anti-tank obstacles surrounds one deliberately clear ceremonial route. Its flanking masses own collision while the central threshold remains walkable.
 
-Musk, Putin, and Lagarde already use the same structural patch contract and collision ownership. Their current motifs are intentionally lighter first passes: prototype launch marks, siege barriers, and tiered stability lines. They are the next visual-detail candidates.
+Musk and Lagarde already use the same structural patch contract and collision ownership. Their current motifs are intentionally lighter first passes: prototype launch marks and tiered stability lines. They are the next visual-detail candidates.
 
 ## Runtime ownership
 
@@ -72,3 +73,5 @@ Musk, Putin, and Lagarde already use the same structural patch contract and coll
 5. Add at most one local motif with a clear narrative purpose.
 6. Verify the patch at gameplay zoom and with the player approaching from the central corridor.
 7. Extend the smoke assertions before changing unrelated districts.
+
+Raster motifs may replace a procedural motif when the satire depends on recognizable physical props. They remain children of the same patch, use nearest filtering, preserve the entrance axis, and contribute explicit flanking collision cells when their mass occupies walkable ground.

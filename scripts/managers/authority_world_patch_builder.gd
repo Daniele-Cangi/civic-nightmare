@@ -45,11 +45,22 @@ const PATCH_PROFILES := {
 			[-2, -2, 2], [-1, -2, 2], [0, -2, 2],
 			[1, -5, 5], [2, -5, 5], [3, -5, 5], [4, -5, 5]
 		],
+		"prop_collision_cells": [
+			Vector2i(-6, 5), Vector2i(-5, 5), Vector2i(-4, 5), Vector2i(-3, 5),
+			Vector2i(3, 5), Vector2i(4, 5), Vector2i(5, 5), Vector2i(6, 5),
+			Vector2i(-6, 6), Vector2i(-5, 6), Vector2i(-4, 6),
+			Vector2i(4, 6), Vector2i(5, 6), Vector2i(6, 6),
+			Vector2i(-6, 7), Vector2i(-5, 7), Vector2i(5, 7), Vector2i(6, 7)
+		],
 		"approach_half_width": 2,
 		"foundation": Color(0.19, 0.18, 0.12, 0.36),
 		"edge": Color(0.76, 0.22, 0.12, 0.58),
 		"route": Color(0.32, 0.035, 0.025, 0.52),
-		"motif": "siege"
+		"motif": "siege",
+		"motif_asset": "res://assets/landmarks/authority_putin_siege_forecourt_v1.png",
+		"motif_display_width": 416.0,
+		"motif_position": Vector2(0.0, 0.0),
+		"motif_z_index": 1
 	},
 	"vault": {
 		"collision_rows": [
@@ -99,6 +110,9 @@ func get_collision_cells(building_key: String, center: Vector2i) -> Array[Vector
 		var local_y := int(row[0])
 		for local_x in range(int(row[1]), int(row[2]) + 1):
 			cells.append(center + Vector2i(local_x, local_y))
+	for local_cell_value in profile.get("prop_collision_cells", []):
+		var local_cell: Vector2i = local_cell_value
+		cells.append(center + local_cell)
 	return cells
 
 
@@ -128,7 +142,8 @@ func create_authority_patch(spec: Dictionary, texture: Texture2D) -> Dictionary:
 	entities_layer.add_child(root)
 
 	_build_ground_contact(root, profile)
-	_build_motif(root, str(profile.get("motif", "")), profile)
+	if not _build_raster_motif(root, profile):
+		_build_motif(root, str(profile.get("motif", "")), profile)
 
 	var facade := Sprite2D.new()
 	facade.name = "%sFacade" % _pascal_case(building_key)
@@ -147,6 +162,29 @@ func create_authority_patch(spec: Dictionary, texture: Texture2D) -> Dictionary:
 		"facade": facade,
 		"collision_cells": collision_cells
 	}
+
+
+func _build_raster_motif(root: Node2D, profile: Dictionary) -> bool:
+	var texture_path := str(profile.get("motif_asset", ""))
+	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
+		return false
+	var texture := load(texture_path) as Texture2D
+	if texture == null or texture.get_width() <= 0:
+		return false
+
+	var motif := Sprite2D.new()
+	motif.name = "SiegeForecourt"
+	motif.texture = texture
+	motif.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	motif.position = profile.get("motif_position", Vector2.ZERO)
+	var display_width := float(profile.get("motif_display_width", texture.get_width()))
+	var motif_scale := display_width / float(texture.get_width())
+	motif.scale = Vector2(motif_scale, motif_scale)
+	motif.z_index = int(profile.get("motif_z_index", 1))
+	motif.add_to_group("authority_patch_motif")
+	motif.set_meta("motif", str(profile.get("motif", "")))
+	root.add_child(motif)
+	return true
 
 
 func _build_ground_contact(root: Node2D, profile: Dictionary) -> void:
