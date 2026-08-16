@@ -95,7 +95,7 @@ func _run() -> void:
 	var overworld_camera := game.get_node_or_null("Entities/Player/Camera2D") as Camera2D
 	_check(overworld_camera != null and overworld_camera.zoom.is_equal_approx(Vector2(1.35, 1.35)), "the overworld camera reveals slightly more of each district")
 	_check(overworld_camera != null and overworld_camera.limit_left == -1088 and overworld_camera.limit_right == 1088, "the overworld camera cannot reveal beyond the authored horizontal plate")
-	_check(overworld_camera != null and overworld_camera.limit_top == -1024 and overworld_camera.limit_bottom == 1024, "the overworld camera cannot reveal beyond the authored vertical plate")
+	_check(overworld_camera != null and overworld_camera.limit_top == -1427 and overworld_camera.limit_bottom == 1024, "the overworld camera includes the complete northern wall without revealing beyond the authored south edge")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
@@ -298,6 +298,7 @@ func _run() -> void:
 			_check(reactor_sprite.texture.get_size() == Vector2(480.0, 320.0), "the inference reactor asset is runtime-sized")
 			_check(reactor_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the inference reactor retains its HD filtering")
 		_check(reactor_door != null and str(reactor_door.get("destination")) == "neural_core", "the single demonstration entrance enters Sam's neural core")
+		_check(reactor_door != null and (inference_reactor.position + reactor_door.position).is_equal_approx(Vector2(1184.0, 700.0)), "Sam's access trigger follows the authored demonstration stairs")
 		_check(inference_reactor.get_node_or_null("NeuralCoreDoorLeft") == null, "the obsolete overlapping reactor triggers are absent")
 		_check(reactor_collision != null and reactor_collision.get_child_count() == 3, "the inference reactor collision follows its upper mass and service wings")
 	_check(hidden_bunker != null, "hidden bunker landmark is created")
@@ -314,6 +315,7 @@ func _run() -> void:
 			_check(artillery_sprite.texture.get_size() == Vector2(448.0, 352.0), "the broadcast artillery asset is runtime-sized")
 			_check(artillery_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "the broadcast artillery retains its HD filtering")
 		_check(artillery_door != null and str(artillery_door.get("destination")) == "pyongyang_command", "the single artillery hatch enters Kim's broadcast room")
+		_check(artillery_door != null and (broadcast_artillery.position + artillery_door.position).is_equal_approx(Vector2(272.0, 700.0)), "Kim's access trigger follows the authored red security threshold")
 		_check(broadcast_artillery.get_node_or_null("PyongyangCannonDoorLeft") == null, "the obsolete overlapping artillery triggers are absent")
 		_check(artillery_collision != null and artillery_collision.get_child_count() == 3, "the broadcast artillery collision follows its carriage and production wings")
 	var annex_exit := southern_annex.get_node_or_null("Interactables/ReturnToMainDistrict") as Area2D if southern_annex else null

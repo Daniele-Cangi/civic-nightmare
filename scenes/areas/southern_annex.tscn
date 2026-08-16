@@ -31,7 +31,7 @@ y_sort_enabled = true
 position = Vector2(768, 260)
 
 [node name="PyongyangExterior" type="Marker2D" parent="Markers"]
-position = Vector2(352, 700)
+position = Vector2(272, 770)
 
 [node name="NeuralCoreExterior" type="Marker2D" parent="Markers"]
-position = Vector2(1184, 700)
+position = Vector2(1184, 770)

@@ -9,6 +9,7 @@ Kim Jong-un and Sam Altman no longer occupy unrelated corners of the main distri
 - Area scene: `res://scenes/areas/southern_annex.tscn`, positioned away from the main world and registered through `RoomManager` as an exterior travel container.
 - West bay: Kim's existing 448×352 broadcast-artillery landmark, centred on the authored medallion at local `(352, 640)`.
 - East bay: Sam's existing 480×320 inference-reactor landmark, centred on the authored medallion at local `(1184, 640)`.
+- Access thresholds are independent from landmark centres: Kim uses the red security threshold at `(272, 700)` and Sam uses the demonstration stairs at `(1184, 700)`. Return markers sit south of both triggers to prevent transition loops.
 - The central gate passage is open; its two checkpoint wings are solid.
 - Both interiors return to named markers in the annex. The annex returns north of the main-map gate trigger.
 - Camera limits follow each opaque plate so no unauthored void appears at an edge.
