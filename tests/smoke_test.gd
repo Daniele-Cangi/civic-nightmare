@@ -288,7 +288,7 @@ func _run() -> void:
 	var inference_reactor := annex_entities.get_node_or_null("NuclearPlantEntrance") as Node2D if annex_entities else null
 	_check(inference_reactor != null, "inference reactor landmark is created")
 	if inference_reactor:
-		_check(inference_reactor.position.is_equal_approx(Vector2(1056.0, 710.0)), "Sam is centered in the eastern demonstration bay")
+		_check(inference_reactor.position.is_equal_approx(Vector2(1184.0, 640.0)), "Sam is centered on the eastern demonstration medallion")
 		var reactor_sprite := inference_reactor.get_node_or_null("NuclearPlantLandmark") as Sprite2D
 		var reactor_door := inference_reactor.get_node_or_null("NeuralCoreDoor") as Area2D
 		var reactor_collision := inference_reactor.get_node_or_null("InferenceReactorCollision") as StaticBody2D
@@ -304,7 +304,7 @@ func _run() -> void:
 	var broadcast_artillery := annex_entities.get_node_or_null("PyongyangEntrance") as Node2D if annex_entities else null
 	_check(broadcast_artillery != null, "Pyongyang broadcast artillery landmark is created")
 	if broadcast_artillery:
-		_check(broadcast_artillery.position.is_equal_approx(Vector2(480.0, 710.0)), "Kim is centered in the western propaganda bay")
+		_check(broadcast_artillery.position.is_equal_approx(Vector2(352.0, 640.0)), "Kim is centered on the western propaganda medallion")
 		var artillery_sprite := broadcast_artillery.get_node_or_null("PyongyangLandmark") as Sprite2D
 		var artillery_door := broadcast_artillery.get_node_or_null("PyongyangCannonDoor") as Area2D
 		var artillery_collision := broadcast_artillery.get_node_or_null("BroadcastArtilleryCollision") as StaticBody2D
