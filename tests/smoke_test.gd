@@ -19,6 +19,7 @@ const WESTERN_AID_DISTRICT_PATCH_PATH := "res://assets/backgrounds/western_aid_d
 const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barrier_v1.png"
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
+const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
 	"spaceship": "res://assets/interiors/starlink_permanent_beta_v1.png",
@@ -57,6 +58,7 @@ func _run() -> void:
 	_test_world_district_plate()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
+	_test_historical_contamination_asset()
 	await _test_xi_intercept_presentation()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
@@ -85,6 +87,7 @@ func _run() -> void:
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	var bezos_encounter: Node = game.get("bezos_encounter")
 	var bunker_access_gauntlet: Node = game.get("bunker_access_gauntlet")
+	var contamination_root: Node = game.get("contamination_root")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
 	_check(save_manager != null, "save manager is initialized")
@@ -96,6 +99,12 @@ func _run() -> void:
 	_check(dialogue_manager != null, "dialogue manager is initialized")
 	_check(dossier_manager != null, "dossier manager is initialized")
 	_check(administrative_hold != null, "Administrative Hold is initialized")
+	_check(contamination_root != null, "historical contamination apparition is initialized")
+	if contamination_root:
+		var contamination_sprite := contamination_root.get_node_or_null("Sprite") as Sprite2D
+		_check(contamination_sprite != null and contamination_sprite.texture != null, "historical contamination apparition mounts its authored sprite")
+		if contamination_sprite and contamination_sprite.texture:
+			_check(contamination_sprite.texture.resource_path == HISTORICAL_CONTAMINATION_SPRITE_PATH, "historical contamination uses the corrected face variant")
 	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(ending_sequence != null, "ending sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
@@ -741,6 +750,18 @@ func _test_ai_terminal_assets() -> void:
 		_check(texture != null, "%s can be loaded" % asset_path)
 		if texture:
 			_check(texture.get_size() == Vector2(128, 128), "%s is runtime-sized" % asset_path)
+
+
+func _test_historical_contamination_asset() -> void:
+	_check(ResourceLoader.exists(HISTORICAL_CONTAMINATION_SPRITE_PATH), "corrected historical contamination sprite exists")
+	if not ResourceLoader.exists(HISTORICAL_CONTAMINATION_SPRITE_PATH):
+		return
+	var texture := load(HISTORICAL_CONTAMINATION_SPRITE_PATH) as Texture2D
+	_check(texture != null, "corrected historical contamination sprite can be loaded")
+	if texture:
+		_check(texture.get_size() == Vector2(1024, 1024), "corrected historical contamination sprite preserves its authored canvas")
+		var image := texture.get_image()
+		_check(image != null and image.get_pixel(0, 0).a < 0.05, "corrected historical contamination sprite preserves transparent margins")
 
 
 func _test_authority_facades() -> void:
