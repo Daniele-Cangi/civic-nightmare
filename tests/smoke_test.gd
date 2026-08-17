@@ -968,6 +968,33 @@ func _test_price_stability_pinball() -> void:
 	_check(int(served_pinball.get("bailouts")) == 1 and (served_pinball.get("balls") as Array).size() == 1, "the replacement ball reaches a flipper instead of immediately draining again")
 	served_pinball.queue_free()
 
+	var rail_pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
+	root.add_child(rail_pinball)
+	rail_pinball.setup(root)
+	rail_pinball.start({
+		"intro_duration": 0.0,
+		"physics_enabled": true,
+		"timers_enabled": false,
+	})
+	rail_pinball.process_frame(0.01)
+	var rail_ball: Dictionary = (rail_pinball.get("balls") as Array)[0]
+	rail_ball["position"] = Vector2(410, 510)
+	rail_ball["velocity"] = Vector2(-250, 600)
+	(rail_ball.get("node") as Node2D).position = rail_ball["position"]
+	rail_pinball.process_frame(0.08)
+	_check((rail_ball.get("velocity") as Vector2).x > 0.0 and (rail_ball.get("velocity") as Vector2).y < 0.0, "the left south guide returns a fast edge ball toward play")
+	rail_ball["position"] = Vector2(870, 510)
+	rail_ball["velocity"] = Vector2(250, 600)
+	(rail_ball.get("node") as Node2D).position = rail_ball["position"]
+	rail_pinball.process_frame(0.08)
+	_check((rail_ball.get("velocity") as Vector2).x < 0.0 and (rail_ball.get("velocity") as Vector2).y < 0.0, "the right south guide returns a fast edge ball toward play")
+	rail_ball["position"] = Vector2(640, 690)
+	rail_ball["velocity"] = Vector2(0, 300)
+	(rail_ball.get("node") as Node2D).position = rail_ball["position"]
+	rail_pinball.process_frame(0.08)
+	_check(int(rail_pinball.get("bailouts")) == 1, "the intentional central drain remains open between the protected south edges")
+	rail_pinball.queue_free()
+
 	var stabilized_pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
 	root.add_child(stabilized_pinball)
 	stabilized_pinball.setup(root)
