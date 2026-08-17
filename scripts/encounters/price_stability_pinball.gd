@@ -17,6 +17,13 @@ const DRAIN_Y := 704.0
 const FLIPPER_LENGTH := 146.0
 const SYSTEMIC_SERVE_POSITION := Vector2(640, 555)
 const SYSTEMIC_SERVE_SPEED := Vector2(18, -260)
+const SOUTH_LEFT_GUIDE_START := Vector2(282, 470)
+const SOUTH_LEFT_GUIDE_END := Vector2(460, 618)
+const SOUTH_RIGHT_GUIDE_START := Vector2(998, 470)
+const SOUTH_RIGHT_GUIDE_END := Vector2(820, 618)
+const SOUTH_GUIDE_COLLISION_RADIUS := BALL_RADIUS + 13.0
+const MAX_PHYSICS_FRAME_DELTA := 0.2
+const PHYSICS_STEP := 1.0 / 120.0
 const DEFAULT_INTRO_DURATION := 1.0
 const DEFAULT_BEAT_DURATION := 1.25
 const DEFAULT_OUTRO_DURATION := 1.6
@@ -343,6 +350,14 @@ func _freeze_balls() -> void:
 
 
 func _update_balls(delta: float) -> void:
+	var simulation_delta := minf(maxf(delta, 0.0), MAX_PHYSICS_FRAME_DELTA)
+	var step_count := maxi(1, ceili(simulation_delta / PHYSICS_STEP))
+	var step_delta := simulation_delta / float(step_count)
+	for step_index in range(step_count):
+		_update_balls_step(step_delta)
+
+
+func _update_balls_step(delta: float) -> void:
 	for i in range(balls.size() - 1, -1, -1):
 		var ball: Dictionary = balls[i]
 		_integrate_ball(ball, delta)
@@ -389,6 +404,7 @@ func _integrate_ball(ball: Dictionary, delta: float) -> void:
 	ball["velocity"] = velocity
 	ball["bumper_cooldown"] = maxf(0.0, float(ball.get("bumper_cooldown", 0.0)) - delta)
 	_collide_ball_with_bumpers(ball)
+	_collide_ball_with_south_guides(ball)
 	_collide_ball_with_flippers(ball)
 	var node: Node2D = ball.get("node")
 	if node and is_instance_valid(node):
@@ -426,6 +442,42 @@ func _collide_ball_with_flippers(ball: Dictionary) -> void:
 	var right_tip := right_flipper.position + Vector2(-FLIPPER_LENGTH, 0).rotated(right_flipper.rotation)
 	_collide_ball_with_segment(ball, left_flipper.position, left_tip, Input.is_action_pressed("ui_left"))
 	_collide_ball_with_segment(ball, right_flipper.position, right_tip, Input.is_action_pressed("ui_right"))
+
+
+func _collide_ball_with_south_guides(ball: Dictionary) -> void:
+	_collide_ball_with_guide(
+		ball,
+		SOUTH_LEFT_GUIDE_START,
+		SOUTH_LEFT_GUIDE_END,
+		Vector2(0.64, -0.77)
+	)
+	_collide_ball_with_guide(
+		ball,
+		SOUTH_RIGHT_GUIDE_START,
+		SOUTH_RIGHT_GUIDE_END,
+		Vector2(-0.64, -0.77)
+	)
+
+
+func _collide_ball_with_guide(ball: Dictionary, start: Vector2, end: Vector2, inward_normal: Vector2) -> void:
+	var position: Vector2 = ball.get("position", Vector2.ZERO)
+	var segment := end - start
+	var segment_length_squared := segment.length_squared()
+	if segment_length_squared <= 0.01:
+		return
+	var amount := clampf((position - start).dot(segment) / segment_length_squared, 0.0, 1.0)
+	var closest := start + segment * amount
+	if position.distance_squared_to(closest) >= SOUTH_GUIDE_COLLISION_RADIUS * SOUTH_GUIDE_COLLISION_RADIUS:
+		return
+	var normal := inward_normal.normalized()
+	position = closest + normal * SOUTH_GUIDE_COLLISION_RADIUS
+	var velocity: Vector2 = ball.get("velocity", Vector2.ZERO)
+	if velocity.dot(normal) < 0.0:
+		velocity = velocity.bounce(normal) * 0.92
+		velocity.y = minf(velocity.y, -240.0)
+		velocity.x += normal.x * 90.0
+	ball["position"] = position
+	ball["velocity"] = velocity
 
 
 func _collide_ball_with_segment(ball: Dictionary, start: Vector2, end: Vector2, engaged: bool) -> void:

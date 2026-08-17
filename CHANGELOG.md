@@ -36,6 +36,9 @@ web deployment and tagged releases for major public milestones.
 
 - Lagarde's restored systemic ball now follows a protected central service arc
   onto an inner flipper instead of immediately draining into repeated bailouts.
+- The monetary table's two south-edge rails now have matching physical guides;
+  fixed physics substeps prevent fast balls from tunnelling through them while
+  preserving the intentional drain between the flippers.
 
 ## [2.0.0] - 2026-08-17
 
