@@ -846,6 +846,15 @@ func _test_consensus_engine() -> void:
 	engine.setup(root)
 	engine.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0, "timers_enabled": false})
 	engine.process_frame(0.01)
+	var approval_lights: Array = engine.get("lights")
+	var first_light_style := (approval_lights[0] as PanelContainer).get_theme_stylebox("panel") as StyleBoxFlat
+	_check(approval_lights.size() == 27 and first_light_style != null and first_light_style.bg_color.a > 0.99, "all 27 approvals use complete physical indicators")
+	var scanner_console := (engine.get("station_nodes") as Dictionary)["scanner"] as PanelContainer
+	var scanner_style := scanner_console.get_theme_stylebox("panel") as StyleBoxFlat
+	_check(scanner_style != null and scanner_style.bg_color.a > 0.99 and (scanner_console.get_child(0) as Control).get_child_count() >= 5, "procedure stations are opaque machine consoles rather than floating labels")
+	_check((engine.get("dossier_root") as Node2D).get_child_count() >= 9 and str((engine.get("dossier_stamp") as Label).text) == "00 / 27", "the movable dossier is a layered physical case with a live approval counter")
+	var derogation_style := (engine.get("emergency_panel") as PanelContainer).get_theme_stylebox("panel") as StyleBoxFlat
+	_check(derogation_style != null and derogation_style.bg_color.a > 0.99, "the emergency derogation is housed in a complete physical console")
 	for station_id in ["scanner", "stamp", "submit"]:
 		_check(engine.interact_at_station(station_id), "simple-majority route accepts %s" % station_id)
 	engine.process_frame(0.01)
