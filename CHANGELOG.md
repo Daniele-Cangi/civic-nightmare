@@ -5,6 +5,12 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+### Changed
+
+- Refreshed the README's visual identity and gallery to use current runtime art,
+  replacing the superseded nuclear-plant mockup with the inference reactor and
+  adding representative 2.0 landmarks, interiors, anomalies, and combat art.
+
 ## [2.0.0] - 2026-08-17
 
 ### Release title
