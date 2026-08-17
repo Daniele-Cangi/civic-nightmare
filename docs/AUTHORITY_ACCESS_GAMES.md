@@ -18,18 +18,23 @@ character's dialogue.
 
 ## The Greatest Deal
 
-Three face-up citizen cards are controlled with Left/Right and played with
-Space. Every phase states its current rule; Trump then declares victory whether
-or not the arithmetic supports it. The player chooses Accept or Challenge.
+The procedure is blackjack before it becomes satire. The HUD permanently shows
+`TARGET: 21`, round, Trump total, Citizen total, and remaining challenges. Both
+hands are rendered as complete physical playing cards. Left/Right selects
+`HIT` or `STAND`; Space confirms.
 
-Accepting loses the current deal but creates leverage. `X` spends leverage to
-freeze one later rule change. A correct challenge wins the deal; a false
-challenge removes chips. The three deterministic hands teach cancellation,
-gold-card multiplication, and a final recount that can be blocked or frozen.
+The three deterministic hands teach the grammar without a tutorial wall: the
+first should be stood on, the second needs one hit, and the third needs two.
+The real result is always displayed first, including exact scores or a bust.
+Only a genuine Citizen win allows Trump to introduce a separate gold event
+card—Poll Numbers, Executive Order, or Dealer Recount—and place the result
+under review. Special moves are never presented as cards in the Citizen hand.
 
-The dossier retains accepted claims, successful and failed challenges,
-leverage use, attempts, and remaining chips. These are observations about the
-negotiation method, not morality points.
+After the intervention, the player chooses Accept or Challenge. Three visible
+challenges correspond to the three deals. The dossier separately retains hits,
+stands, busts, original wins, accepted claims, successful challenges, attempts,
+and the named interference events. These are observations about play and
+negotiation, not morality points.
 
 ## The Consensus Engine
 
@@ -50,7 +55,7 @@ an 847-page approval before the normal Ursula room opens.
 
 ## Verification
 
-`tests/smoke_test.gd` proves the deterministic winning rules, the strategic
-Accept path, the lawful derogation path, semantic results, module mounting, and
-save/restore of both clearance bits. CI runs parse, smoke, and Web export before
-deployment.
+`tests/smoke_test.gd` proves blackjack totals, HIT/STAND progression, physical
+card bodies, the strict real-result-before-interference sequence, a normal bust,
+the lawful derogation path, semantic results, module mounting, and save/restore
+of both clearance bits. CI runs parse, smoke, and Web export before deployment.

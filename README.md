@@ -47,7 +47,7 @@ Navigate an authored overworld and confront six different machines of authority.
 - **Christine Lagarde**: A stability vault that protects confidence more carefully than citizens.
 - **Emmanuel Macron**: Managed decline staged as elegance, philosophy, and excellent lighting.
 
-Trump and Ursula now defend their doors with playable procedures. **The Greatest Deal** teaches three increasingly unstable card rules and asks whether a mathematically false victory should be accepted or challenged. **The Consensus Engine** turns 27 approvals into a physical machine of scanners, stamps, translations, moving documents, and lawful exceptions. Clearing either procedure opens the existing encounter without replacing its dialogue.
+Trump and Ursula now defend their doors with playable procedures. **The Greatest Deal** is readable blackjack first—visible hands, totals, `HIT`, `STAND`, and a target of 21—then asks whether Trump's post-result intervention should be accepted or challenged. **The Consensus Engine** turns 27 approvals into a physical machine of scanners, stamps, translations, moving documents, and lawful exceptions. Clearing either procedure opens the existing encounter without replacing its dialogue.
 
 ### 🛸 Optional Investigations, Deviations & Anomalies
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.

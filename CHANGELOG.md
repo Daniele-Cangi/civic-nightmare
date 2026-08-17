@@ -8,8 +8,10 @@ web deployment and tagged releases for major public milestones.
 ### Added
 
 - **The Greatest Deal**, a three-round Trump entry procedure built around
-  readable card rules, declared victories, timed acceptance or challenge, and
-  leverage gained by strategically accepting an adverse result.
+  readable blackjack hands, visible totals, HIT/STAND decisions, post-result
+  special moves, and a sharply separated acceptance or challenge phase.
+- Full opaque playing-card faces replace outlined card placeholders, including
+  coherent overlapping hands and a separate physical card for Trump events.
 - **The Consensus Engine**, a physical 27-approval Ursula entry procedure with
   moving dossiers, scanners, stamps, translations, expiring approvals, and two
   legitimate unanimity routes.
