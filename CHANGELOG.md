@@ -1,9 +1,15 @@
 # Changelog
 
-All notable project changes are documented here. Civic Nightmare currently uses
-continuous web deployment; a tagged public release has not yet been cut.
+All notable project changes are documented here. Civic Nightmare uses continuous
+web deployment and tagged releases for major public milestones.
 
 ## Unreleased
+
+## [2.0.0] - 2026-08-17
+
+### Release title
+
+**Civic Nightmare 2.0 — The Dossier Update**
 
 ### Added
 
