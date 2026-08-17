@@ -138,6 +138,7 @@ var hidden_bunker_ai_ack_active: bool = false
 var bunker_access_complete: bool = false
 var trump_deal_complete: bool = false
 var ursula_consensus_complete: bool = false
+var authority_access_intro_pending: String = ""
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
 var contamination_appearance_count: int = 0
@@ -1811,7 +1812,7 @@ func _on_dialogue_choice_selected(character_id: String, choice: Dictionary) -> v
 			active_room.handle_dialogue_choice(character_id, choice)
 
 
-func open_dialogue(character_id: String) -> void:
+func open_dialogue(character_id: String, scripted_lines: Array = []) -> void:
 	if is_dialogue_open or contamination_active:
 		return
 	if character_id == "xi_jinping" and not xi_pre_scene_seen and not xi_pre_scene_active:
@@ -1828,8 +1829,11 @@ func open_dialogue(character_id: String) -> void:
 	dialogue_farewell = ""
 	choice_container.visible = false
 
-	# Determine dialogue content based on character type
-	if character_id == "ai_terminal":
+	# Short encounter cards can reuse the dialogue presentation without entering
+	# the politician quest flow or duplicating its content.
+	if not scripted_lines.is_empty():
+		dialogue_lines = scripted_lines.duplicate()
+	elif character_id == "ai_terminal":
 		_setup_ai_dialogue()
 	else:
 		_setup_politician_dialogue(character_id)
@@ -1914,6 +1918,18 @@ func _setup_politician_dialogue(character_id: String) -> void:
 
 
 func _finish_dialogue() -> void:
+	# Authority entrances use the character card as an interstitial, not as the
+	# signature dialogue. Closing it launches the procedure without completing
+	# or recording the politician quest.
+	if authority_access_intro_pending != "":
+		var procedure_id := authority_access_intro_pending
+		authority_access_intro_pending = ""
+		_close_dialogue()
+		get_tree().create_timer(0.24).timeout.connect(func() -> void:
+			_launch_authority_access_procedure(procedure_id)
+		)
+		return
+
 	# Final mission: after the self-NPC response, open text input instead of closing normally
 	if current_character_id == "self":
 		_close_dialogue()
@@ -2554,6 +2570,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	bunker_access_complete = false
 	trump_deal_complete = false
 	ursula_consensus_complete = false
+	authority_access_intro_pending = ""
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
 	if bunker_access_gauntlet:
@@ -2666,6 +2683,7 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	# that its access procedure happened off-record and must not be imposed later.
 	trump_deal_complete = bool(story.get("trump_deal_complete", restored_quest_completed.has("donald_trump")))
 	ursula_consensus_complete = bool(story.get("ursula_consensus_complete", restored_quest_completed.has("ursula_von_der_leyen")))
+	authority_access_intro_pending = ""
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
 	if world_landmark_builder:
@@ -3221,21 +3239,52 @@ func _setup_authority_access_procedures() -> void:
 
 
 func _start_greatest_deal() -> void:
-	if trump_deal_complete or greatest_deal_active or active_room_id != "":
+	if trump_deal_complete or greatest_deal_active or authority_access_intro_pending != "" or active_room_id != "":
 		return
 	_write_save_checkpoint(true)
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
-	greatest_deal.start()
+	_show_authority_access_intro("donald_trump", "greatest_deal")
 
 
 func _start_consensus_engine() -> void:
-	if ursula_consensus_complete or consensus_engine_active or active_room_id != "":
+	if ursula_consensus_complete or consensus_engine_active or authority_access_intro_pending != "" or active_room_id != "":
 		return
 	_write_save_checkpoint(true)
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
-	consensus_engine.start()
+	_show_authority_access_intro("ursula_von_der_leyen", "consensus_engine")
+
+
+func _show_authority_access_intro(character_id: String, procedure_id: String) -> void:
+	var intro_lines := _authority_access_intro_lines(character_id)
+	if intro_lines.is_empty():
+		_launch_authority_access_procedure(procedure_id)
+		return
+	authority_access_intro_pending = procedure_id
+	open_dialogue(character_id, intro_lines)
+
+
+func _authority_access_intro_lines(character_id: String) -> Array:
+	var character_data: Dictionary = character_data_cache.get(character_id, {})
+	return Array(character_data.get("access_challenge_intro", [])).duplicate()
+
+
+func _launch_authority_access_procedure(procedure_id: String) -> void:
+	if active_room_id != "":
+		player.set_physics_process(true)
+		return
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	match procedure_id:
+		"greatest_deal":
+			if not trump_deal_complete and not greatest_deal_active:
+				greatest_deal.start()
+		"consensus_engine":
+			if not ursula_consensus_complete and not consensus_engine_active:
+				consensus_engine.start()
+		_:
+			player.set_physics_process(true)
 
 
 func _on_authority_access_cancelled() -> void:
