@@ -349,7 +349,23 @@ func _run() -> void:
 				_check(actor_sprite != null and actor_sprite.texture != null and actor_sprite.visible, "%s receives its encounter sprite" % actor_name)
 				_check(actor_placeholder == null or not actor_placeholder.visible, "%s placeholder is absent or hidden" % actor_name)
 	if bezos_drone_encounter:
-		_check(bezos_drone_encounter.get("bezos_drone_root") != null, "Bezos drone world node is created")
+		var bezos_drone_root := bezos_drone_encounter.get("bezos_drone_root") as Node2D
+		_check(bezos_drone_root != null, "Bezos drone world node is created")
+		if bezos_drone_root:
+			var bezos_drone_sprite := bezos_drone_root.get_node_or_null("DroneSprite") as Sprite2D
+			_check(
+				bezos_drone_sprite != null
+				and bezos_drone_sprite.texture != null
+				and bezos_drone_sprite.texture.resource_path == "res://assets/mockups/bezos_drone_v2.png",
+				"Bezos drone uses the custom logistics-auditor artwork"
+			)
+			_check(
+				bezos_drone_sprite != null
+				and bezos_drone_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+				"Bezos drone retains its HD filtering"
+			)
+			_check(bezos_drone_root.get_node_or_null("ScannerBeam") != null, "Bezos drone has an animated inspection beam")
+			_check(bezos_drone_root.get_node_or_null("ScannerEye") != null, "Bezos drone has an animated scanner eye")
 
 	game.call("_begin_new_game", false)
 	await process_frame
