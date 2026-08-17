@@ -154,6 +154,8 @@ var xi_pre_scene_active: bool:
 		return bool(xi_pre_scene_encounter.get("xi_pre_scene_active")) if xi_pre_scene_encounter else false
 
 const CONTAMINATION_MAX_APPEARANCES := 3
+const CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
+const CONTAMINATION_SPRITE_FALLBACK_PATH := "res://assets/sprites/npc_contamination.png"
 const CONTAMINATION_SOURCE_OFFSETS := {
 	"oval_office": Vector2(-116, -24),
 	"kremlin": Vector2(122, -24),
@@ -2168,17 +2170,17 @@ func _start_hidden_bunker_scene() -> void:
 	_request_autosave()
 
 func _load_contamination_texture() -> Texture2D:
-	var tex_path := "res://assets/sprites/npc_contamination.png"
-	var tex := load(tex_path) as Texture2D
-	if tex != null:
-		return tex
+	for tex_path in [CONTAMINATION_SPRITE_PATH, CONTAMINATION_SPRITE_FALLBACK_PATH]:
+		var tex := load(tex_path) as Texture2D
+		if tex != null:
+			return tex
 
-	var image := Image.new()
-	var err := image.load(ProjectSettings.globalize_path(tex_path))
-	if err == OK:
-		return ImageTexture.create_from_image(image)
+		var image := Image.new()
+		var err := image.load(ProjectSettings.globalize_path(tex_path))
+		if err == OK:
+			return ImageTexture.create_from_image(image)
 
-	push_error("Failed to load contamination sprite at %s" % tex_path)
+	push_error("Failed to load contamination sprite variants")
 	return null
 
 func _ensure_kim_phone_encounter() -> void:
