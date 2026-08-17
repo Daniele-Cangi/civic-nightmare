@@ -259,7 +259,7 @@ const UFO_FLOAT_OFFSET := Vector2(0, -24)
 const BEZOS_DRONE_TILE := Vector2i(24, 10)
 const BEZOS_DRONE_FLOAT_OFFSET := Vector2(0, -14)
 const HIDDEN_BUNKER_TILE := Vector2i(-30, -11)
-const HIDDEN_BUNKER_WORLD_OFFSET := Vector2(12, 0)
+const HIDDEN_BUNKER_EXIT_WORLD_OFFSET := Vector2(360.0, 0.0)
 
 var _pack_sources: Dictionary = {
 	SRC_NATURE: "res://assets/tiles/nature_32.png",
@@ -449,18 +449,19 @@ func _ready() -> void:
 	_setup_interiors()
 	_remove_world_npcs()
 	_setup_world_landmark_builder()
+	var district_world_bounds := Rect2(
+		Vector2(WORLD_MIN_X * 32, WORLD_MIN_Y * 32),
+		Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, (WORLD_MAX_Y - WORLD_MIN_Y) * 32)
+	)
 	world_landmark_builder.create_great_wall(
-		Rect2(
-			Vector2(WORLD_MIN_X * 32, WORLD_MIN_Y * 32),
-			Vector2((WORLD_MAX_X - WORLD_MIN_X) * 32, (WORLD_MAX_Y - WORLD_MIN_Y) * 32)
-		),
+		district_world_bounds,
 		GREAT_WALL_APPROACH_TILE
 	)
 	_setup_southern_annex()
 	world_landmark_builder.create_southern_annex_gate(SOUTHERN_ANNEX_GATE_TILE)
 	_setup_ufo_encounter()
 	_setup_bezos_drone_encounter()
-	world_landmark_builder.create_hidden_bunker(HIDDEN_BUNKER_TILE, HIDDEN_BUNKER_WORLD_OFFSET)
+	world_landmark_builder.create_hidden_bunker(district_world_bounds, HIDDEN_BUNKER_TILE)
 	_ensure_contamination_figure()
 	CHARACTER_VISUAL_CATALOG.assign_npc_textures(get_tree().get_nodes_in_group("npc"))
 	_create_ai_terminal()
@@ -669,7 +670,10 @@ func _setup_interiors() -> void:
 			"character_id": "hidden_bunker_scene",
 			"character_name": "Hidden Bunker",
 			"spawn_marker": "mountain_bunker_exterior",
-			"world_position": _tile_to_actor_position(HIDDEN_BUNKER_TILE + Vector2i(0, 2)) + HIDDEN_BUNKER_WORLD_OFFSET
+			"world_position": Vector2(
+				float(WORLD_MIN_X * 32),
+				float(HIDDEN_BUNKER_TILE.y * 32 + 16)
+			) + HIDDEN_BUNKER_EXIT_WORLD_OFFSET
 		},
 		{
 			"key": "red_command",
@@ -2472,6 +2476,8 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	if dossier_manager:
 		dossier_manager.reset()
 	bunker_access_complete = false
+	if world_landmark_builder:
+		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
 	if bunker_access_gauntlet:
 		bunker_access_gauntlet.stop()
 	_close_start_menu()
@@ -2572,6 +2578,8 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	bunker_access_complete = bool(story.get("bunker_access_complete", seen_hidden_bunker_scene))
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
+	if world_landmark_builder:
+		world_landmark_builder.set_hidden_bunker_gate_cleared(bunker_access_complete)
 	if bunker_access_gauntlet:
 		bunker_access_gauntlet.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
@@ -3117,6 +3125,7 @@ func _on_bunker_access_cancelled() -> void:
 
 func _on_bunker_access_completed(result: Dictionary) -> void:
 	bunker_access_complete = true
+	world_landmark_builder.set_hidden_bunker_gate_cleared(true)
 	dossier_manager.record_investigation(
 		"investigation:bunker_access_corridor",
 		"mountain_bunker_access",

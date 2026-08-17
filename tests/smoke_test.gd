@@ -15,6 +15,8 @@ const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1
 const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
+const WESTERN_AID_GATE_PATH := "res://assets/landmarks/western_aid_gate_v1.png"
+const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barrier_v1.png"
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
 const AUTHORED_INTERIOR_PATHS := {
@@ -266,10 +268,30 @@ func _run() -> void:
 		_check(wall_collision != null and wall_collision.get_child_count() == 2, "wall wings are solid while the central passage remains open")
 		_check(gate_world_position.is_equal_approx(Vector2(0.0, -976.0)), "the Xi entrance is aligned to the visual center of the boulevard")
 	var hidden_bunker := game.get_node_or_null("Entities/HiddenBunkerEntrance") as Node2D
-	_check(hidden_bunker != null and hidden_bunker.position.y > -576.0, "the classified bunker no longer interrupts the northern perimeter")
+	_check(hidden_bunker != null, "the western aid gate is created")
+	if hidden_bunker:
+		var aid_gate_sprite := hidden_bunker.get_node_or_null("WesternAidGateLandmark") as Sprite2D
+		var aid_gate_passage := hidden_bunker.get_node_or_null("HiddenBunkerDoor") as Area2D
+		var aid_gate_collision := hidden_bunker.get_node_or_null("WesternAidGateCollision") as StaticBody2D
+		var aid_gate_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
+		var aid_gate_barrier := hidden_bunker.get_node_or_null("AidGateShutter/AidGateBarrierProp") as Sprite2D
+		var aid_gate_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
+		var aid_passage_world_position: Vector2 = hidden_bunker.get_meta("passage_world_position", Vector2.ZERO)
+		_check(str(hidden_bunker.get_meta("asset_path", "")) == WESTERN_AID_GATE_PATH, "the bunker route uses the authored Western Aid Gate")
+		_check(hidden_bunker.position.is_equal_approx(Vector2(-1088.0, -336.0)), "the aid gate is anchored to the western map boundary and road")
+		_check(aid_passage_world_position.is_equal_approx(Vector2(-888.0, -336.0)), "the aid passage follows the existing horizontal road")
+		_check(aid_gate_sprite != null and aid_gate_sprite.texture != null and aid_gate_sprite.texture.get_size() == Vector2(576.0, 720.0), "the aid gate mounts its transparent runtime asset")
+		_check(aid_gate_sprite != null and aid_gate_sprite.scale.is_equal_approx(Vector2(0.62, 0.62)), "the aid gate fits the live overworld camera framing")
+		_check(aid_gate_passage != null and str(aid_gate_passage.get("destination")) == "mountain_bunker", "the aid gate preserves the bunker destination")
+		_check(aid_gate_collision != null and aid_gate_collision.get_child_count() == 2, "the aid gate has solid upper and lower wings around its road")
+		_check(aid_gate_shutter != null and aid_gate_shutter.visible, "the aid barrier begins sealed before the corridor is cleared")
+		_check(aid_gate_barrier != null and aid_gate_barrier.texture != null and aid_gate_barrier.texture.resource_path == WESTERN_AID_BARRIER_PATH, "the sealed gate uses its authored mechanical barrier prop")
+		_check(aid_gate_shutter_shape != null and not aid_gate_shutter_shape.disabled, "the sealed aid barrier blocks crossing the western boundary")
 	var world_spawn_points: Dictionary = room_manager.get("world_spawn_points") if room_manager else {}
 	var xi_exit_position: Vector2 = world_spawn_points.get("red_command_exterior", Vector2.ZERO)
 	_check(xi_exit_position.is_equal_approx(Vector2(16.0, -896.0)), "exiting Xi returns the player south of the gate trigger")
+	var bunker_exit_position: Vector2 = world_spawn_points.get("mountain_bunker_exterior", Vector2.ZERO)
+	_check(bunker_exit_position.is_equal_approx(Vector2(-728.0, -336.0)), "leaving the bunker returns east of the aid gate trigger")
 	var southern_gate := game.get_node_or_null("Entities/SouthernAnnexGate") as Node2D
 	_check(southern_gate != null, "the main district installs the southern annex gate")
 	if southern_gate:
@@ -500,6 +522,12 @@ func _run() -> void:
 	_check((dossier_manager.get("events") as Array).size() == 2, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 	_check(bool(game.get("bunker_access_complete")), "Continue preserves cleared bunker access without resuming the gauntlet")
+	if hidden_bunker:
+		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
+		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
+		var cleared_beacon := hidden_bunker.get_node_or_null("AidGateClearedBeacon") as Polygon2D
+		_check(not restored_shutter.visible and restored_shutter_shape.disabled, "Continue restores the cleared physical aid gate")
+		_check(cleared_beacon != null and cleared_beacon.visible, "Continue restores the gate's cold clearance beacon")
 
 	_finish()
 
