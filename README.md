@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>The Bureaucracy RPG</strong><br>
-  A surreal 16-bit political satire about the most dangerous quest of all: renewing a passport.
+  A surreal political satire about the most dangerous quest of all: renewing a passport.
 </p>
 
 <p align="center">
@@ -28,24 +28,24 @@
 <p align="center">
   <img alt="Godot 4.6" src="https://img.shields.io/badge/Godot-4.6-478CBF?logo=godot-engine&logoColor=white">
   <a href="https://github.com/Daniele-Cangi/civic-nightmare/releases/tag/v2.0.0"><img alt="Civic Nightmare 2.0" src="https://img.shields.io/badge/Release-v2.0.0-ffcc33"></a>
-  <img alt="16-bit satire" src="https://img.shields.io/badge/Aesthetic-16--bit_Satire-f39c3d">
+  <img alt="Civic surrealism" src="https://img.shields.io/badge/Aesthetic-Civic_Surrealism-f39c3d">
   <img alt="Source code licensed under MIT" src="https://img.shields.io/badge/Source_Code-MIT-8bd5ca">
   <a href="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml"><img alt="GitHub Pages deployment" src="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml/badge.svg"></a>
 </p>
 
-**Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.6** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, navigating a world where reality is filtered through 16-bit aesthetics and 90s television glitches.
+**Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.6** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, crossing high-detail districts where pixel-scale citizens, monumental political caricature, arcade confrontation, and CRT bureaucracy occupy the same collapsing reality.
 
 ## 🕹️ Game Features
 
 ### 🏛️ The Great Signature Quest
-Navigate a procedurally detailed overworld and interact with the "Architects of the Spectacle"—now part of a high-fidelity **Global Tournament** roster. To get your document signed, you must confront:
+Navigate an authored overworld and confront six different machines of authority. To get your document signed, you must deal with:
 
-- **Donald Trump**: Within his Golden Eagle monument, featuring a high-fidelity "Fighter Card" combat portrait.
-- **Elon Musk**: Inside a minimalist SpaceShip HQ, portrayed as an "M. Bison" style corporate overlord.
-- **Ursula von der Leyen**: Guarding the Labyrinth of Regulations with the "Hammer of Directives."
-- **Vladimir Putin**: Within a cross-shaped bunker, active on the "Red Phone" network.
-- **Christine Lagarde**: Managed by interest rates, appearing in a custom "Chun-Li" arcade style.
-- **Emmanuel Macron**: Offering Raiden-style philosophy lectures near the Eiffel Tower ruins.
+- **Donald Trump**: Broadcast patriotism, gold-plated access, and a monument already posing for its own victory screen.
+- **Elon Musk**: A permanent-beta headquarters where unfinished infrastructure is presented as inevitable progress.
+- **Ursula von der Leyen**: A transparency maze whose instructions require their own instructions.
+- **Vladimir Putin**: A ceremonial palace barricaded for a war that official paperwork insists is proceeding normally.
+- **Christine Lagarde**: A stability vault that protects confidence more carefully than citizens.
+- **Emmanuel Macron**: Managed decline staged as elegance, philosophy, and excellent lighting.
 
 ### 🛸 Optional Investigations, Deviations & Anomalies
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.
@@ -63,22 +63,38 @@ The title screen offers **Continue** and **New Game**. Progress, encounter conse
 
 Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
 
+## 🎞️ Civic Nightmare 2.0
+
+These images are all loaded by the current game runtime—not superseded concept art.
+
 <table>
   <tr>
     <td width="33%" align="center"><img src="assets/landmarks/authority_trump_v2.png" alt="Trump authority facade"></td>
-    <td width="33%" align="center"><img src="assets/mockups/ufo_advanced.png" alt="Quantum UFO encounter"></td>
-    <td width="33%" align="center"><img src="assets/mockups/landmark_nuclear_plant.png" alt="Unstable nuclear plant"></td>
+    <td width="33%" align="center"><img src="assets/landmarks/inference_reactor_demo_v1.png" alt="Sam Altman's inference reactor demonstration"></td>
+    <td width="33%" align="center"><img src="assets/landmarks/pyongyang_broadcast_artillery_v1.png" alt="Kim Jong-un's broadcast artillery monument"></td>
   </tr>
   <tr>
     <td align="center"><strong>THE GOLDEN EAGLE</strong><br><sub>Patriotism, now with collision.</sub></td>
-    <td align="center"><strong>QUANTUM UFO</strong><br><sub>Intergalactic monetization awaits.</sub></td>
-    <td align="center"><strong>NEURAL CORE</strong><br><sub>Perfectly safe. Legally speaking.</sub></td>
+    <td align="center"><strong>INFERENCE REACTOR</strong><br><sub>One keynote away from grid stability.</sub></td>
+    <td align="center"><strong>BROADCAST ARTILLERY</strong><br><sub>Strategic deterrence. Excellent ratings.</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="assets/interiors/elysee_managed_decline_v1.png" alt="The Elysee managed-decline interior"></td>
+    <td width="33%" align="center"><img src="assets/mockups/ufo_advanced.png" alt="Quantum UFO encounter"></td>
+    <td width="33%" align="center"><img src="assets/mockups/bezos_battle_poses.png" alt="Cybernetic Bezos battle poses"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>MANAGED DECLINE</strong><br><sub>Elegance remains within tolerance.</sub></td>
+    <td align="center"><strong>UNRECONCILED MATERIAL</strong><br><sub>The evidence refuses classification.</sub></td>
+    <td align="center"><strong>FULFILLMENT COMBAT</strong><br><sub>Objections processed in real time.</sub></td>
   </tr>
 </table>
 
+The Administrative Hold and its behavioural dossier are deliberately not fully illustrated here: discovering what the system has recorded is part of the game.
+
 ## 🎨 Technical & Aesthetic Identity
 
-- **16-bit Arcade Style**: Every character features a dual-asset system: a low-detail world sprite and a high-fidelity 16-bit "Fighter Card" for dialogue and combat.
+- **Hybrid Civic-Surreal Style**: Pixel-scale citizens and arcade cues inhabit authored, high-detail environments whose architecture carries the political joke before dialogue begins.
 - **Portrait Pipeline**: Fighter portraits use controlled chroma-key extraction, premultiplied-alpha resizing, and automated 128×128 validation for clean, halo-free transparency.
 - **Authority Architecture**: The six signature encounters use dedicated 352 px hero facades with shared perspective, pixel density, lighting, and door alignment instead of procedural roof symbols. Their reusable visual contract is documented in the [facade art direction](docs/AUTHORITY_FACADE_ART_DIRECTION.md).
 - **Narrative Interiors**: Authority rooms may replace the shared visual tile pass with a full authored environment while keeping the same travel, collision, dialogue, and save contract. All six signature authorities now reveal a different machine beneath their public architecture; the reusable visual grammar is documented in the [interior art direction](docs/AUTHORITY_INTERIOR_ART_DIRECTION.md).
