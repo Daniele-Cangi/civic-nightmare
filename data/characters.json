@@ -92,6 +92,9 @@
   {
     "id": "donald_trump",
     "name": "Donald Trump",
+    "access_challenge_intro": [
+      "Nobody gets through this door without winning three deals. If you beat me, I reserve the right to have won."
+    ],
     "quest_dialogue": {
       "lines": [
         "TREMENDOUS!! Look at you! Walking in here like you OWN the place. You don't. I do. But great energy!",
@@ -203,6 +206,9 @@
   {
     "id": "ursula_von_der_leyen",
     "name": "Ursula von der Leyen",
+    "access_challenge_intro": [
+      "Access requires unanimous approval from 27 desks. They all use the same form. They all read it differently."
+    ],
     "quest_dialogue": {
       "lines": [
         "Welcome. Have you filled out form EU-4872/B? In triplicate? With the BLUE pen, not the black one.",

@@ -142,6 +142,24 @@ func _run() -> void:
 	_check(bunker_access_gauntlet != null and bunker_access_gauntlet.get("layer") != null, "hidden bunker owns a modular access gauntlet")
 	_check(greatest_deal != null and greatest_deal.get("layer") != null, "Trump's entrance owns the Greatest Deal procedure")
 	_check(consensus_engine != null and consensus_engine.get("layer") != null, "Ursula's entrance owns the Consensus Engine procedure")
+	var trump_access_lines: Array = game.call("_authority_access_intro_lines", "donald_trump")
+	var ursula_access_lines: Array = game.call("_authority_access_intro_lines", "ursula_von_der_leyen")
+	_check(trump_access_lines.size() == 1 and str(trump_access_lines[0]).contains("reserve the right to have won"), "Trump introduces his game with one character-specific card")
+	_check(ursula_access_lines.size() == 1 and str(ursula_access_lines[0]).contains("same form"), "Ursula introduces her game with one character-specific card")
+	game.call("_start_greatest_deal")
+	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "greatest_deal", "Trump's entrance opens the card before the table")
+	_check(not bool(greatest_deal.get("active")) and str(dialogue_manager.get("current_character_id")) == "donald_trump", "Trump's game waits behind his portrait card")
+	game.call("_finish_dialogue")
+	await create_timer(0.3).timeout
+	_check(bool(greatest_deal.get("active")), "closing Trump's card launches the existing game")
+	greatest_deal.stop()
+	game.call("_start_consensus_engine")
+	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "consensus_engine", "Ursula's entrance opens the card before the machine")
+	_check(not bool(consensus_engine.get("active")) and str(dialogue_manager.get("current_character_id")) == "ursula_von_der_leyen", "Ursula's game waits behind her portrait card")
+	game.call("_finish_dialogue")
+	await create_timer(0.3).timeout
+	_check(bool(consensus_engine.get("active")), "closing Ursula's card launches the existing game")
+	consensus_engine.stop()
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
