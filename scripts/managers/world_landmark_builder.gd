@@ -9,6 +9,7 @@ const LEGACY_NUCLEAR_PLANT_PATH := "res://assets/mockups/landmark_nuclear_plant.
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const LEGACY_PYONGYANG_PATH := "res://assets/mockups/landmark_pyongyang.png"
 const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
+const WESTERN_AID_DISTRICT_PATCH_PATH := "res://assets/backgrounds/western_aid_district_patch_v1.png"
 const WESTERN_AID_GATE_PATH := "res://assets/landmarks/western_aid_gate_v1.png"
 const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barrier_v1.png"
 const LEGACY_BUNKER_PATH := "res://assets/mockups/landmark_bunker.png"
@@ -16,6 +17,8 @@ const NORTHERN_WALL_HEIGHT := 448.0
 const NORTHERN_WALL_FRONT_Y := 403.0
 const NORTHERN_GATE_OVERHANG := 48.0
 const NORTHERN_GATE_HALF_WIDTH := 64.0
+const WESTERN_AID_DISTRICT_PATCH_SIZE := Vector2(560.0, 700.0)
+const WESTERN_AID_DISTRICT_PATCH_OFFSET := Vector2(0.0, -348.0)
 const WESTERN_AID_GATE_SIZE := Vector2(576.0, 720.0)
 const WESTERN_AID_GATE_SCALE := 0.62
 const WESTERN_AID_GATE_SPRITE_OFFSET := Vector2(80.0, -27.0)
@@ -235,33 +238,53 @@ func _create_legacy_nuclear_plant(tile: Vector2i) -> void:
 
 func create_hidden_bunker(world_bounds: Rect2, approach_tile: Vector2i) -> void:
 	_clear_decor_patch(approach_tile, 10, 5)
-	if not ResourceLoader.exists(WESTERN_AID_GATE_PATH):
-		_create_legacy_hidden_bunker(approach_tile)
-		return
-	var texture := load(WESTERN_AID_GATE_PATH) as Texture2D
-	if texture == null or texture.get_size() != WESTERN_AID_GATE_SIZE:
+	var patch_texture: Texture2D
+	if ResourceLoader.exists(WESTERN_AID_DISTRICT_PATCH_PATH):
+		patch_texture = load(WESTERN_AID_DISTRICT_PATCH_PATH) as Texture2D
+		if patch_texture and patch_texture.get_size() != WESTERN_AID_DISTRICT_PATCH_SIZE:
+			patch_texture = null
+	var gate_texture: Texture2D
+	if patch_texture == null and ResourceLoader.exists(WESTERN_AID_GATE_PATH):
+		gate_texture = load(WESTERN_AID_GATE_PATH) as Texture2D
+		if gate_texture and gate_texture.get_size() != WESTERN_AID_GATE_SIZE:
+			gate_texture = null
+	if patch_texture == null and gate_texture == null:
 		_create_legacy_hidden_bunker(approach_tile)
 		return
 
 	var root := Node2D.new()
 	root.name = "HiddenBunkerEntrance"
-	# The authored opening begins 160 px into the cutout. Offsetting the scaled
-	# sprite by 80 px makes that opening meet the western boundary exactly, while the
-	# checkpoint's fortification and donor set project into the playable map.
 	root.position = Vector2(world_bounds.position.x, _tile_to_body_position(approach_tile).y)
 	root.z_index = 2
 	root.add_to_group("classified_world_landmark")
-	root.set_meta("asset_path", WESTERN_AID_GATE_PATH)
+	root.set_meta("asset_path", WESTERN_AID_DISTRICT_PATCH_PATH if patch_texture else WESTERN_AID_GATE_PATH)
 	root.set_meta("passage_world_position", root.position + WESTERN_AID_GATE_PASSAGE_OFFSET)
 	entities_layer.add_child(root)
 
-	var sprite := Sprite2D.new()
-	sprite.name = "WesternAidGateLandmark"
-	sprite.texture = texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	sprite.position = WESTERN_AID_GATE_SPRITE_OFFSET
-	sprite.scale = Vector2.ONE * WESTERN_AID_GATE_SCALE
-	root.add_child(sprite)
+	if patch_texture:
+		# This authored crop repeats the exact district pixels at its feathered
+		# edges, so it can replace the western plate section without a visible
+		# rectangle. Render it with the ground, below the player and gate state.
+		var district_patch := Sprite2D.new()
+		district_patch.name = "WesternAidDistrictPatch"
+		district_patch.texture = patch_texture
+		district_patch.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		district_patch.centered = false
+		district_patch.position = WESTERN_AID_DISTRICT_PATCH_OFFSET
+		district_patch.z_as_relative = false
+		district_patch.z_index = -9
+		root.add_child(district_patch)
+	else:
+		# Keep the previous transparent landmark as a non-destructive fallback.
+		# Its opening begins 160 px into the cutout; this scaled offset meets the
+		# same western boundary and passage contract as the integrated patch.
+		var sprite := Sprite2D.new()
+		sprite.name = "WesternAidGateLandmark"
+		sprite.texture = gate_texture
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		sprite.position = WESTERN_AID_GATE_SPRITE_OFFSET
+		sprite.scale = Vector2.ONE * WESTERN_AID_GATE_SCALE
+		root.add_child(sprite)
 
 	var collision := StaticBody2D.new()
 	collision.name = "WesternAidGateCollision"
@@ -297,9 +320,6 @@ func set_hidden_bunker_gate_cleared(is_cleared: bool) -> void:
 	var shutter_shape := root.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
 	if shutter_shape:
 		shutter_shape.disabled = is_cleared
-	var cleared_beacon := root.get_node_or_null("AidGateClearedBeacon") as Polygon2D
-	if cleared_beacon:
-		cleared_beacon.visible = is_cleared
 
 
 func _add_aid_gate_state(root: Node2D) -> void:
@@ -334,23 +354,6 @@ func _add_aid_gate_state(root: Node2D) -> void:
 	shutter_collision.position = shutter.position
 	root.add_child(shutter_collision)
 	_add_collision_rect(shutter_collision, "CollisionShape2D", Vector2.ZERO, Vector2(18.0, 84.0))
-
-	var cleared_beacon := Polygon2D.new()
-	cleared_beacon.name = "AidGateClearedBeacon"
-	cleared_beacon.position = Vector2(110.0, -47.0)
-	cleared_beacon.color = Color("71e7d5")
-	cleared_beacon.polygon = _regular_polygon(4.0, 8)
-	cleared_beacon.z_index = 4
-	cleared_beacon.visible = false
-	root.add_child(cleared_beacon)
-
-
-func _regular_polygon(radius: float, sides: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for point_index in range(sides):
-		var angle := TAU * float(point_index) / float(sides)
-		points.append(Vector2(cos(angle), sin(angle)) * radius)
-	return points
 
 
 func _create_legacy_hidden_bunker(tile: Vector2i) -> void:

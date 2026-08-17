@@ -15,7 +15,7 @@ const NORTHERN_GREAT_WALL_PATH := "res://assets/landmarks/northern_great_wall_v1
 const INFERENCE_REACTOR_PATH := "res://assets/landmarks/inference_reactor_demo_v1.png"
 const PYONGYANG_ARTILLERY_PATH := "res://assets/landmarks/pyongyang_broadcast_artillery_v1.png"
 const SOUTHERN_ANNEX_GATE_PATH := "res://assets/landmarks/southern_annex_gate_v1.png"
-const WESTERN_AID_GATE_PATH := "res://assets/landmarks/western_aid_gate_v1.png"
+const WESTERN_AID_DISTRICT_PATCH_PATH := "res://assets/backgrounds/western_aid_district_patch_v1.png"
 const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barrier_v1.png"
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
@@ -270,18 +270,20 @@ func _run() -> void:
 	var hidden_bunker := game.get_node_or_null("Entities/HiddenBunkerEntrance") as Node2D
 	_check(hidden_bunker != null, "the western aid gate is created")
 	if hidden_bunker:
-		var aid_gate_sprite := hidden_bunker.get_node_or_null("WesternAidGateLandmark") as Sprite2D
+		var aid_district_patch := hidden_bunker.get_node_or_null("WesternAidDistrictPatch") as Sprite2D
 		var aid_gate_passage := hidden_bunker.get_node_or_null("HiddenBunkerDoor") as Area2D
 		var aid_gate_collision := hidden_bunker.get_node_or_null("WesternAidGateCollision") as StaticBody2D
 		var aid_gate_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var aid_gate_barrier := hidden_bunker.get_node_or_null("AidGateShutter/AidGateBarrierProp") as Sprite2D
 		var aid_gate_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
 		var aid_passage_world_position: Vector2 = hidden_bunker.get_meta("passage_world_position", Vector2.ZERO)
-		_check(str(hidden_bunker.get_meta("asset_path", "")) == WESTERN_AID_GATE_PATH, "the bunker route uses the authored Western Aid Gate")
+		_check(str(hidden_bunker.get_meta("asset_path", "")) == WESTERN_AID_DISTRICT_PATCH_PATH, "the bunker route uses the environment-integrated western district patch")
 		_check(hidden_bunker.position.is_equal_approx(Vector2(-1088.0, -336.0)), "the aid gate is anchored to the western map boundary and road")
 		_check(aid_passage_world_position.is_equal_approx(Vector2(-888.0, -336.0)), "the aid passage follows the existing horizontal road")
-		_check(aid_gate_sprite != null and aid_gate_sprite.texture != null and aid_gate_sprite.texture.get_size() == Vector2(576.0, 720.0), "the aid gate mounts its transparent runtime asset")
-		_check(aid_gate_sprite != null and aid_gate_sprite.scale.is_equal_approx(Vector2(0.62, 0.62)), "the aid gate fits the live overworld camera framing")
+		_check(aid_district_patch != null and aid_district_patch.texture != null and aid_district_patch.texture.get_size() == Vector2(560.0, 700.0), "the aid gate mounts its authored background patch")
+		_check(aid_district_patch != null and not aid_district_patch.centered and aid_district_patch.position.is_equal_approx(Vector2(0.0, -348.0)), "the aid patch replaces the exact western plate crop")
+		_check(aid_district_patch != null and not aid_district_patch.z_as_relative and aid_district_patch.z_index == -9, "the aid patch renders with the district below the player")
+		_check(hidden_bunker.get_node_or_null("WesternAidGateLandmark") == null, "the pasted-on transparent landmark is no longer mounted")
 		_check(aid_gate_passage != null and str(aid_gate_passage.get("destination")) == "mountain_bunker", "the aid gate preserves the bunker destination")
 		_check(aid_gate_collision != null and aid_gate_collision.get_child_count() == 2, "the aid gate has solid upper and lower wings around its road")
 		_check(aid_gate_shutter != null and aid_gate_shutter.visible, "the aid barrier begins sealed before the corridor is cleared")
@@ -525,9 +527,8 @@ func _run() -> void:
 	if hidden_bunker:
 		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
-		var cleared_beacon := hidden_bunker.get_node_or_null("AidGateClearedBeacon") as Polygon2D
 		_check(not restored_shutter.visible and restored_shutter_shape.disabled, "Continue restores the cleared physical aid gate")
-		_check(cleared_beacon != null and cleared_beacon.visible, "Continue restores the gate's cold clearance beacon")
+		_check(hidden_bunker.get_node_or_null("AidGateClearedBeacon") == null, "the cleared gate no longer leaves a floating status marker")
 
 	_finish()
 
