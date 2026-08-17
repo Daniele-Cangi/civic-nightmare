@@ -437,6 +437,24 @@ func _run() -> void:
 	var entities: Node = game.get("entities_layer")
 	_check(player.get_parent() == entities, "player is reparented into the world")
 
+	game.call("use_door", "red_command", "EntryMarker")
+	await create_timer(0.5).timeout
+	var xi_door_encounter: Node = game.get("xi_pre_scene_encounter")
+	_check(str(game.get("active_room_id")) == "red_command", "the northern gate enters Xi's command room")
+	_check(xi_door_encounter != null and bool(xi_door_encounter.get("xi_pre_scene_active")), "Xi intercept claims control during the door transition")
+	_check(not player.is_physics_processing(), "the door transition cannot restore movement while Xi's intercept is active")
+	_check(not player.is_processing_unhandled_input(), "Xi intercept suppresses gameplay interaction input")
+	if xi_door_encounter:
+		xi_door_encounter.call("request_skip")
+	await create_timer(1.0).timeout
+	_check(xi_door_encounter != null and not bool(xi_door_encounter.get("xi_pre_scene_active")), "closing Xi's intercept releases its active state")
+	_check(player.is_physics_processing(), "closing Xi's intercept restores movement after the real door flow")
+	_check(player.is_processing_unhandled_input(), "closing Xi's intercept restores interaction on the following frame")
+	game.call("use_door", "world", "red_command_exterior")
+	await create_timer(0.5).timeout
+	_check(str(game.get("active_room_id")) == "", "the player can leave Xi's command room after the intercept")
+	_check(player.get_parent() == entities, "Xi's exit returns the released player to the world")
+
 	game.call("_enter_room", "southern_annex", "NorthEntry")
 	await process_frame
 	_check(str(game.get("active_room_id")) == "southern_annex", "the southern gate enters the annex exterior")

@@ -46,12 +46,14 @@ func start(current_room_id: String, xi_room: Node) -> void:
 	xi_pre_scene_active = true
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
 
 	var xi_data: Dictionary = data_cache.get("xi_jinping", {})
 	var beats: Array = xi_data.get("xi_pre_scene", [])
 	if beats.is_empty():
 		xi_pre_scene_active = false
 		player.set_physics_process(true)
+		player.set_process_unhandled_input(true)
 		return
 
 	xi_pre_skip_requested = false
@@ -120,6 +122,9 @@ func _finish_xi_pre_scene(xi_room: Node) -> void:
 	if player and is_instance_valid(player):
 		player.velocity = Vector2.ZERO
 		player.set_physics_process(true)
+		# Restore interaction on the next frame so the SPACE that closed the
+		# transmission cannot also trigger Xi's dialogue.
+		player.call_deferred("set_process_unhandled_input", true)
 	if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
 		xi_room.set_npc_interaction_enabled(true)
 	if xi_room and xi_room.has_method("require_npc_reapproach"):
@@ -157,7 +162,9 @@ func _build_xi_scene_overlay() -> Tween:
 	scanline.size = Vector2(FRAME_SIZE.x, 3.0)
 	scanline.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	xi_scene_root.add_child(scanline)
-	var scan_tween := create_tween().set_loops()
+	# Bind the loop to its visual node so freeing the overlay also kills the
+	# tween instead of leaving an empty infinite loop in the SceneTree.
+	var scan_tween := create_tween().bind_node(scanline).set_loops()
 	scan_tween.tween_property(scanline, "position:y", FRAME_SIZE.y + 4.0, 3.8).set_trans(Tween.TRANS_LINEAR)
 	scan_tween.tween_property(scanline, "position:y", -4.0, 0.0)
 
