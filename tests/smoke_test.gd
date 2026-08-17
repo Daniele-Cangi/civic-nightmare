@@ -7,6 +7,8 @@ const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
 const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
+const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
+const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
@@ -19,6 +21,8 @@ const WESTERN_AID_DISTRICT_PATCH_PATH := "res://assets/backgrounds/western_aid_d
 const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barrier_v1.png"
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
+const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
+const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
 const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
@@ -53,6 +57,8 @@ func _run() -> void:
 	_test_combat_portraits()
 	_test_bezos_battle_stage()
 	_test_bunker_access_gauntlet()
+	_test_greatest_deal()
+	_test_consensus_engine()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -87,6 +93,8 @@ func _run() -> void:
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	var bezos_encounter: Node = game.get("bezos_encounter")
 	var bunker_access_gauntlet: Node = game.get("bunker_access_gauntlet")
+	var greatest_deal: Node = game.get("greatest_deal")
+	var consensus_engine: Node = game.get("consensus_engine")
 	var contamination_root: Node = game.get("contamination_root")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
@@ -132,6 +140,8 @@ func _run() -> void:
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
 	_check(bunker_access_gauntlet != null and bunker_access_gauntlet.get("layer") != null, "hidden bunker owns a modular access gauntlet")
+	_check(greatest_deal != null and greatest_deal.get("layer") != null, "Trump's entrance owns the Greatest Deal procedure")
+	_check(consensus_engine != null and consensus_engine.get("layer") != null, "Ursula's entrance owns the Consensus Engine procedure")
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
@@ -535,6 +545,8 @@ func _run() -> void:
 
 	var resume_snapshot: Dictionary = game.call("_build_save_snapshot")
 	resume_snapshot["story"]["bunker_access_complete"] = true
+	resume_snapshot["story"]["trump_deal_complete"] = true
+	resume_snapshot["story"]["ursula_consensus_complete"] = true
 	resume_snapshot["world"]["safe_position"] = [160.0, 224.0]
 	resume_snapshot["quest"]["quest_index"] = 2
 	resume_snapshot["quest"]["quest_completed"] = {
@@ -548,6 +560,15 @@ func _run() -> void:
 	_check((dossier_manager.get("events") as Array).size() == 2, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 	_check(bool(game.get("bunker_access_complete")), "Continue preserves cleared bunker access without resuming the gauntlet")
+	_check(bool(game.get("trump_deal_complete")), "Continue preserves Greatest Deal access clearance")
+	_check(bool(game.get("ursula_consensus_complete")), "Continue preserves Consensus Engine access clearance")
+	var legacy_access_snapshot := resume_snapshot.duplicate(true)
+	legacy_access_snapshot["story"].erase("trump_deal_complete")
+	legacy_access_snapshot["story"].erase("ursula_consensus_complete")
+	legacy_access_snapshot["quest"]["quest_completed"]["ursula_von_der_leyen"] = true
+	game.call("_apply_save_snapshot", legacy_access_snapshot)
+	await process_frame
+	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")), "older dossiers infer access clearance from signatures already obtained")
 	if hidden_bunker:
 		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
@@ -752,6 +773,74 @@ func _test_bunker_access_gauntlet() -> void:
 	_check(not bool(gauntlet.get("active")), "surviving the authored interval closes the corridor cleanly")
 	_check(str(gauntlet.get_result().get("outcome", "")) == "access_granted", "bunker corridor emits a semantic access result")
 	gauntlet.queue_free()
+
+
+func _test_greatest_deal() -> void:
+	_check(ResourceLoader.exists(GREATEST_DEAL_BACKGROUND_PATH), "Greatest Deal stage background exists")
+	if ResourceLoader.exists(GREATEST_DEAL_BACKGROUND_PATH):
+		var stage_texture := load(GREATEST_DEAL_BACKGROUND_PATH) as Texture2D
+		_check(stage_texture != null and stage_texture.get_size() == Vector2(1280, 720), "Greatest Deal stage is authored for the gameplay viewport")
+	var deal := GREATEST_DEAL_SCRIPT.new()
+	root.add_child(deal)
+	deal.setup(root)
+	deal.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0})
+	deal.process_frame(0.01)
+	deal.play_card(0)
+	deal.process_frame(0.01)
+	deal.choose_claim(false)
+	deal.process_frame(0.01)
+	_check(int(deal.get("leverage")) == 1, "accepting an adverse claim creates leverage instead of a dead-end loss")
+	deal.play_card(1)
+	deal.process_frame(0.01)
+	deal.choose_claim(true)
+	deal.process_frame(0.01)
+	_check(int(deal.get("round_index")) == 1, "Fake News can contest the first declared result")
+	deal.play_card(0)
+	deal.process_frame(0.01)
+	deal.choose_claim(true)
+	deal.process_frame(0.01)
+	_check(int(deal.get("round_index")) == 2, "the readable gold-card rule resolves the second deal")
+	deal.play_card(0)
+	deal.process_frame(0.01)
+	deal.choose_claim(true)
+	deal.process_frame(0.01)
+	deal.process_frame(0.01)
+	_check(not bool(deal.get("active")), "three successful deals close the casino procedure")
+	var deal_result: Dictionary = deal.get_result()
+	_check(str(deal_result.get("outcome", "")) == "access_granted", "Greatest Deal emits semantic access clearance")
+	_check(int(deal_result.get("accepted_claims", 0)) == 1 and int(deal_result.get("successful_challenges", 0)) == 3, "Greatest Deal preserves the player's negotiation behaviour")
+	deal.queue_free()
+
+
+func _test_consensus_engine() -> void:
+	_check(ResourceLoader.exists(CONSENSUS_ENGINE_BACKGROUND_PATH), "Consensus Engine stage background exists")
+	if ResourceLoader.exists(CONSENSUS_ENGINE_BACKGROUND_PATH):
+		var stage_texture := load(CONSENSUS_ENGINE_BACKGROUND_PATH) as Texture2D
+		_check(stage_texture != null and stage_texture.get_size() == Vector2(1280, 720), "Consensus Engine stage is authored for the gameplay viewport")
+	var engine := CONSENSUS_ENGINE_SCRIPT.new()
+	root.add_child(engine)
+	engine.setup(root)
+	engine.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0, "timers_enabled": false})
+	engine.process_frame(0.01)
+	for station_id in ["scanner", "stamp", "submit"]:
+		_check(engine.interact_at_station(station_id), "simple-majority route accepts %s" % station_id)
+	engine.process_frame(0.01)
+	_check(int(engine.get("phase_index")) == 1 and int(engine.get("approvals")) == 8, "simple majority is achieved and then declared insufficient")
+	for station_id in ["stamp", "translation", "mobile_stamp", "submit"]:
+		_check(engine.interact_at_station(station_id), "qualified-majority route accepts %s" % station_id)
+	engine.process_frame(0.01)
+	_check(int(engine.get("phase_index")) == 2 and int(engine.get("approvals")) == 26, "qualified majority advances to the single unresolved approval")
+	for station_id in ["submit", "scanner", "translation"]:
+		_check(engine.interact_at_station(station_id), "unanimity route accepts %s" % station_id)
+	_check(bool(engine.get("derogation_unlocked")), "Annex B exposes the lawful emergency derogation")
+	_check(engine.activate_derogation(), "the discovered derogation can complete unanimity")
+	engine.process_frame(3.0)
+	engine.process_frame(0.01)
+	_check(not bool(engine.get("active")), "printed unanimous approval closes the procedure")
+	var consensus_result: Dictionary = engine.get_result()
+	_check(str(consensus_result.get("outcome", "")) == "access_granted", "Consensus Engine emits semantic access clearance")
+	_check(bool(consensus_result.get("derogation_used", false)) and str(consensus_result.get("route", "")) == "emergency_derogation", "Consensus Engine records the procedural route rather than a generic win")
+	engine.queue_free()
 
 
 func _test_ai_terminal_assets() -> void:

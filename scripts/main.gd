@@ -8,6 +8,8 @@ const DIALOGUE_MANAGER_SCRIPT = preload("res://scripts/managers/dialogue_manager
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 const BEZOS_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_encounter.gd")
 const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
+const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
+const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.gd")
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
@@ -134,6 +136,8 @@ var hidden_bunker_exit_acknowledged: bool = false
 var hidden_bunker_ai_ack_pending: bool = false
 var hidden_bunker_ai_ack_active: bool = false
 var bunker_access_complete: bool = false
+var trump_deal_complete: bool = false
+var ursula_consensus_complete: bool = false
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
 var contamination_appearance_count: int = 0
@@ -211,6 +215,16 @@ var bunker_access_gauntlet: Node
 var bunker_access_active: bool:
 	get:
 		return bool(bunker_access_gauntlet.get("active")) if bunker_access_gauntlet else false
+
+# --- Authority access procedures ---
+var greatest_deal: Node
+var greatest_deal_active: bool:
+	get:
+		return bool(greatest_deal.get("active")) if greatest_deal else false
+var consensus_engine: Node
+var consensus_engine_active: bool:
+	get:
+		return bool(consensus_engine.get("active")) if consensus_engine else false
 
 
 # --- Final Mission ---
@@ -474,6 +488,7 @@ func _ready() -> void:
 	_create_ending_overlay()
 	_create_bezos_cinematic_overlay()
 	_setup_bunker_access_gauntlet()
+	_setup_authority_access_procedures()
 	_setup_mk_sequence()
 	_setup_save_manager()
 	_setup_start_menu()
@@ -709,7 +724,13 @@ func _setup_interiors() -> void:
 
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active:
+		return
+	if destination == "oval_office" and not trump_deal_complete:
+		_start_greatest_deal()
+		return
+	if destination == "eu_palace" and not ursula_consensus_complete:
+		_start_consensus_engine()
 		return
 	if destination == "mountain_bunker" and not bunker_access_complete:
 		_start_bunker_access_gauntlet()
@@ -837,6 +858,12 @@ func _process(delta: float) -> void:
 		return
 	if intro_active:
 		intro_sequence.process_frame(delta)
+		return
+	if greatest_deal_active:
+		greatest_deal.process_frame(delta)
+		return
+	if consensus_engine_active:
+		consensus_engine.process_frame(delta)
 		return
 	if bunker_access_active:
 		bunker_access_gauntlet.process_frame(delta)
@@ -2503,6 +2530,8 @@ func _can_open_administrative_hold() -> bool:
 		and not contamination_active
 		and not bezos_cinematic_active
 		and not bunker_access_active
+		and not greatest_deal_active
+		and not consensus_engine_active
 		and not ufo_abduction_active
 		and not final_mission_awaiting_input
 	)
@@ -2523,10 +2552,16 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 		dossier_manager.reset()
 	_refresh_behavioral_world_state()
 	bunker_access_complete = false
+	trump_deal_complete = false
+	ursula_consensus_complete = false
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
 	if bunker_access_gauntlet:
 		bunker_access_gauntlet.stop()
+	if greatest_deal:
+		greatest_deal.stop()
+	if consensus_engine:
+		consensus_engine.stop()
 	_close_start_menu()
 	_setup_intro_sequence()
 
@@ -2563,6 +2598,8 @@ func _build_save_snapshot() -> Dictionary:
 		"story": {
 			"seen_hidden_bunker_scene": seen_hidden_bunker_scene,
 			"bunker_access_complete": bunker_access_complete,
+			"trump_deal_complete": trump_deal_complete,
+			"ursula_consensus_complete": ursula_consensus_complete,
 			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
 			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
 			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
@@ -2624,12 +2661,21 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 		story = {}
 	seen_hidden_bunker_scene = bool(story.get("seen_hidden_bunker_scene", false))
 	bunker_access_complete = bool(story.get("bunker_access_complete", seen_hidden_bunker_scene))
+	var restored_quest_completed := quest_manager.get("quest_completed") as Dictionary
+	# Version-2 dossiers predate these doors. A signature already obtained proves
+	# that its access procedure happened off-record and must not be imposed later.
+	trump_deal_complete = bool(story.get("trump_deal_complete", restored_quest_completed.has("donald_trump")))
+	ursula_consensus_complete = bool(story.get("ursula_consensus_complete", restored_quest_completed.has("ursula_von_der_leyen")))
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(bunker_access_complete)
 	if bunker_access_gauntlet:
 		bunker_access_gauntlet.stop()
+	if greatest_deal:
+		greatest_deal.stop()
+	if consensus_engine:
+		consensus_engine.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
 	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
 	hidden_bunker_ai_ack_active = false
@@ -2722,6 +2768,8 @@ func _is_autosave_safe() -> bool:
 		and not contamination_active
 		and not bezos_cinematic_active
 		and not bunker_access_active
+		and not greatest_deal_active
+		and not consensus_engine_active
 		and not ufo_abduction_active
 		and not (administrative_hold and bool(administrative_hold.get("opened")))
 		and not final_mission_awaiting_input
@@ -3154,6 +3202,84 @@ func _setup_bunker_access_gauntlet() -> void:
 	bunker_access_gauntlet.completed.connect(_on_bunker_access_completed)
 	bunker_access_gauntlet.cancelled.connect(_on_bunker_access_cancelled)
 	bunker_access_gauntlet.setup(self)
+
+
+func _setup_authority_access_procedures() -> void:
+	greatest_deal = GREATEST_DEAL_SCRIPT.new()
+	greatest_deal.name = "GreatestDeal"
+	add_child(greatest_deal)
+	greatest_deal.completed.connect(_on_greatest_deal_completed)
+	greatest_deal.cancelled.connect(_on_authority_access_cancelled)
+	greatest_deal.setup(self)
+
+	consensus_engine = CONSENSUS_ENGINE_SCRIPT.new()
+	consensus_engine.name = "ConsensusEngine"
+	add_child(consensus_engine)
+	consensus_engine.completed.connect(_on_consensus_engine_completed)
+	consensus_engine.cancelled.connect(_on_authority_access_cancelled)
+	consensus_engine.setup(self)
+
+
+func _start_greatest_deal() -> void:
+	if trump_deal_complete or greatest_deal_active or active_room_id != "":
+		return
+	_write_save_checkpoint(true)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	greatest_deal.start()
+
+
+func _start_consensus_engine() -> void:
+	if ursula_consensus_complete or consensus_engine_active or active_room_id != "":
+		return
+	_write_save_checkpoint(true)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	consensus_engine.start()
+
+
+func _on_authority_access_cancelled() -> void:
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(true)
+	door_cooldown_until_ms = Time.get_ticks_msec() + 550
+
+
+func _on_greatest_deal_completed(result: Dictionary) -> void:
+	trump_deal_complete = true
+	var tag := "rule-contested" if int(result.get("successful_challenges", 0)) > 0 else "claim-accommodated"
+	dossier_manager.record_contest(
+		"contest:greatest_deal",
+		"oval_office_access",
+		tag,
+		"Subject completed a negotiation in which the dealer retained authority over arithmetic.",
+		result
+	)
+	_write_save_checkpoint(true)
+	door_cooldown_until_ms = 0
+	call_deferred("_enter_cleared_oval_office")
+
+
+func _enter_cleared_oval_office() -> void:
+	use_door("oval_office", "EntryMarker")
+
+
+func _on_consensus_engine_completed(result: Dictionary) -> void:
+	ursula_consensus_complete = true
+	var used_derogation := bool(result.get("derogation_used", false))
+	dossier_manager.record_contest(
+		"contest:consensus_engine",
+		"eu_palace_access",
+		"procedural-exception" if used_derogation else "procedure-completed",
+		"Subject obtained unanimous authorization%s." % (" through an authorized exception" if used_derogation else " after satisfying the complete process"),
+		result
+	)
+	_write_save_checkpoint(true)
+	door_cooldown_until_ms = 0
+	call_deferred("_enter_cleared_eu_palace")
+
+
+func _enter_cleared_eu_palace() -> void:
+	use_door("eu_palace", "EntryMarker")
 
 
 func _start_bunker_access_gauntlet() -> void:

@@ -47,6 +47,8 @@ Navigate an authored overworld and confront six different machines of authority.
 - **Christine Lagarde**: A stability vault that protects confidence more carefully than citizens.
 - **Emmanuel Macron**: Managed decline staged as elegance, philosophy, and excellent lighting.
 
+Trump and Ursula now defend their doors with playable procedures. **The Greatest Deal** teaches three increasingly unstable card rules and asks whether a mathematically false victory should be accepted or challenged. **The Consensus Engine** turns 27 approvals into a physical machine of scanners, stamps, translations, moving documents, and lawful exceptions. Clearing either procedure opens the existing encounter without replacing its dialogue.
+
 ### 🛸 Optional Investigations, Deviations & Anomalies
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.
 - **The Southern Sanctuary**: Find **Sam Altman** searching for trillion-dollar funding near an unstable Nuclear Plant (and its Neural Core).
@@ -88,6 +90,16 @@ These images are all loaded by the current game runtime—not superseded concept
     <td align="center"><strong>UNRECONCILED MATERIAL</strong><br><sub>The evidence refuses classification.</sub></td>
     <td align="center"><strong>FULFILLMENT COMBAT</strong><br><sub>Objections processed in real time.</sub></td>
   </tr>
+  <tr>
+    <td width="33%" align="center"><img src="assets/encounters/greatest_deal_stage_v1.png" alt="The Greatest Deal casino procedure"></td>
+    <td width="33%" align="center"><img src="assets/encounters/consensus_engine_stage_v1.png" alt="The Consensus Engine circular bureaucracy"></td>
+    <td width="33%" align="center"><img src="assets/encounters/bunker_aid_corridor_v1.png" alt="The classified bunker access corridor"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>THE GREATEST DEAL</strong><br><sub>The arithmetic is under review.</sub></td>
+    <td align="center"><strong>THE CONSENSUS ENGINE</strong><br><sub>Unanimity has entered production.</sub></td>
+    <td align="center"><strong>AID TRANSFER CORRIDOR</strong><br><sub>Funding outbound. Ordnance inbound.</sub></td>
+  </tr>
 </table>
 
 The Administrative Hold and its behavioural dossier are deliberately not fully illustrated here: discovering what the system has recorded is part of the game.
@@ -102,6 +114,7 @@ The Administrative Hold and its behavioural dossier are deliberately not fully i
 - **Southern Administrative Annex**: A dedicated optional exterior makes Kim's televised strategic spectacle and Altman's immaculate AI demo visibly depend on the same failing municipal utility layer. The [area art direction](docs/SOUTHERN_ANNEX_ART_DIRECTION.md) records its gate, layout and travel contract.
 - **Classified and Anomalous Interiors**: The bunker now visualizes war as prohibited administrative routine, while the UFO gives the evidence system a room whose clocks, objects, shadows, and geometry cannot agree.
 - **Bunker Access Gauntlet**: The classified route becomes a controls-first dodge encounter with telegraphed ordnance, funding traffic, instant retry, persistent access clearance, and a later dossier interpretation. Its runtime and visual contract are documented in the [gauntlet brief](docs/BUNKER_ACCESS_GAUNTLET.md).
+- **Authority Access Games**: Trump and Ursula gate their existing rooms with two self-contained, controls-first procedures whose outcomes become behavioural evidence. Their shared travel, persistence, and interaction contract is documented in the [authority access brief](docs/AUTHORITY_ACCESS_GAMES.md).
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 
@@ -135,7 +148,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
 - `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
-- `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
+- `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos, bunker, Greatest Deal, and Consensus Engine logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
 - `scenes/interiors/`: reusable interior scenes and room-local behavior.
 - `scenes/areas/`: authored exterior travel containers that reuse the room transition contract without indoor presentation.
@@ -151,7 +164,7 @@ godot --headless --path . --editor --quit
 godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
 ```
 
-The smoke test loads the main scene and covers the title flow, six-signature dossier interpretation, Dossier-to-world consequences, save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip. Pull requests run parse, smoke, and Web export before they can reach the Pages deploy step.
+The smoke test loads the main scene and covers the title flow, six-signature dossier interpretation, Dossier-to-world consequences, authority access rules, save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip. Pull requests run parse, smoke, and Web export before they can reach the Pages deploy step.
 
 Asset ownership and repository-weight decisions are recorded in [`docs/ASSET_INVENTORY.md`](docs/ASSET_INVENTORY.md); release verification lives in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
