@@ -54,13 +54,17 @@ var title_label: Label
 var approvals_label: Label
 var requirement_label: Label
 var prompt_label: Label
-var lights: Array[ColorRect] = []
+var lights: Array[PanelContainer] = []
 var station_nodes: Dictionary = {}
+var station_status_lights: Dictionary = {}
 var dossier_root: Node2D
 var dossier_body: Polygon2D
 var dossier_stamp: Label
+var dossier_seal: PanelContainer
 var target_ring: Line2D
+var target_halo: Polygon2D
 var mobile_stamp_node: PanelContainer
+var mobile_stamp_light: PanelContainer
 var emergency_fill: ColorRect
 var emergency_panel: PanelContainer
 var printer_sheet: ColorRect
@@ -139,6 +143,7 @@ func process_frame(delta: float) -> void:
 	state_timer += delta
 	mobile_stamp_time += delta
 	_update_mobile_stamp()
+	_update_target_visual()
 	match state:
 		State.INTRO:
 			if state_timer >= intro_duration:
@@ -363,21 +368,31 @@ func _requirement_text() -> String:
 
 func _refresh_approvals() -> void:
 	approvals_label.text = "%02d / 27  APPROVALS" % approvals
+	dossier_stamp.text = "%02d / 27" % approvals
 	for i in range(lights.size()):
 		if i < approvals:
-			lights[i].color = Color("#56f092")
+			_set_indicator_color(lights[i], Color("#56f092"), Color(0.22, 0.95, 0.55, 0.36))
 		elif phase_index == 2 and i == 26:
-			lights[i].color = Color("#f04455")
+			_set_indicator_color(lights[i], Color("#f04455"), Color(0.95, 0.14, 0.22, 0.38))
 		else:
-			lights[i].color = Color(0.13, 0.19, 0.21, 0.92)
+			_set_indicator_color(lights[i], Color("#14252c"), Color(0, 0, 0, 0.0))
+	if dossier_seal:
+		_set_indicator_color(dossier_seal, Color("#3a76ba") if approvals < 27 else Color("#56f092"), Color(0.2, 0.75, 1.0, 0.24))
 
 
 func _refresh_target() -> void:
 	var station_id := _expected_station()
 	target_ring.position = _station_position(station_id)
+	target_halo.position = target_ring.position
 	for id in station_nodes:
 		var node: PanelContainer = station_nodes[id]
-		node.modulate = Color.WHITE if id == station_id else Color(0.64, 0.7, 0.74, 0.82)
+		node.modulate = Color.WHITE if id == station_id else Color(0.62, 0.69, 0.72, 0.86)
+		var status_light: PanelContainer = station_status_lights[id]
+		_set_indicator_color(
+			status_light,
+			Color("#ffdd68") if id == station_id else Color("#16272d"),
+			Color(1.0, 0.75, 0.16, 0.36) if id == station_id else Color(0, 0, 0, 0)
+		)
 	requirement_label.text = _requirement_text()
 
 
@@ -388,6 +403,19 @@ func _update_mobile_stamp() -> void:
 	mobile_stamp_node.position = Vector2(x, 403)
 	if active and state == State.ACTIVE and _expected_station() == "mobile_stamp":
 		target_ring.position = _station_position("mobile_stamp")
+		target_halo.position = target_ring.position
+		_set_indicator_color(mobile_stamp_light, Color("#ffdd68"), Color(1.0, 0.75, 0.16, 0.38))
+	else:
+		_set_indicator_color(mobile_stamp_light, Color("#342d19"), Color(0, 0, 0, 0))
+
+
+func _update_target_visual() -> void:
+	if not target_ring or not target_halo:
+		return
+	var pulse := 0.5 + sin(mobile_stamp_time * 4.2) * 0.5
+	target_ring.rotation = sin(mobile_stamp_time * 1.35) * 0.045
+	target_ring.modulate.a = lerpf(0.72, 1.0, pulse)
+	target_halo.modulate.a = lerpf(0.2, 0.38, pulse)
 
 
 func _update_dossier_position() -> void:
@@ -397,7 +425,7 @@ func _update_dossier_position() -> void:
 
 func _refresh_emergency_fill() -> void:
 	if emergency_fill:
-		emergency_fill.size.x = 132.0 * clampf(derogation_hold / DEROGATION_HOLD, 0.0, 1.0)
+		emergency_fill.size.x = 152.0 * clampf(derogation_hold / DEROGATION_HOLD, 0.0, 1.0)
 
 
 func _create_overlay() -> void:
@@ -427,103 +455,190 @@ func _create_overlay() -> void:
 	frame.add_child(background)
 	var wash := ColorRect.new()
 	wash.size = VIEW_SIZE
-	wash.color = Color(0.015, 0.035, 0.05, 0.16)
+	wash.color = Color(0.015, 0.035, 0.05, 0.11)
 	frame.add_child(wash)
 
 	for i in range(27):
 		var angle := -PI * 0.94 + (PI * 1.88 * float(i) / 26.0)
-		var light := ColorRect.new()
-		light.position = Vector2(640, 356) + Vector2(cos(angle) * 500.0, sin(angle) * 244.0) - Vector2(8, 8)
-		light.size = Vector2(16, 16)
-		light.color = Color(0.13, 0.19, 0.21, 0.92)
-		frame.add_child(light)
-		lights.append(light)
+		var housing := _make_round_indicator(Vector2(22, 22), Color("#14252c"), Color("#9f8d5c"), 4)
+		housing.name = "ApprovalHousing%02d" % (i + 1)
+		housing.position = Vector2(640, 356) + Vector2(cos(angle) * 500.0, sin(angle) * 244.0) - Vector2(11, 11)
+		frame.add_child(housing)
+		var housing_content := Control.new()
+		housing_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		housing.add_child(housing_content)
+		var core := _make_round_indicator(Vector2(12, 12), Color("#14252c"), Color("#071015"), 2)
+		core.name = "ApprovalCore%02d" % (i + 1)
+		core.position = Vector2(5, 5)
+		housing_content.add_child(core)
+		lights.append(core)
 
-	var top_bar := ColorRect.new()
-	top_bar.size = Vector2(1280, 108)
-	top_bar.color = Color(0.018, 0.04, 0.055, 0.94)
+	var top_bar := _make_panel(Vector2(14, 10), Vector2(1252, 94), Color("#bba760"), Color(0.012, 0.033, 0.046, 0.97), 4)
+	top_bar.name = "CouncilStatusConsole"
 	frame.add_child(top_bar)
-	title_label = _make_label(Vector2(26, 12), Vector2(1228, 35), 25, Color("#7ad9ff"))
+	var top_content := Control.new()
+	top_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_bar.add_child(top_content)
+	var header_glass := ColorRect.new()
+	header_glass.position = Vector2(10, 9)
+	header_glass.size = Vector2(1232, 72)
+	header_glass.color = Color(0.035, 0.095, 0.13, 0.72)
+	header_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_content.add_child(header_glass)
+	for i in range(12):
+		var star := _make_round_indicator(Vector2(5, 5), Color("#e6c85b"), Color("#58481d"), 1)
+		var star_angle := TAU * float(i) / 12.0
+		star.position = Vector2(56, 45) + Vector2(cos(star_angle), sin(star_angle)) * 22.0 - Vector2(2.5, 2.5)
+		top_content.add_child(star)
+	title_label = _make_label(Vector2(90, 17), Vector2(1072, 31), 24, Color("#8bddff"))
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	frame.add_child(title_label)
-	approvals_label = _make_label(Vector2(30, 48), Vector2(1220, 30), 20, Color("#f5e794"))
+	top_content.add_child(title_label)
+	approvals_label = _make_label(Vector2(90, 49), Vector2(1072, 30), 22, Color("#f7e38a"))
 	approvals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	frame.add_child(approvals_label)
-	requirement_label = _make_label(Vector2(230, 112), Vector2(820, 62), 18, Color.WHITE)
+	top_content.add_child(approvals_label)
+
+	var requirement_panel := _make_panel(Vector2(222, 112), Vector2(836, 62), Color("#617c88"), Color(0.018, 0.052, 0.067, 0.94), 3)
+	requirement_panel.name = "ProcedureDirective"
+	frame.add_child(requirement_panel)
+	requirement_label = _make_label(Vector2(12, 5), Vector2(812, 52), 18, Color.WHITE)
 	requirement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	requirement_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	frame.add_child(requirement_label)
-	prompt_label = _make_label(Vector2(330, 650), Vector2(620, 40), 21, Color("#fff2a7"))
+	requirement_panel.add_child(requirement_label)
+	var prompt_panel := _make_panel(Vector2(360, 649), Vector2(560, 43), Color("#9b874c"), Color(0.018, 0.045, 0.056, 0.96), 3)
+	prompt_panel.name = "InputConsole"
+	frame.add_child(prompt_panel)
+	prompt_label = _make_label(Vector2(8, 4), Vector2(544, 35), 20, Color("#fff2a7"))
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	frame.add_child(prompt_label)
+	prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	prompt_panel.add_child(prompt_label)
 
-	_create_station("scanner", Vector2(575, 210), Vector2(130, 72), Color("#5ac9ed"))
-	_create_station("stamp", Vector2(289, 330), Vector2(130, 72), Color("#4f81e8"))
-	_create_station("translation", Vector2(865, 330), Vector2(130, 72), Color("#ca72de"))
-	_create_station("submit", Vector2(575, 469), Vector2(130, 72), Color("#65d18d"))
+	_create_station("scanner", Vector2(562, 203), Vector2(156, 86), Color("#5ac9ed"), "SCAN // OPTICAL")
+	_create_station("stamp", Vector2(276, 323), Vector2(156, 86), Color("#4f81e8"), "STAMP // BLUE")
+	_create_station("translation", Vector2(852, 323), Vector2(156, 86), Color("#ca72de"), "A <> B // 24 LANG")
+	_create_station("submit", Vector2(562, 462), Vector2(156, 86), Color("#65d18d"), "SEND // COUNCIL")
 
-	mobile_stamp_node = _make_panel(Vector2(536, 403), Vector2(150, 66), Color("#ffd45c"))
+	mobile_stamp_node = _make_panel(Vector2(536, 403), Vector2(150, 66), Color("#ffd45c"), Color("#29230f"), 5)
+	mobile_stamp_node.name = "MobilePopulationStamp"
 	mobile_stamp_node.visible = true
 	frame.add_child(mobile_stamp_node)
-	var mobile_label := _make_label(Vector2(8, 14), Vector2(134, 36), 15, Color("#1b1a12"))
+	var mobile_content := Control.new()
+	mobile_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mobile_stamp_node.add_child(mobile_content)
+	var mobile_stripe := ColorRect.new()
+	mobile_stripe.position = Vector2(0, 0)
+	mobile_stripe.size = Vector2(150, 11)
+	mobile_stripe.color = Color("#ffd45c")
+	mobile_content.add_child(mobile_stripe)
+	var mobile_label := _make_label(Vector2(8, 17), Vector2(134, 36), 15, Color("#fff2b0"))
 	mobile_label.text = "65% STAMP"
 	mobile_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mobile_stamp_node.add_child(mobile_label)
+	mobile_content.add_child(mobile_label)
+	mobile_stamp_light = _make_round_indicator(Vector2(12, 12), Color("#342d19"), Color("#9e8333"), 2)
+	mobile_stamp_light.position = Vector2(128, 27)
+	mobile_content.add_child(mobile_stamp_light)
 
-	emergency_panel = _make_panel(Vector2(923, 514), Vector2(166, 77), Color("#f04c3f"))
+	emergency_panel = _make_panel(Vector2(913, 506), Vector2(186, 94), Color("#ca4139"), Color("#311414"), 5)
+	emergency_panel.name = "EmergencyDerogationConsole"
 	frame.add_child(emergency_panel)
 	var emergency_content := Control.new()
 	emergency_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	emergency_panel.add_child(emergency_content)
-	var emergency_label := _make_label(Vector2(8, 8), Vector2(150, 26), 14, Color.WHITE)
+	var emergency_glass := _make_panel(Vector2(9, 8), Vector2(168, 47), Color("#ff7569"), Color(0.22, 0.025, 0.03, 0.96), 3)
+	emergency_content.add_child(emergency_glass)
+	var emergency_label := _make_label(Vector2(5, 6), Vector2(158, 34), 13, Color.WHITE)
 	emergency_label.text = "EMERGENCY DEROGATION"
 	emergency_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	emergency_content.add_child(emergency_label)
+	emergency_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	emergency_glass.add_child(emergency_label)
 	var fill_back := ColorRect.new()
-	fill_back.position = Vector2(17, 47)
-	fill_back.size = Vector2(132, 12)
+	fill_back.position = Vector2(17, 67)
+	fill_back.size = Vector2(152, 13)
 	fill_back.color = Color(0.1, 0.08, 0.08, 0.9)
 	emergency_content.add_child(fill_back)
 	emergency_fill = ColorRect.new()
-	emergency_fill.position = Vector2(17, 47)
+	emergency_fill.position = Vector2(17, 67)
 	emergency_fill.size = Vector2(0, 12)
 	emergency_fill.color = Color("#ffdf58")
 	emergency_content.add_child(emergency_fill)
 	emergency_panel.visible = false
 
+	target_halo = Polygon2D.new()
+	target_halo.name = "ProcedureTargetHalo"
+	target_halo.polygon = _circle_points(61.0, 32)
+	target_halo.color = Color(0.2, 0.82, 1.0, 0.18)
+	frame.add_child(target_halo)
 	target_ring = Line2D.new()
-	target_ring.width = 4.0
-	target_ring.default_color = Color("#ffec7a")
+	target_ring.name = "ProcedureTargetBrackets"
+	target_ring.width = 5.0
+	target_ring.default_color = Color("#ffdf68")
 	target_ring.closed = true
-	for i in range(25):
-		var angle := TAU * float(i) / 24.0
-		target_ring.add_point(Vector2(cos(angle), sin(angle)) * 53.0)
+	for point in [Vector2(-58, -34), Vector2(-58, -52), Vector2(-40, -52), Vector2(40, -52), Vector2(58, -52), Vector2(58, -34), Vector2(58, 34), Vector2(58, 52), Vector2(40, 52), Vector2(-40, 52), Vector2(-58, 52), Vector2(-58, 34)]:
+		target_ring.add_point(point)
 	frame.add_child(target_ring)
 
 	dossier_root = Node2D.new()
+	dossier_root.name = "CitizenDossier"
 	frame.add_child(dossier_root)
 	var shadow := Polygon2D.new()
-	shadow.polygon = PackedVector2Array([Vector2(-29, 24), Vector2(32, 24), Vector2(39, 31), Vector2(-35, 31)])
+	shadow.polygon = PackedVector2Array([Vector2(-41, -23), Vector2(34, -23), Vector2(43, -14), Vector2(43, 35), Vector2(-43, 35)])
 	shadow.color = Color(0, 0, 0, 0.45)
 	dossier_root.add_child(shadow)
+	var tab := Polygon2D.new()
+	tab.polygon = PackedVector2Array([Vector2(-38, -31), Vector2(-7, -31), Vector2(1, -23), Vector2(-38, -23)])
+	tab.color = Color("#c3a958")
+	dossier_root.add_child(tab)
 	dossier_body = Polygon2D.new()
-	dossier_body.polygon = PackedVector2Array([Vector2(-32, -24), Vector2(22, -24), Vector2(34, -12), Vector2(34, 25), Vector2(-32, 25)])
-	dossier_body.color = Color("#ead9a4")
+	dossier_body.polygon = PackedVector2Array([Vector2(-40, -25), Vector2(28, -25), Vector2(40, -13), Vector2(40, 31), Vector2(-40, 31)])
+	dossier_body.color = Color("#ead7a0")
 	dossier_root.add_child(dossier_body)
 	var fold := Polygon2D.new()
-	fold.polygon = PackedVector2Array([Vector2(22, -24), Vector2(34, -12), Vector2(22, -12)])
+	fold.polygon = PackedVector2Array([Vector2(28, -25), Vector2(40, -13), Vector2(28, -13)])
 	fold.color = Color("#bcae85")
 	dossier_root.add_child(fold)
-	dossier_stamp = _make_label(Vector2(-27, -9), Vector2(54, 23), 13, Color("#153c7d"))
-	dossier_stamp.text = "CASE"
+	var blue_band := ColorRect.new()
+	blue_band.position = Vector2(-40, -12)
+	blue_band.size = Vector2(80, 8)
+	blue_band.color = Color("#24548a")
+	dossier_root.add_child(blue_band)
+	var red_band := ColorRect.new()
+	red_band.position = Vector2(-40, -4)
+	red_band.size = Vector2(80, 3)
+	red_band.color = Color("#a63b38")
+	dossier_root.add_child(red_band)
+	var case_label := _make_label(Vector2(-34, 2), Vector2(42, 18), 10, Color("#493c25"))
+	case_label.text = "PASSPORT"
+	dossier_root.add_child(case_label)
+	dossier_stamp = _make_label(Vector2(-22, 13), Vector2(48, 17), 11, Color("#153c7d"))
+	dossier_stamp.text = "00 / 27"
 	dossier_stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dossier_root.add_child(dossier_stamp)
+	dossier_seal = _make_round_indicator(Vector2(15, 15), Color("#3a76ba"), Color("#183e69"), 2)
+	dossier_seal.position = Vector2(21, 7)
+	dossier_root.add_child(dossier_seal)
+	var staple := ColorRect.new()
+	staple.position = Vector2(-32, -21)
+	staple.size = Vector2(13, 2)
+	staple.color = Color("#766b55")
+	dossier_root.add_child(staple)
 
 	printer_sheet = ColorRect.new()
+	printer_sheet.name = "RegulationPrintout"
 	printer_sheet.position = Vector2(612, 272)
 	printer_sheet.size = Vector2(56, 0)
 	printer_sheet.color = Color("#ede7ca")
+	printer_sheet.clip_contents = true
 	frame.add_child(printer_sheet)
+	var printer_margin := ColorRect.new()
+	printer_margin.position = Vector2(7, 0)
+	printer_margin.size = Vector2(3, 315)
+	printer_margin.color = Color("#b94b50")
+	printer_sheet.add_child(printer_margin)
+	for i in range(18):
+		var printed_line := ColorRect.new()
+		printed_line.position = Vector2(15, 13 + i * 16)
+		printed_line.size = Vector2(33 if i % 4 != 3 else 24, 2)
+		printed_line.color = Color(0.18, 0.25, 0.27, 0.36)
+		printer_sheet.add_child(printed_line)
 	printer_label = _make_label(Vector2(515, 600), Vector2(250, 35), 19, Color("#fff2a7"))
 	printer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	frame.add_child(printer_label)
@@ -531,31 +646,95 @@ func _create_overlay() -> void:
 	printer_label.visible = false
 
 
-func _create_station(id: String, position_value: Vector2, size_value: Vector2, color: Color) -> void:
-	var panel := _make_panel(position_value, size_value, color)
+func _create_station(id: String, position_value: Vector2, size_value: Vector2, color: Color, technical_label: String) -> void:
+	var panel := _make_panel(position_value, size_value, color, Color("#10232c"), 5)
+	panel.name = "%sConsole" % id.capitalize().replace(" ", "")
 	frame.add_child(panel)
 	station_nodes[id] = panel
-	var label := _make_label(Vector2(5, 16), Vector2(size_value.x - 10, 40), 15, Color.WHITE)
+	var content := Control.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(content)
+	var face := ColorRect.new()
+	face.position = Vector2(8, 9)
+	face.size = Vector2(size_value.x - 16, size_value.y - 18)
+	face.color = Color(0.035, 0.11, 0.14, 0.94)
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(face)
+	var accent := ColorRect.new()
+	accent.position = Vector2(8, 9)
+	accent.size = Vector2(size_value.x - 16, 8)
+	accent.color = color
+	content.add_child(accent)
+	var label := _make_label(Vector2(14, 22), Vector2(size_value.x - 28, 28), 16, Color.WHITE)
 	label.text = str(STATION_NAMES[id])
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(label)
+	content.add_child(label)
+	var technical := _make_label(Vector2(14, 52), Vector2(size_value.x - 28, 18), 9, Color("#8db3bd"))
+	technical.text = technical_label
+	technical.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(technical)
+	var status := _make_round_indicator(Vector2(12, 12), Color("#16272d"), Color("#54636a"), 2)
+	status.position = Vector2(size_value.x - 25, 26)
+	content.add_child(status)
+	station_status_lights[id] = status
 
 
-func _make_panel(position_value: Vector2, size_value: Vector2, border: Color) -> PanelContainer:
+func _make_panel(position_value: Vector2, size_value: Vector2, border: Color, background: Color = Color(0.025, 0.06, 0.075, 0.96), border_width: int = 3) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.position = position_value
 	panel.size = size_value
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.06, 0.075, 0.9)
+	style.bg_color = background
 	style.border_color = border
-	style.set_border_width_all(3)
+	style.set_border_width_all(border_width)
 	style.corner_radius_top_left = 4
 	style.corner_radius_top_right = 4
 	style.corner_radius_bottom_left = 4
 	style.corner_radius_bottom_right = 4
+	style.shadow_color = Color(0, 0, 0, 0.55)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 4)
 	panel.add_theme_stylebox_override("panel", style)
 	return panel
+
+
+func _make_round_indicator(size_value: Vector2, fill: Color, border: Color, border_width: int) -> PanelContainer:
+	var indicator := PanelContainer.new()
+	indicator.size = size_value
+	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_border_width_all(border_width)
+	var radius := int(minf(size_value.x, size_value.y) * 0.5)
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	indicator.add_theme_stylebox_override("panel", style)
+	return indicator
+
+
+func _set_indicator_color(indicator: PanelContainer, fill: Color, glow: Color) -> void:
+	if not indicator:
+		return
+	var current := indicator.get_theme_stylebox("panel") as StyleBoxFlat
+	if not current:
+		return
+	var style := current.duplicate() as StyleBoxFlat
+	style.bg_color = fill
+	style.shadow_color = glow
+	style.shadow_size = 9 if glow.a > 0.0 else 0
+	indicator.add_theme_stylebox_override("panel", style)
+
+
+func _circle_points(radius: float, segments: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(segments):
+		var angle := TAU * float(i) / float(segments)
+		points.append(Vector2(cos(angle), sin(angle)) * radius)
+	return points
 
 
 func _make_label(position_value: Vector2, size_value: Vector2, font_size: int, color: Color) -> Label:
