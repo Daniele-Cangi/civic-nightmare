@@ -737,7 +737,9 @@ func use_door(destination: String, spawn_marker: String) -> void:
 				subtitle = str(room.get_room_subtitle())
 		_show_room_title(title, subtitle)
 	await _fade_transition(0.0, 0.18)
-	if not is_dialogue_open:
+	# Xi's arrival scene begins inside the fade. Do not let the generic door
+	# flow undo the movement lock it has already claimed.
+	if not is_dialogue_open and not xi_pre_scene_active:
 		player.set_physics_process(true)
 	is_room_transition = false
 	if entering_hidden_bunker:
