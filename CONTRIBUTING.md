@@ -69,6 +69,10 @@ godot --headless --path . --quit-after 3
 
 `tests/smoke_test.gd` is a focused boundary test, not full game coverage. It currently checks the main scene, title/save flow, manager initialization, dialogue lifecycle, room entry and exit, visual-catalog NPC assignment, world landmarks, UFO lab actors, the Bezos handoff, and final-credit variants.
 
+The same parse, smoke, and Web export commands run on pull requests. The Pages
+deployment step runs only after a successful push to `main`; never weaken a
+smoke assertion to make a feature mergeable.
+
 Add a manual check when your change is visual, interactive, audio-related, or outside the smoke test's reach. Include the commands and manual checks in the pull request.
 
 ## Media and asset provenance
@@ -81,5 +85,9 @@ For every pull request that introduces media, disclose:
 - the source or generation tool where relevant;
 - applicable usage rights for third-party material;
 - meaningful modifications, when useful to reviewers.
+
+Runtime-ready media belongs in `assets/`, retained masters in `asset_sources/`,
+and reproducible previews in ignored `tmp/generated/`. Update
+`docs/ASSET_INVENTORY.md` when a material asset enters or leaves the runtime set.
 
 Do not submit third-party material whose rights are unclear. No contributor license agreement is required.

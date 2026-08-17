@@ -1,4 +1,5 @@
 .godot/
 *.import
-export_presets.cfg
-tmp/imagegen/
+build/
+artifacts/
+tmp/

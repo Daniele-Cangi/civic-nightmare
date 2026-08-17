@@ -5,12 +5,12 @@ const NPC_SCENE = preload("res://scenes/npc.tscn")
 const DOORWAY_SCRIPT = preload("res://scripts/doorway.gd")
 const RITUAL_STATION_SCRIPT = preload("res://scripts/ritual_station.gd")
 const WORLD_TILES = preload("res://assets/tiles/world_tiles.png")
-const PROP_BOOK = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Book.png")
-const PROP_HOURGLASS = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Hourglass.png")
-const PROP_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/Bag.png")
-const PROP_MONEY_BAG = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/MoneyBag.png")
-const PROP_CRATE = preload("res://assets/packs/civic_nightmare/items_props/ninja/Object/CrateEmpty.png")
-const PROP_GOLD_CUP = preload("res://assets/packs/civic_nightmare/items_props/ninja/Treasure/GoldCup.png")
+const PROP_BOOK = preload("res://assets/runtime/props/book.png")
+const PROP_HOURGLASS = preload("res://assets/runtime/props/hourglass.png")
+const PROP_BAG = preload("res://assets/runtime/props/bag.png")
+const PROP_MONEY_BAG = preload("res://assets/runtime/props/money_bag.png")
+const PROP_CRATE = preload("res://assets/runtime/props/crate_empty.png")
+const PROP_GOLD_CUP = preload("res://assets/runtime/props/gold_cup.png")
 
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
@@ -82,6 +82,8 @@ var collision_root: Node2D
 var room_npc: StaticBody2D
 var ritual_stations: Dictionary = {}
 var encounter_state: Dictionary = {}
+var administrative_context: Dictionary = {}
+var administrative_notice: Label
 
 func _ready() -> void:
 	theme = _theme_for_key(room_key)
@@ -123,7 +125,32 @@ func get_room_title() -> String:
 	return str(theme.get("title", room_key.to_upper()))
 
 func get_room_subtitle() -> String:
+	var routed_subtitle := str(administrative_context.get("subtitle", "")).strip_edges()
+	if routed_subtitle != "":
+		return routed_subtitle
 	return str(theme.get("subtitle", ""))
+
+
+func apply_administrative_context(context: Dictionary) -> void:
+	administrative_context = context.duplicate(true)
+	if room_npc and is_instance_valid(room_npc) and room_npc.has_method("set_administrative_posture"):
+		room_npc.set_administrative_posture(str(administrative_context.get("npc_posture", "standard")))
+	var notice_text := str(administrative_context.get("notice", "")).strip_edges()
+	if not administrative_notice:
+		administrative_notice = Label.new()
+		administrative_notice.name = "AdministrativeRoutingNotice"
+		administrative_notice.position = Vector2(-176, 126)
+		administrative_notice.size = Vector2(128, 42)
+		administrative_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		administrative_notice.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		administrative_notice.add_theme_font_size_override("font_size", 9)
+		administrative_notice.add_theme_color_override("font_color", Color(0.8, 0.86, 0.78))
+		administrative_notice.add_theme_color_override("font_outline_color", Color(0.03, 0.05, 0.04, 0.94))
+		administrative_notice.add_theme_constant_override("outline_size", 4)
+		administrative_notice.z_index = 20
+		entities.add_child(administrative_notice)
+	administrative_notice.text = notice_text
+	administrative_notice.visible = notice_text != ""
 
 
 func get_save_data() -> Dictionary:

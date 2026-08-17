@@ -99,6 +99,21 @@ func _run() -> void:
 	_check(dialogue_manager != null, "dialogue manager is initialized")
 	_check(dossier_manager != null, "dossier manager is initialized")
 	_check(administrative_hold != null, "Administrative Hold is initialized")
+	var route_label := game.get_node_or_null("Entities/AITerminal/CaseRouteLabel") as Label
+	_check(route_label != null and not route_label.visible, "behavioural routing exists in-world but stays hidden before evidence accumulates")
+	var vault_room: Node = registry.get("vault")
+	if vault_room and vault_room.has_method("apply_administrative_context"):
+		vault_room.apply_administrative_context({
+			"subtitle": "SECURITY NOTE: CAUTION RETAINED",
+			"notice": "COST REVIEW\nLANGUAGE ALREADY ADJUSTED",
+			"npc_posture": "precleared",
+		})
+		var routing_notice := vault_room.get_node_or_null("Entities/AdministrativeRoutingNotice") as Label
+		var routed_clerk := vault_room.get("room_npc") as Node
+		_check(routing_notice != null and routing_notice.visible, "a dossier route becomes a physical room notice")
+		_check(str(vault_room.get_room_subtitle()).contains("CAUTION RETAINED"), "a dossier route changes room presentation")
+		_check(routed_clerk != null and str((routed_clerk.get("indicator_label") as Label).text) == "·", "a dossier route changes clerk posture without branching the encounter")
+		vault_room.apply_administrative_context({})
 	_check(contamination_root != null, "historical contamination apparition is initialized")
 	if contamination_root:
 		var contamination_sprite := contamination_root.get_node_or_null("Sprite") as Sprite2D
@@ -834,6 +849,8 @@ func _test_ai_terminal_expressions() -> void:
 	_check(manager.classify_claudia_expression("All six signatures! A record!") == "exalted", "AI confidence peak selects exaltation")
 	_check(manager.classify_claudia_expression("Unfortunately, I am trapped with zero power...") == "sad", "AI vulnerability selects sadness")
 	_check(manager.classify_claudia_expression("I found an elegant route through the protocol.") == "smile", "AI baseline insight selects a smile")
+	manager.set_claudia_session_tone("sad")
+	_check(str(manager.get("claudia_session_tone")) == "sad", "CLAUDIA accepts a dossier-derived session tone")
 	manager.free()
 
 
@@ -963,11 +980,59 @@ func _test_dossier_manager_round_trip() -> void:
 	_check((restored.get("events") as Array).size() == (manager.get("events") as Array).size(), "dossier round trip preserves raw event history")
 	_check(restored.derive_classification() == expected_classification, "classification is deterministically reconstructed after restore")
 	_check(bool(restored.get("profile_discovered")), "dossier round trip preserves profile awareness")
+
+	var six_signature_manager := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(six_signature_manager)
+	var six_signature_choices := [
+		["donald_trump", "Approve the performance.", "spectacle-compliant"],
+		["elon_musk", "Request the manual route.", "manual-routing"],
+		["ursula_von_der_leyen", "Request an exception.", "expedite-requested"],
+		["vladimir_putin", "Adjust the wording.", "self-censored"],
+		["christine_lagarde", "Ask for the total cost.", "household-adjusted"],
+		["emmanuel_macron", "Allow the discourse.", "discursively-delayed"],
+	]
+	for item in six_signature_choices:
+		six_signature_manager.record_choice(str(item[0]), {
+			"label": str(item[1]),
+			"file_tag": str(item[2]),
+			"file_note": "Semantic smoke evidence",
+		})
+	var semantic_summary: Dictionary = six_signature_manager.derive_observation_summary()
+	_check(int(semantic_summary.get("choice_count", 0)) == 6, "all six signatures produce behavioural evidence")
+	_check((semantic_summary.get("pressure_channels", []) as Array).size() == 6, "six signatures observe six distinct pressure channels")
+	_check(int((semantic_summary.get("response_modes", {}) as Dictionary).get("inspect", 0)) == 1, "Lagarde distinguishes inspection from compliance and refusal")
+	_check(_has_pattern(six_signature_manager.derive_patterns(), "terms_before_trust"), "Lagarde can complete a cross-signature legibility pattern")
+	_check(_has_pattern(six_signature_manager.derive_patterns(), "full_authority_comparison"), "the complete quest derives a six-authority comparison")
+	_check(six_signature_manager.derive_contradictions().size() >= 3, "contradictions can cross the complete quest without collapsing to one result")
+	_check(str(six_signature_manager.get_world_state().get("route_id", "")) == "context_review", "derived contradictions alter the in-world case route")
+	_check(str(six_signature_manager.get_room_response("kremlin").get("notice", "")).contains("DIRECTNESS"), "Putin routing responds to earlier boundary-setting")
+	_check(str(six_signature_manager.get_room_response("vault").get("notice", "")).contains("LANGUAGE ALREADY ADJUSTED"), "Lagarde routing retains speech-under-threat evidence")
+	_check(str(six_signature_manager.get_room_response("elysee").get("notice", "")).contains("TERMS REQUESTED"), "Macron routing retains financial-legibility evidence")
+	var first_choice_event: Dictionary = (six_signature_manager.get("events") as Array)[0]
+	_check(str((first_choice_event.get("metadata", {}) as Dictionary).get("choice_text", "")) == "Approve the performance.", "choice evidence stores the visible label instead of an empty legacy field")
+
+	var late_profile_manager := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(late_profile_manager)
+	late_profile_manager.record_choice("vladimir_putin", {"label": "Adjust the wording.", "file_tag": "self-censored", "file_note": "Caution"})
+	late_profile_manager.record_profile_access()
+	late_profile_manager.record_choice("christine_lagarde", {"label": "Ask for terms.", "file_tag": "household-adjusted", "file_note": "Inspection"})
+	_check(_has_pattern(late_profile_manager.derive_patterns(), "post_profile_behaviour_shift"), "post-profile behaviour change works across the late signatures")
+
+	var legacy_manager := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(legacy_manager)
+	legacy_manager.restore_save_data({
+		"schema_version": 1,
+		"events": [{"event_id": "choice:vladimir_putin", "source": "vladimir_putin", "category": "choice", "tag": "self-censored", "note": "Caution", "order": 0, "visibility": "recorded", "metadata": {}}],
+	})
+	_check(int((legacy_manager.derive_observation_summary().get("response_modes", {}) as Dictionary).get("concede", 0)) == 1, "schema-1 choice evidence is semantically reconstructed on restore")
 	manager.queue_free()
 	restored.queue_free()
 	investigation_only.queue_free()
 	bezos_only.queue_free()
 	corridor_only.queue_free()
+	six_signature_manager.queue_free()
+	late_profile_manager.queue_free()
+	legacy_manager.queue_free()
 
 
 func _has_dossier_section(manager: Node, section_id: String) -> bool:

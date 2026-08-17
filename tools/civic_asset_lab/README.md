@@ -8,7 +8,7 @@ Offline scene generator for `Civic Nightmare`.
 - Supports style profiles for cleaner or harsher art direction passes
 - Exports spritesheet SVGs and metadata JSON for animated presets
 - Provides optional local pixel dithering for raster preview
-- Exports directly into `assets/generated`
+- Exports disposable previews into `tmp/generated/civic_asset_lab`
 - Avoids API calls and avoids name-based celebrity prompting
 
 ## Open the lab
@@ -20,6 +20,10 @@ Run:
 ```powershell
 node .\tools\civic_asset_lab\generate_assets.js
 ```
+
+Generated output is ignored by Git and excluded from Godot exports. Promote a
+selected asset into `assets/` only after it has a runtime owner and provenance
+entry in `docs/ASSET_INVENTORY.md`.
 
 ## Smoke test
 Run:

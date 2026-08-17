@@ -172,6 +172,7 @@ var intro_active: bool:
 # --- Dossier / continue flow ---
 var save_manager: Node
 var dossier_manager: Node
+var behavioural_world_state: Dictionary = {}
 var administrative_hold: Node
 var start_menu: Node
 var start_menu_active: bool:
@@ -477,6 +478,7 @@ func _ready() -> void:
 	_setup_save_manager()
 	_setup_start_menu()
 	_setup_administrative_hold()
+	_refresh_behavioral_world_state()
 
 func _remove_world_npcs() -> void:
 	for child in entities_layer.get_children():
@@ -737,6 +739,8 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		var title := _pascal_case(destination).to_upper()
 		var subtitle := ""
 		if room:
+			if room.has_method("apply_administrative_context"):
+				room.apply_administrative_context(dossier_manager.get_room_response(destination))
 			if room.has_method("get_room_title"):
 				title = str(room.get_room_title())
 			if room.has_method("get_room_subtitle"):
@@ -1594,6 +1598,22 @@ func _create_ai_terminal() -> void:
 	indicator.z_index = 10
 	terminal.add_child(indicator)
 
+	# This label becomes visible only after the case has accumulated enough
+	# evidence to affect routing. It is a world object, not a stats display.
+	var route_label := Label.new()
+	route_label.name = "CaseRouteLabel"
+	route_label.position = Vector2(-86, 28)
+	route_label.size = Vector2(172, 34)
+	route_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	route_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	route_label.add_theme_font_size_override("font_size", 9)
+	route_label.add_theme_color_override("font_color", Color(0.72, 0.95, 0.9))
+	route_label.add_theme_color_override("font_outline_color", Color(0.02, 0.04, 0.06, 0.92))
+	route_label.add_theme_constant_override("outline_size", 3)
+	route_label.visible = false
+	route_label.z_index = 10
+	terminal.add_child(route_label)
+
 	# Collision for interaction ray
 	var col := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
@@ -1648,6 +1668,14 @@ func _process_ai_terminal(_delta: float) -> void:
 		return
 	var mascot := terminal.get_node_or_null("MascotSprite") as Sprite2D
 	var glow := terminal.get_node_or_null("InferenceGlow") as PointLight2D
+	var route_label := terminal.get_node_or_null("CaseRouteLabel") as Label
+	var world_state := behavioural_world_state
+	if world_state.is_empty():
+		_refresh_behavioral_world_state()
+		world_state = behavioural_world_state
+	if route_label:
+		route_label.visible = bool(world_state.get("visible", false))
+		route_label.text = str(world_state.get("terminal_message", ""))
 	var claudia_is_visible := (
 		is_dialogue_open
 		and dialogue_manager
@@ -1658,7 +1686,7 @@ func _process_ai_terminal(_delta: float) -> void:
 		and bool(dialogue_manager.get("claudia_inference_active"))
 	)
 	if mascot:
-		var world_expression := str(dialogue_manager.get("claudia_visible_expression")) if claudia_is_visible else "neutral"
+		var world_expression := str(dialogue_manager.get("claudia_visible_expression")) if claudia_is_visible else str(world_state.get("claudia_tone", "neutral"))
 		var world_texture = ai_terminal_world_expression_textures.get(world_expression, ai_terminal_world_expression_textures.get("neutral"))
 		if world_texture is Texture2D and mascot.texture != world_texture:
 			mascot.texture = world_texture
@@ -1666,7 +1694,15 @@ func _process_ai_terminal(_delta: float) -> void:
 		mascot.scale = Vector2.ONE * (0.85 + inference_step * 0.012)
 		mascot.modulate = Color(1.0, 0.94 + inference_step * 0.02, 0.88 + inference_step * 0.04) if claudia_is_inferring else Color.WHITE
 		if glow:
-			glow.energy = 0.5 + inference_step * 0.14 if claudia_is_inferring else 0.5
+			var route_id := str(world_state.get("route_id", "standard"))
+			glow.color = {
+				"assisted_processing": Color(0.42, 0.82, 0.48),
+				"manual_review": Color(1.0, 0.55, 0.16),
+				"context_review": Color(0.5, 0.82, 0.94),
+				"adaptive_review": Color(0.78, 0.54, 0.94),
+				"notification_review": Color(0.62, 0.72, 0.92),
+			}.get(route_id, Color(1.0, 0.45, 0.1))
+			glow.energy = 0.5 + inference_step * 0.14 if claudia_is_inferring else (0.58 if bool(world_state.get("visible", false)) else 0.5)
 	if (contamination_terminal_ready or hidden_bunker_ai_ack_pending or hidden_bunker_ai_ack_active) and not contamination_terminal_departed and contamination_root and is_instance_valid(contamination_root) and not contamination_active:
 		contamination_root.modulate = Color.WHITE
 		contamination_root.visible = true
@@ -1674,6 +1710,7 @@ func _process_ai_terminal(_delta: float) -> void:
 	var indicator := terminal.get_node_or_null("Indicator") as Label
 	if not indicator:
 		return
+	indicator.text = str(world_state.get("indicator", "!"))
 	var dist: float = terminal.global_position.distance_to(player.global_position)
 	indicator.visible = dist < 80.0
 	if indicator.visible:
@@ -1831,6 +1868,7 @@ func _setup_ai_dialogue() -> void:
 	)
 	var dossier_observation: Dictionary = dossier_manager.claim_claudia_observation()
 	if not dossier_observation.is_empty():
+		dialogue_manager.set_claudia_session_tone(str(dossier_observation.get("tone", behavioural_world_state.get("claudia_tone", "neutral"))))
 		var observation_lines: Array = dossier_observation.get("lines", [])
 		if not observation_lines.is_empty():
 			dialogue_lines.append("...")
@@ -1934,6 +1972,11 @@ func _try_open_optional_ai_followup() -> void:
 func _record_choice_mark(character_id: String, choice: Dictionary) -> void:
 	quest_manager.record_choice_mark(character_id, choice)
 	dossier_manager.record_choice(character_id, choice)
+	_refresh_behavioral_world_state()
+
+
+func _refresh_behavioral_world_state() -> void:
+	behavioural_world_state = dossier_manager.get_world_state() if dossier_manager else {}
 
 
 func _apply_dialogue_identity(character_id: String) -> void:
@@ -2466,6 +2509,7 @@ func _can_open_administrative_hold() -> bool:
 
 
 func _on_administrative_hold_state_changed() -> void:
+	_refresh_behavioral_world_state()
 	_request_autosave()
 
 
@@ -2477,6 +2521,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	autosave_pending = false
 	if dossier_manager:
 		dossier_manager.reset()
+	_refresh_behavioral_world_state()
 	bunker_access_complete = false
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
@@ -2564,6 +2609,7 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	var dossier_data = snapshot.get("dossier", {})
 	if dossier_data is Dictionary:
 		dossier_manager.restore_save_data(dossier_data)
+	_refresh_behavioral_world_state()
 
 	var saved_rooms = snapshot.get("rooms", {})
 	if saved_rooms is Dictionary:

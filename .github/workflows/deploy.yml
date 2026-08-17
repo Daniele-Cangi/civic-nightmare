@@ -3,6 +3,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -29,6 +36,12 @@ jobs:
           mv templates/* ~/.local/share/godot/export_templates/4.6.stable/
           rm -rf templates Godot_v4.6-stable_export_templates.tpz
 
+      - name: "Parse project"
+        run: ./Godot_v4.6-stable_linux.x86_64 --headless --path . --editor --quit
+
+      - name: "Run smoke tests"
+        run: ./Godot_v4.6-stable_linux.x86_64 --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
+
       - name: "Export Web"
         run: |
           mkdir -pv build/web
@@ -40,7 +53,9 @@ jobs:
           cp coi-serviceworker.js build/web/
 
       - name: "Deploy to GitHub Pages"
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: build/web
+          single-commit: true

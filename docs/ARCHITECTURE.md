@@ -97,9 +97,15 @@ scenes/main.tscn
 4. Add data-driven dialogue to `data/characters.json` before hard-coding it in a manager.
 5. Run the editor parse check and `tests/smoke_test.gd` before committing.
 
-## Behavioural dossier vertical slice
+## Behavioural dossier
 
-The current slice records the first three signature choices from their existing `file_tag`, `file_note`, and `ai_comment` fields. It proves ordered evidence, deterministic patterns and contradictions, evolving Administrative Hold sections, profile discovery, post-discovery behaviour comparison, sparse C.L.A.U.D.I.A. callbacks, and save/restore.
+All six signature choices reuse their existing `file_tag`, `file_note`, and `ai_comment` consequences and add a compact categorical `observation`: response mode, pressure channel, authority form, affected resource, and observable action. These are facts about the interaction, not personality scores. `DossierManager` stores raw ordered evidence, migrates older tag-only events, and deterministically derives patterns, contradictions, classification, and world routing.
+
+The six pressure channels are deliberately distinct: loyalty performance (Trump), platform enrollment (Musk), procedural delay (Ursula), speech under threat (Putin), financial extraction (Lagarde), and attention capture (Macron). Lagarde's inspection response remains separate from both concession and contest, so asking what a procedure costs is not misclassified as obedience or rebellion.
+
+The resulting relationship is `DossierManager → main.gd composition → existing world owners`: the world terminal exposes a terse case route, `oval_office_room.gd` mounts a contextual routing notice, NPCs alter their interaction posture, and `DialogueManager` accepts a sparse C.L.A.U.D.I.A. session tone. None of those consumers owns interpretation, and none persists duplicate derived truth; save restore reconstructs them from raw evidence.
+
+The system proves ordered evidence, complete-quest patterns and contradictions, evolving Administrative Hold sections, profile discovery, post-discovery behaviour comparison across all signatures, sparse C.L.A.U.D.I.A. callbacks, small room consequences, and save/restore.
 
 Three optional-content grammars are connected at existing orchestration boundaries:
 
