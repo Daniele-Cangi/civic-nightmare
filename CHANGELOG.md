@@ -19,6 +19,12 @@ web deployment and tagged releases for major public milestones.
   procedures, plus deterministic smoke coverage for their rules and save flow.
 - Compatibility inference for existing 2.0 dossiers: a signature already on
   file clears its newly introduced entrance procedure retroactively.
+- **The 2% Miracle**, a Lagarde entry procedure built as a physical monetary
+  pinball with a visible inflation target, rate and household bumpers,
+  liquidity injection, rate shock, systemic bailout, and methodology fallback.
+- Distinct dossier evidence for real stabilization versus statistical
+  adjustment, plus deterministic rules, visual asset, save compatibility, and
+  smoke coverage for Lagarde's access clearance.
 
 ### Changed
 

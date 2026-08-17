@@ -35,5 +35,6 @@ OpenAI image generation, then locally resized and promoted into the runtime:
 
 - `assets/encounters/greatest_deal_stage_v1.png`
 - `assets/encounters/consensus_engine_stage_v1.png`
+- `assets/encounters/price_stability_pinball_stage_v1.png`
 
 They were art-directed for Civic Nightmare and use existing repository artwork only as a style or character-design reference.

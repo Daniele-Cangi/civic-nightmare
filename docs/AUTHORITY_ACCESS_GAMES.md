@@ -1,12 +1,12 @@
 # Authority access games
 
-Trump and Ursula each own a playable door procedure. These games happen before
-the existing interior travel transition; they do not replace or alter either
-character's dialogue.
+Trump, Ursula, and Lagarde each own a playable door procedure. These games
+happen before the existing interior travel transition; they do not replace or
+alter the character dialogue that follows.
 
 ## Shared contract
 
-- The door asks `main.gd` to travel to `oval_office` or `eu_palace`.
+- The door asks `main.gd` to travel to `oval_office`, `eu_palace`, or `vault`.
 - If its clearance bit is absent, `main.gd` archives the safe exterior
   checkpoint, freezes the world player, and starts the encounter module.
 - The module owns its full-screen stage, local input and deterministic rules.
@@ -53,9 +53,31 @@ The dossier retains the route, expiry resets, misroutes, station actions and
 attempts. A complete run ends with the deliberately impractical first page of
 an 847-page approval before the normal Ursula room opens.
 
+## The 2% Miracle
+
+Left and Right operate two physical flippers under a decaying baroque monetary
+machine. A euro ball collides with visible policy and household bumpers while a
+permanent header shows the live inflation indicator and its `2.00%` target.
+Rate bumpers lower the publication; energy, rent, wages, and bank rescue move it
+up. The player must keep the published value inside the narrow stability band
+for two seconds rather than merely touch it.
+
+Five interventions trigger a liquidity injection as multiball. Ten trigger a
+rate shock that accelerates the table. A completely drained table restores one
+systemic ball through a bailout and moves inflation upward. If the indicator
+has not converged when the procedure expires, the methodology is revised and
+publishes `2.0%`; this prevents the main quest from being blocked while making
+the administrative outcome distinct from genuine stabilization.
+
+The final presentation first certifies price stability, then explicitly leaves
+purchasing power and household effects outside the measurement perimeter. The
+dossier retains the route, policy and household hits, liquidity injection,
+rate shock, bailouts, acceptable losses, and elapsed time.
+
 ## Verification
 
 `tests/smoke_test.gd` proves blackjack totals, HIT/STAND progression, physical
 card bodies, the strict real-result-before-interference sequence, a normal bust,
-the lawful derogation path, semantic results, module mounting, and save/restore
-of both clearance bits. CI runs parse, smoke, and Web export before deployment.
+the lawful derogation path, deterministic pinball escalation and both monetary
+routes, semantic results, module mounting, and save/restore of all three
+clearance bits. CI runs parse, smoke, and Web export before deployment.

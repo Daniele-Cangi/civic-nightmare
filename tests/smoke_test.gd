@@ -9,6 +9,7 @@ const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle
 const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
 const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
+const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
@@ -23,6 +24,7 @@ const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_admin
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
 const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
 const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
+const PRICE_STABILITY_PINBALL_BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
 const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
@@ -59,6 +61,7 @@ func _run() -> void:
 	_test_bunker_access_gauntlet()
 	_test_greatest_deal()
 	_test_consensus_engine()
+	_test_price_stability_pinball()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -95,6 +98,7 @@ func _run() -> void:
 	var bunker_access_gauntlet: Node = game.get("bunker_access_gauntlet")
 	var greatest_deal: Node = game.get("greatest_deal")
 	var consensus_engine: Node = game.get("consensus_engine")
+	var price_stability_pinball: Node = game.get("price_stability_pinball")
 	var contamination_root: Node = game.get("contamination_root")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
@@ -142,10 +146,13 @@ func _run() -> void:
 	_check(bunker_access_gauntlet != null and bunker_access_gauntlet.get("layer") != null, "hidden bunker owns a modular access gauntlet")
 	_check(greatest_deal != null and greatest_deal.get("layer") != null, "Trump's entrance owns the Greatest Deal procedure")
 	_check(consensus_engine != null and consensus_engine.get("layer") != null, "Ursula's entrance owns the Consensus Engine procedure")
+	_check(price_stability_pinball != null and price_stability_pinball.get("layer") != null, "Lagarde's entrance owns the Price Stability procedure")
 	var trump_access_lines: Array = game.call("_authority_access_intro_lines", "donald_trump")
 	var ursula_access_lines: Array = game.call("_authority_access_intro_lines", "ursula_von_der_leyen")
+	var lagarde_access_lines: Array = game.call("_authority_access_intro_lines", "christine_lagarde")
 	_check(trump_access_lines.size() == 1 and str(trump_access_lines[0]).contains("reserve the right to have won"), "Trump introduces his game with one character-specific card")
 	_check(ursula_access_lines.size() == 1 and str(ursula_access_lines[0]).contains("same form"), "Ursula introduces her game with one character-specific card")
+	_check(lagarde_access_lines.size() == 1 and str(lagarde_access_lines[0]).contains("stabilize the economy"), "Lagarde introduces her game with one character-specific card")
 	game.call("_start_greatest_deal")
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "greatest_deal", "Trump's entrance opens the card before the table")
 	_check(not bool(greatest_deal.get("active")) and str(dialogue_manager.get("current_character_id")) == "donald_trump", "Trump's game waits behind his portrait card")
@@ -160,6 +167,13 @@ func _run() -> void:
 	await create_timer(0.3).timeout
 	_check(bool(consensus_engine.get("active")), "closing Ursula's card launches the existing game")
 	consensus_engine.stop()
+	game.call("_start_price_stability_pinball")
+	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "price_stability_pinball", "Lagarde's entrance opens the card before the monetary table")
+	_check(not bool(price_stability_pinball.get("active")) and str(dialogue_manager.get("current_character_id")) == "christine_lagarde", "Lagarde's game waits behind her portrait card")
+	game.call("_finish_dialogue")
+	await create_timer(0.3).timeout
+	_check(bool(price_stability_pinball.get("active")), "closing Lagarde's card launches the monetary pinball")
+	price_stability_pinball.stop()
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
@@ -565,6 +579,7 @@ func _run() -> void:
 	resume_snapshot["story"]["bunker_access_complete"] = true
 	resume_snapshot["story"]["trump_deal_complete"] = true
 	resume_snapshot["story"]["ursula_consensus_complete"] = true
+	resume_snapshot["story"]["lagarde_price_stability_complete"] = true
 	resume_snapshot["world"]["safe_position"] = [160.0, 224.0]
 	resume_snapshot["quest"]["quest_index"] = 2
 	resume_snapshot["quest"]["quest_completed"] = {
@@ -580,13 +595,16 @@ func _run() -> void:
 	_check(bool(game.get("bunker_access_complete")), "Continue preserves cleared bunker access without resuming the gauntlet")
 	_check(bool(game.get("trump_deal_complete")), "Continue preserves Greatest Deal access clearance")
 	_check(bool(game.get("ursula_consensus_complete")), "Continue preserves Consensus Engine access clearance")
+	_check(bool(game.get("lagarde_price_stability_complete")), "Continue preserves Price Stability access clearance")
 	var legacy_access_snapshot := resume_snapshot.duplicate(true)
 	legacy_access_snapshot["story"].erase("trump_deal_complete")
 	legacy_access_snapshot["story"].erase("ursula_consensus_complete")
+	legacy_access_snapshot["story"].erase("lagarde_price_stability_complete")
 	legacy_access_snapshot["quest"]["quest_completed"]["ursula_von_der_leyen"] = true
+	legacy_access_snapshot["quest"]["quest_completed"]["christine_lagarde"] = true
 	game.call("_apply_save_snapshot", legacy_access_snapshot)
 	await process_frame
-	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")), "older dossiers infer access clearance from signatures already obtained")
+	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")) and bool(game.get("lagarde_price_stability_complete")), "older dossiers infer access clearance from signatures already obtained")
 	if hidden_bunker:
 		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
@@ -892,6 +910,67 @@ func _test_consensus_engine() -> void:
 	_check(str(consensus_result.get("outcome", "")) == "access_granted", "Consensus Engine emits semantic access clearance")
 	_check(bool(consensus_result.get("derogation_used", false)) and str(consensus_result.get("route", "")) == "emergency_derogation", "Consensus Engine records the procedural route rather than a generic win")
 	engine.queue_free()
+
+
+func _test_price_stability_pinball() -> void:
+	_check(ResourceLoader.exists(PRICE_STABILITY_PINBALL_BACKGROUND_PATH), "Price Stability pinball background exists")
+	if ResourceLoader.exists(PRICE_STABILITY_PINBALL_BACKGROUND_PATH):
+		var stage_texture := load(PRICE_STABILITY_PINBALL_BACKGROUND_PATH) as Texture2D
+		_check(stage_texture != null and stage_texture.get_size() == Vector2(1280, 720), "Price Stability stage is authored for the gameplay viewport")
+	var pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
+	root.add_child(pinball)
+	pinball.setup(root)
+	pinball.start({
+		"intro_duration": 0.0,
+		"beat_duration": 0.0,
+		"outro_duration": 0.0,
+		"physics_enabled": false,
+		"timers_enabled": false,
+	})
+	pinball.process_frame(0.01)
+	_check(str(pinball.get("title_label").text) == "THE 2% MIRACLE", "Lagarde's procedure names its impossible target immediately")
+	_check(is_equal_approx(float(pinball.get("inflation")), 4.8) and str(pinball.get("target_label").text).contains("2.00%"), "the inflation reading and target are visible before play")
+	_check((pinball.get("bumper_nodes") as Dictionary).size() == 6, "the monetary table exposes six physical policy and household bumpers")
+	_check((pinball.get("balls") as Array).size() == 1 and pinball.get("left_flipper") != null and pinball.get("right_flipper") != null, "the procedure begins as a readable two-flipper pinball table")
+	for bumper_id in ["rates_left", "energy", "rates_right", "rent", "rates_left"]:
+		_check(pinball.register_bumper_hit(bumper_id), "policy table accepts the %s bumper" % bumper_id)
+	_check(bool(pinball.get("multiball_spawned")) and (pinball.get("balls") as Array).size() == 2, "five interventions trigger the readable liquidity-injection multiball")
+	for bumper_id in ["wages", "rates_right", "bank_rescue", "energy", "rates_left"]:
+		_check(pinball.register_bumper_hit(bumper_id), "accelerated policy table accepts the %s bumper" % bumper_id)
+	_check(bool(pinball.get("rate_shock_active")), "ten interventions trigger the authored rate shock")
+	_check(pinball.simulate_ball_loss(), "a drained economy reaches the bailout rule")
+	_check(int(pinball.get("bailouts")) == 1 and (pinball.get("balls") as Array).size() == 1, "the last drained ball is restored as a systemic bailout")
+	_check(pinball.force_statistical_adjustment(), "the timeout route can publish the target statistically")
+	pinball.process_frame(0.01)
+	pinball.process_frame(0.01)
+	pinball.process_frame(0.01)
+	_check(not bool(pinball.get("active")), "the published indicator closes the monetary procedure")
+	var adjusted_result: Dictionary = pinball.get_result()
+	_check(str(adjusted_result.get("outcome", "")) == "access_granted" and str(adjusted_result.get("route", "")) == "statistical_adjustment", "the adjustment route grants access without pretending it was player mastery")
+	_check(bool(adjusted_result.get("multiball_used", false)) and bool(adjusted_result.get("rate_shock", false)) and int(adjusted_result.get("bailouts", 0)) == 1, "the result preserves monetary interventions for the dossier")
+	pinball.queue_free()
+
+	var stabilized_pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
+	root.add_child(stabilized_pinball)
+	stabilized_pinball.setup(root)
+	stabilized_pinball.start({
+		"intro_duration": 0.0,
+		"beat_duration": 0.0,
+		"outro_duration": 0.0,
+		"physics_enabled": false,
+		"timers_enabled": false,
+	})
+	stabilized_pinball.process_frame(0.01)
+	for hit_index in range(6):
+		_check(stabilized_pinball.register_bumper_hit("rates_left"), "rate policy hit %d is deterministic" % (hit_index + 1))
+	_check(is_equal_approx(float(stabilized_pinball.get("inflation")), 2.1), "six rate hits reach the visible stability band without hidden arithmetic")
+	stabilized_pinball.process_frame(2.1)
+	stabilized_pinball.process_frame(0.01)
+	stabilized_pinball.process_frame(0.01)
+	stabilized_pinball.process_frame(0.01)
+	var stabilized_result: Dictionary = stabilized_pinball.get_result()
+	_check(not bool(stabilized_pinball.get("active")) and str(stabilized_result.get("route", "")) == "market_stabilized", "holding the real target records the genuine stabilization route")
+	stabilized_pinball.queue_free()
 
 
 func _test_ai_terminal_assets() -> void:
