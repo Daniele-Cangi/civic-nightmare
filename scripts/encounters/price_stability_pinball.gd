@@ -15,6 +15,8 @@ const PLAY_RIGHT := 1010.0
 const PLAY_TOP := 132.0
 const DRAIN_Y := 704.0
 const FLIPPER_LENGTH := 146.0
+const SYSTEMIC_SERVE_POSITION := Vector2(640, 555)
+const SYSTEMIC_SERVE_SPEED := Vector2(18, -260)
 const DEFAULT_INTRO_DURATION := 1.0
 const DEFAULT_BEAT_DURATION := 1.25
 const DEFAULT_OUTRO_DURATION := 1.6
@@ -360,7 +362,10 @@ func _restore_systemic_ball() -> void:
 	_refresh_inflation()
 	_show_policy_message("SYSTEMIC BALL RESTORED")
 	spawn_direction *= -1.0
-	_spawn_ball(Vector2(640, 505), Vector2(175.0 * spawn_direction, -430))
+	_spawn_ball(
+		SYSTEMIC_SERVE_POSITION,
+		Vector2(SYSTEMIC_SERVE_SPEED.x * spawn_direction, SYSTEMIC_SERVE_SPEED.y)
+	)
 
 
 func _integrate_ball(ball: Dictionary, delta: float) -> void:

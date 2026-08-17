@@ -32,6 +32,11 @@ web deployment and tagged releases for major public milestones.
   replacing the superseded nuclear-plant mockup with the inference reactor and
   adding representative 2.0 landmarks, interiors, anomalies, and combat art.
 
+### Fixed
+
+- Lagarde's restored systemic ball now follows a protected central service arc
+  onto an inner flipper instead of immediately draining into repeated bailouts.
+
 ## [2.0.0] - 2026-08-17
 
 ### Release title

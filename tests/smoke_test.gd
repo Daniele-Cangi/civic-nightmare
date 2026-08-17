@@ -950,6 +950,24 @@ func _test_price_stability_pinball() -> void:
 	_check(bool(adjusted_result.get("multiball_used", false)) and bool(adjusted_result.get("rate_shock", false)) and int(adjusted_result.get("bailouts", 0)) == 1, "the result preserves monetary interventions for the dossier")
 	pinball.queue_free()
 
+	var served_pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
+	root.add_child(served_pinball)
+	served_pinball.setup(root)
+	served_pinball.start({
+		"intro_duration": 0.0,
+		"physics_enabled": true,
+		"timers_enabled": false,
+	})
+	served_pinball.process_frame(0.01)
+	_check(served_pinball.simulate_ball_loss(), "a live drained table requests a systemic serve")
+	var served_ball: Dictionary = (served_pinball.get("balls") as Array)[0]
+	_check((served_ball.get("position") as Vector2).is_equal_approx(Vector2(640, 555)), "the replacement ball starts in the protected central service lane")
+	_check(absf((served_ball.get("velocity") as Vector2).x) <= 18.0 and is_equal_approx((served_ball.get("velocity") as Vector2).y, -260.0), "the replacement ball uses a controlled flipper-aligned serve")
+	for frame_index in range(240):
+		served_pinball.process_frame(1.0 / 120.0)
+	_check(int(served_pinball.get("bailouts")) == 1 and (served_pinball.get("balls") as Array).size() == 1, "the replacement ball reaches a flipper instead of immediately draining again")
+	served_pinball.queue_free()
+
 	var stabilized_pinball := PRICE_STABILITY_PINBALL_SCRIPT.new()
 	root.add_child(stabilized_pinball)
 	stabilized_pinball.setup(root)
