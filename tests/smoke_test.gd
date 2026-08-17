@@ -7,6 +7,7 @@ const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const BEZOS_BATTLE_STAGE_SCRIPT = preload("res://scripts/encounters/bezos_battle_stage.gd")
 const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
+const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
@@ -54,6 +55,7 @@ func _run() -> void:
 	_test_world_district_plate()
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
+	await _test_xi_intercept_presentation()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
 	_check(packed_scene != null, "main scene can be loaded")
@@ -494,6 +496,51 @@ func _test_combat_portraits() -> void:
 		_check(portrait != null, "%s combat portrait can be loaded" % character_id)
 		if portrait:
 			_check(portrait.get_size() == Vector2(128, 128), "%s combat portrait is runtime-sized" % character_id)
+
+
+func _test_xi_intercept_presentation() -> void:
+	var host := Node.new()
+	host.name = "XiInterceptSmokeHost"
+	root.add_child(host)
+	var player := CharacterBody2D.new()
+	host.add_child(player)
+	var encounter := XI_PRE_SCENE_SCRIPT.new()
+	host.add_child(encounter)
+	encounter.call("setup", host, player, {})
+	encounter.set("xi_scene_total_messages", 3)
+	encounter.call("_build_xi_scene_overlay")
+	await process_frame
+
+	var speaker_cards: Dictionary = encounter.get("xi_scene_speaker_cards")
+	_check(speaker_cards.size() == 3, "Xi intercept presents DeepSick, Xi, and CLAUDIA as distinct speakers")
+	_check(speaker_cards.has("deepsick") and speaker_cards.has("xi") and speaker_cards.has("claudia"), "Xi intercept keeps the three-speaker hierarchy")
+	var deepsick_card := speaker_cards.get("deepsick") as PanelContainer
+	var claudia_card := speaker_cards.get("claudia") as PanelContainer
+	var deepsick_portrait := deepsick_card.get_node_or_null("Content/PortraitFrame/Portrait") as TextureRect if deepsick_card else null
+	_check(
+		deepsick_portrait != null
+		and deepsick_portrait.texture != null
+		and deepsick_portrait.texture.resource_path == "res://assets/mockups/deepsick_state_ai_portrait_v1.png",
+		"Xi intercept uses the custom state-AI portrait"
+	)
+	_check(encounter.get("xi_scene_history_label") != null, "Xi intercept exposes a restrained signal buffer instead of an accumulating chat log")
+
+	encounter.call("_xi_scene_add_message", "deepsick", "xi", "Test order")
+	encounter.call("_xi_scene_add_message", "claudia", "claudia", "Call it alignment. Everyone is doing it.")
+	await process_frame
+	var history_entries: Array = encounter.get("xi_scene_history_entries")
+	_check(history_entries.size() == 1, "Xi intercept moves only previous messages into its short signal buffer")
+	_check(claudia_card != null and claudia_card.modulate.is_equal_approx(Color.WHITE), "Xi intercept visually prioritizes the active speaker")
+	var claudia_portrait := claudia_card.get_node_or_null("Content/PortraitFrame/Portrait") as TextureRect if claudia_card else null
+	_check(
+		claudia_portrait != null
+		and claudia_portrait.texture != null
+		and claudia_portrait.texture.resource_path == "res://assets/mockups/ai_terminal_portrait_smile_v2.png",
+		"CLAUDIA expression reacts to the intercepted line"
+	)
+
+	host.queue_free()
+	await process_frame
 
 
 func _test_bezos_battle_stage() -> void:
