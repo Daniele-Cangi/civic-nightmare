@@ -542,6 +542,33 @@ func _test_xi_intercept_presentation() -> void:
 	host.queue_free()
 	await process_frame
 
+	var release_host := Node.new()
+	release_host.name = "XiReleaseSmokeHost"
+	root.add_child(release_host)
+	var release_player := CharacterBody2D.new()
+	release_host.add_child(release_player)
+	var release_encounter := XI_PRE_SCENE_SCRIPT.new()
+	release_host.add_child(release_encounter)
+	release_encounter.call("setup", release_host, release_player, {
+		"xi_jinping": {
+			"xi_pre_scene": [
+				{
+					"channel": "deepsick",
+					"from": "xi",
+					"text": "Release-control test.",
+					"hold": 0.0
+				}
+			]
+		}
+	})
+	release_encounter.call("start", "red_command", null)
+	await create_timer(2.7).timeout
+	_check(not bool(release_encounter.get("xi_pre_scene_active")), "Xi intercept automatically releases its active state after the final beat")
+	_check(bool(release_encounter.get("xi_pre_scene_seen")), "Xi intercept records completion after automatic release")
+	_check(release_player.is_physics_processing(), "Xi intercept always restores player movement after completion")
+	release_host.queue_free()
+	await process_frame
+
 
 func _test_bezos_battle_stage() -> void:
 	var arena_path := "res://assets/mockups/bezos_fulfillment_cathedral.png"

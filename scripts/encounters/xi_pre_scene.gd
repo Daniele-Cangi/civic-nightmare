@@ -61,16 +61,7 @@ func start(current_room_id: String, xi_room: Node) -> void:
 	if intro_tween:
 		await intro_tween.finished
 	if xi_pre_skip_requested:
-		xi_pre_skip_requested = false
-		xi_pre_scene_seen = true
-		_destroy_xi_scene_overlay(func() -> void:
-			xi_pre_scene_active = false
-			player.set_physics_process(true)
-			if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
-				xi_room.set_npc_interaction_enabled(true)
-			if xi_room and xi_room.has_method("require_npc_reapproach"):
-				xi_room.require_npc_reapproach()
-		)
+		_finish_xi_pre_scene(xi_room)
 		return
 	await get_tree().create_timer(0.18).timeout
 
@@ -91,16 +82,15 @@ func start(current_room_id: String, xi_room: Node) -> void:
 			if xi_pre_skip_requested:
 				break
 
-	xi_pre_skip_requested = false
-
-	# Show "press space" hint and wait for player input
+	# The transmission releases control automatically. SPACE may shorten this
+	# final beat, but gameplay state must never depend on another key press.
 	if xi_scene_frame and is_instance_valid(xi_scene_frame):
 		var skip_hint := xi_scene_frame.get_node_or_null("XiSkipHint")
 		if skip_hint:
 			skip_hint.queue_free()
 		var close_lbl := Label.new()
 		close_lbl.name = "XiCloseHint"
-		close_lbl.text = "[ SPACE — close transmission ]"
+		close_lbl.text = "[ TRANSMISSION ENDED — RELEASING LOCAL CONTROL ]"
 		close_lbl.add_theme_font_size_override("font_size", 13)
 		close_lbl.add_theme_color_override("font_color", Color(0.82, 0.74, 0.56))
 		close_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -108,22 +98,33 @@ func start(current_room_id: String, xi_room: Node) -> void:
 		close_lbl.size = Vector2(1280.0, 24.0)
 		xi_scene_frame.add_child(close_lbl)
 		var blink_t: float = 0.0
-		while true:
+		var linger_time: float = 0.0
+		while linger_time < 1.15:
 			await get_tree().process_frame
-			blink_t += get_process_delta_time() * 3.0
+			var frame_delta := get_process_delta_time()
+			linger_time += frame_delta
+			blink_t += frame_delta * 3.0
 			close_lbl.modulate.a = 0.45 + sin(blink_t) * 0.45
-			if Input.is_action_just_pressed("ui_accept"):
+			if xi_pre_skip_requested or Input.is_action_just_pressed("ui_accept"):
 				break
 
+	_finish_xi_pre_scene(xi_room)
+
+
+func _finish_xi_pre_scene(xi_room: Node) -> void:
+	# Release gameplay before starting the cosmetic fade. A visual tween must
+	# never own the player's movement lock.
+	xi_pre_skip_requested = false
 	xi_pre_scene_seen = true
-	_destroy_xi_scene_overlay(func() -> void:
-		xi_pre_scene_active = false
+	xi_pre_scene_active = false
+	if player and is_instance_valid(player):
+		player.velocity = Vector2.ZERO
 		player.set_physics_process(true)
-		if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
-			xi_room.set_npc_interaction_enabled(true)
-		if xi_room and xi_room.has_method("require_npc_reapproach"):
-			xi_room.require_npc_reapproach()
-	)
+	if xi_room and xi_room.has_method("set_npc_interaction_enabled"):
+		xi_room.set_npc_interaction_enabled(true)
+	if xi_room and xi_room.has_method("require_npc_reapproach"):
+		xi_room.require_npc_reapproach()
+	_destroy_xi_scene_overlay()
 
 func _layout_xi_scene_frame() -> void:
 	if not xi_scene_root or not xi_scene_frame:
