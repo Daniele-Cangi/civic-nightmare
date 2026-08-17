@@ -36,8 +36,10 @@ scenes/main.tscn
         │                           in-world drone prelude
 		├── bezos_encounter.gd      arcade encounter sequence and verdict
 		├── bezos_battle_stage.gd   local input, attacks, poses, and battle result
-		└── bunker_access_gauntlet.gd
-		                            classified-route dodge encounter and result
+		├── bunker_access_gauntlet.gd
+		│                           classified-route dodge encounter and result
+		├── greatest_deal.gd        Trump access rules, claim, and result
+		└── consensus_engine.gd      Ursula physical procedure and result
 ```
 
 `main.gd` instantiates these nodes in `_ready()`, supplies their scene dependencies, and handles signals whose consequences span more than one system. The extracted modules do not load or replace `main.tscn`.
@@ -86,6 +88,7 @@ scenes/main.tscn
 - `assets/landmarks/northern_great_wall_v1.png` replaces Xi's isolated isometric cutout with a 2176×448 transparent northern perimeter. `WorldLandmarkBuilder` anchors its visible frontage to the north world boundary while the wall mass remains outside the playable map, keeps one open central gate aligned to the boulevard, adds two solid wall wings, and retains the former wall asset only as a missing-resource fallback. The hidden bunker now occupies the western margin between rows so it cannot interrupt the northern silhouette. See [Northern Great Wall Art Direction](NORTHERN_GREAT_WALL_ART_DIRECTION.md).
 - `assets/landmarks/southern_annex_gate_v1.png` turns the main map's southern edge into a travel boundary. The gate leads to `assets/backgrounds/southern_administrative_annex_v1.png`, where the existing Kim and Sam landmarks are mounted in dedicated west/east bays over one shared municipal utility layer. Their interiors return to local area markers. Safe checkpoints persist the current exterior area so Continue reconstructs the same travel container deterministically. See [Southern Administrative Annex Art Direction](SOUTHERN_ANNEX_ART_DIRECTION.md).
 - The hidden-bunker door now starts `BunkerAccessGauntlet` before ordinary room travel. The encounter owns its overlay, movement, authored bomb/funding timeline, retry loop, and semantic result; `main.gd` only freezes the world, archives the result, and resumes the existing door transition. The cleared-access bit is persisted while mid-gauntlet state is deliberately not resumable. See [Bunker Access Gauntlet](BUNKER_ACCESS_GAUNTLET.md).
+- The Trump and Ursula doors now start `GreatestDeal` and `ConsensusEngine` before ordinary room travel. Each module owns its input, local rules, authored stage, retry state, and semantic result; `main.gd` owns only the world freeze, persistent clearance, dossier handoff, and deferred entry into the unchanged interior encounter. Mid-procedure state is deliberately resumed from the safe exterior checkpoint. See [Authority Access Games](AUTHORITY_ACCESS_GAMES.md).
 - The six main compounds follow the authored plate's two-column/three-row visual grid. Their physical roots remain tile-centred at world `x = ±528`; presentation offsets place five facade rasters at `x = ±544` and Putin at `x = -552`, without moving doorway, collision, NPC, or lighting. Row centers remain `y = -683 / 0 / 683`. Facades use shared row heights (330 px top, 320 px middle, 298 px bottom), so paired landmarks align predictably with their doorway rows.
 - All six authorities use facade-specific collision masks rather than legacy procedural silhouettes. Each mask follows the visible lower building mass and stops before the exterior threshold; the doorway trigger remains owned by `RoomManager`.
 

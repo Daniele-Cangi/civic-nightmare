@@ -5,6 +5,19 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+### Added
+
+- **The Greatest Deal**, a three-round Trump entry procedure built around
+  readable card rules, declared victories, timed acceptance or challenge, and
+  leverage gained by strategically accepting an adverse result.
+- **The Consensus Engine**, a physical 27-approval Ursula entry procedure with
+  moving dossiers, scanners, stamps, translations, expiring approvals, and two
+  legitimate unanimity routes.
+- Persistent access clearance and semantic dossier evidence for both authority
+  procedures, plus deterministic smoke coverage for their rules and save flow.
+- Compatibility inference for existing 2.0 dossiers: a signature already on
+  file clears its newly introduced entrance procedure retroactively.
+
 ### Changed
 
 - Refreshed the README's visual identity and gallery to use current runtime art,

@@ -30,4 +30,10 @@ The following project-specific battle assets were generated with OpenAI image ge
 - `assets/mockups/bezos_battle_poses.png`
 - `assets/mockups/citizen_battle_poses.png`
 
+The following 1280×720 project-specific encounter stages were generated with
+OpenAI image generation, then locally resized and promoted into the runtime:
+
+- `assets/encounters/greatest_deal_stage_v1.png`
+- `assets/encounters/consensus_engine_stage_v1.png`
+
 They were art-directed for Civic Nightmare and use existing repository artwork only as a style or character-design reference.
