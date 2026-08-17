@@ -45,6 +45,7 @@ var claudia_inference_active: bool = false
 var claudia_inference_load: float = 0.0
 var claudia_performance_step: int = 0
 var claudia_inference_beat: int = 0
+var claudia_session_tone: String = ""
 
 
 func setup(
@@ -439,7 +440,7 @@ func classify_claudia_expression(text: String) -> String:
 
 
 func _begin_claudia_inference(text: String) -> void:
-	claudia_target_expression = classify_claudia_expression(text)
+	claudia_target_expression = claudia_session_tone if claudia_session_tone != "" else classify_claudia_expression(text)
 	claudia_inference_load = clampf((text.length() - 42.0) / 170.0, 0.0, 1.0)
 	claudia_performance_step = 0
 	claudia_inference_beat = 0
@@ -515,6 +516,10 @@ func _reset_claudia_visuals() -> void:
 	portrait_rect.scale = Vector2.ONE
 	portrait_rect.modulate = Color.WHITE
 
+
+func set_claudia_session_tone(expression: String) -> void:
+	claudia_session_tone = expression if expression in ["neutral", "smile", "sad", "exalted"] else ""
+
 func animate_dialogue_in() -> void:
 	dialogue_anchor.visible = true
 	dialogue_anchor.modulate.a = 0.0
@@ -530,6 +535,7 @@ func close_dialogue() -> void:
 	continue_label.visible = false
 	choice_container.visible = false
 	is_choosing = false
+	claudia_session_tone = ""
 	dialogue_anchor.offset_top = dialogue_rest_top  # reset expanded height
 
 	var start_top = dialogue_anchor.offset_top

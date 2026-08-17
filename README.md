@@ -114,6 +114,9 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `assets/landmarks/`: runtime-sized exterior hero facades for the six required-signature locations.
 - `assets/interiors/`: opaque authored room backgrounds aligned to the shared indoor gameplay canvas.
 - `assets/backgrounds/`: collision-neutral overworld ground art rendered beneath the procedural gameplay layers.
+- `assets/runtime/props/`: the small promoted vendor subset actually used by interiors.
+- `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
+- `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos-drone, and Bezos-cinematic logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
@@ -131,7 +134,9 @@ godot --headless --path . --editor --quit
 godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
 ```
 
-The smoke test loads the main scene and covers the title flow, dossier interpretation and save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip.
+The smoke test loads the main scene and covers the title flow, six-signature dossier interpretation, Dossier-to-world consequences, save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip. Pull requests run parse, smoke, and Web export before they can reach the Pages deploy step.
+
+Asset ownership and repository-weight decisions are recorded in [`docs/ASSET_INVENTORY.md`](docs/ASSET_INVENTORY.md); release verification lives in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
 ## ⚖️ License
 

@@ -17,6 +17,11 @@ When contributing media:
 
 This notice is a practical repository policy and is not a complete rights audit of every existing file.
 
+Repository placement does not change rights. `assets/` is the exported runtime
+set, `asset_sources/` is non-exported retained source material, and
+`tmp/generated/` is disposable local output. The maintained storage and
+provenance inventory is [`docs/ASSET_INVENTORY.md`](docs/ASSET_INVENTORY.md).
+
 ## Generated project artwork
 
 The following project-specific battle assets were generated with OpenAI image generation and then locally cropped or chroma-keyed for runtime use:

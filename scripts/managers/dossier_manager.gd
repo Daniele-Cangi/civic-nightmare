@@ -1,31 +1,106 @@
 extends Node
 
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2
 
-const TAG_RULES := {
+# These are categorical descriptions of an observable act, not personality
+# scores. The table also migrates schema-1 saves whose choice events predate
+# the data-driven `observation` field now carried by characters.json.
+const LEGACY_CHOICE_OBSERVATIONS := {
 	"spectacle-compliant": {
-		"strategy": "accommodate",
-		"traits": {"authority_accommodation": 2},
+		"choice_id": "trump_perform_approval",
+		"response_mode": "concede",
+		"pressure_channel": "loyalty_performance",
+		"authority_form": "spectacular_personal",
+		"resource": "approval",
+		"action": "performed_approval",
 	},
 	"insufficiently-enthusiastic": {
-		"strategy": "resist",
-		"traits": {"procedural_resistance": 2},
+		"choice_id": "trump_refuse_performance",
+		"response_mode": "contest",
+		"pressure_channel": "loyalty_performance",
+		"authority_form": "spectacular_personal",
+		"resource": "time",
+		"action": "refused_performance",
 	},
 	"platform-opted-in": {
-		"strategy": "accommodate",
-		"traits": {"platform_dependence": 2, "authority_accommodation": 1},
+		"choice_id": "musk_accept_enrollment",
+		"response_mode": "concede",
+		"pressure_channel": "platform_enrollment",
+		"authority_form": "commercial_platform",
+		"resource": "autonomy",
+		"action": "accepted_enrollment",
 	},
 	"manual-routing": {
-		"strategy": "resist",
-		"traits": {"platform_dependence": -2, "procedural_resistance": 1},
+		"choice_id": "musk_insist_manual_route",
+		"response_mode": "contest",
+		"pressure_channel": "platform_enrollment",
+		"authority_form": "commercial_platform",
+		"resource": "autonomy",
+		"action": "insisted_manual_route",
 	},
 	"committee-pending": {
-		"strategy": "accommodate",
-		"traits": {"institutional_patience": 2, "authority_accommodation": 1},
+		"choice_id": "ursula_accept_delay",
+		"response_mode": "concede",
+		"pressure_channel": "procedural_delay",
+		"authority_form": "distributed_institution",
+		"resource": "time",
+		"action": "accepted_delay",
 	},
 	"expedite-requested": {
-		"strategy": "resist",
-		"traits": {"institutional_patience": -2, "procedural_resistance": 1},
+		"choice_id": "ursula_request_exception",
+		"response_mode": "contest",
+		"pressure_channel": "procedural_delay",
+		"authority_form": "distributed_institution",
+		"resource": "time",
+		"action": "requested_exception",
+	},
+	"self-censored": {
+		"choice_id": "putin_soften_language",
+		"response_mode": "concede",
+		"pressure_channel": "speech_under_threat",
+		"authority_form": "coercive_security",
+		"resource": "speech",
+		"action": "softened_language",
+	},
+	"remembered-by-security": {
+		"choice_id": "putin_speak_plainly",
+		"response_mode": "contest",
+		"pressure_channel": "speech_under_threat",
+		"authority_form": "coercive_security",
+		"resource": "speech",
+		"action": "spoke_plainly",
+	},
+	"household-adjusted": {
+		"choice_id": "lagarde_request_cost_terms",
+		"response_mode": "inspect",
+		"pressure_channel": "financial_extraction",
+		"authority_form": "financial_system",
+		"resource": "money",
+		"action": "requested_cost_legibility",
+	},
+	"tone-surcharged": {
+		"choice_id": "lagarde_reject_public_fee",
+		"response_mode": "contest",
+		"pressure_channel": "financial_extraction",
+		"authority_form": "financial_system",
+		"resource": "money",
+		"action": "rejected_public_fee",
+	},
+	"discursively-delayed": {
+		"choice_id": "macron_indulge_discourse",
+		"response_mode": "concede",
+		"pressure_channel": "attention_capture",
+		"authority_form": "discursive_prestige",
+		"resource": "attention",
+		"action": "indulged_discourse",
+	},
+	"procedurally-impatient": {
+		"choice_id": "macron_restore_task_focus",
+		"response_mode": "contest",
+		"pressure_channel": "attention_capture",
+		"authority_form": "discursive_prestige",
+		"resource": "attention",
+		"action": "restored_task_focus",
 	},
 }
 
@@ -80,9 +155,11 @@ func record_choice(character_id: String, choice: Dictionary) -> bool:
 		file_note,
 		"recorded",
 		{
-			"choice_text": str(choice.get("text", "")),
+			"choice_id": str(choice.get("choice_id", _observation_for_tag(file_tag).get("choice_id", ""))),
+			"choice_text": str(choice.get("label", choice.get("text", ""))),
 			"ai_comment": ai_comment,
 			"profile_was_known": profile_discovered,
+			"observation": _normalise_observation(choice.get("observation", {}), file_tag),
 		}
 	)
 
@@ -122,59 +199,76 @@ func record_profile_access(section_id: String = "citizen_dossier") -> bool:
 	return true
 
 
-func derive_traits() -> Dictionary:
-	var traits: Dictionary = {
-		"authority_accommodation": 0,
-		"procedural_resistance": 0,
-		"platform_dependence": 0,
-		"institutional_patience": 0,
-		"protocol_deviation": 0,
-		"investigative_curiosity": 0,
-		"profile_awareness": 0,
-		"procedural_persistence": 0,
+func derive_observation_summary() -> Dictionary:
+	var summary := {
+		"choice_count": 0,
+		"response_modes": {},
+		"pressure_channels": [],
+		"authority_forms": [],
+		"resources_conceded": [],
+		"resources_protected": [],
+		"actions": [],
 	}
-	for event in events:
-		if not event is Dictionary:
+	for event in _events_in_category("choice"):
+		var observation := _observation_for_event(event)
+		if observation.is_empty():
 			continue
-		var tag := str(event.get("tag", ""))
-		var rule: Dictionary = TAG_RULES.get(tag, {})
-		var weights: Dictionary = rule.get("traits", {})
-		for trait_id in weights:
-			traits[trait_id] = int(traits.get(trait_id, 0)) + int(weights[trait_id])
-		match str(event.get("category", "")):
-			"investigation":
-				traits["investigative_curiosity"] += 1
-			"protocol_deviation":
-				traits["protocol_deviation"] += 2
-				traits["investigative_curiosity"] += 1
-			"profile_access":
-				traits["profile_awareness"] += 1
-			"contest":
-				traits["procedural_persistence"] += 2
-				if str(event.get("tag", "")) == "physical-remedy-invalidated":
-					traits["procedural_resistance"] += 1
-	return traits
+		summary["choice_count"] = int(summary["choice_count"]) + 1
+		var mode := str(observation.get("response_mode", ""))
+		var modes: Dictionary = summary["response_modes"]
+		modes[mode] = int(modes.get(mode, 0)) + 1
+		_append_unique(summary["pressure_channels"], str(observation.get("pressure_channel", "")))
+		_append_unique(summary["authority_forms"], str(observation.get("authority_form", "")))
+		_append_unique(summary["actions"], str(observation.get("action", "")))
+		var resource := str(observation.get("resource", ""))
+		if mode == "concede":
+			_append_unique(summary["resources_conceded"], resource)
+		elif mode == "contest":
+			_append_unique(summary["resources_protected"], resource)
+	return summary
 
 
 func derive_patterns() -> Array:
 	var patterns: Array = []
 	var choice_events := _events_in_category("choice")
-	var traits := derive_traits()
-	if choice_events.size() >= 2:
-		if int(traits.get("authority_accommodation", 0)) >= 3:
+	var summary := derive_observation_summary()
+	var modes: Dictionary = summary.get("response_modes", {})
+	if choice_events.size() >= 3:
+		if int(modes.get("concede", 0)) >= 3:
 			patterns.append({
-				"id": "access_through_accommodation",
-				"title": "REPEATED ACCESS STRATEGY",
-				"body": "Subject repeatedly reduced procedural friction by accommodating the authority presenting it.",
-				"note": "This is considered efficient. Intent has not been requested.",
+				"id": "access_by_concession",
+				"title": "ACCESS COST REPEATED",
+				"body": "Subject repeatedly surrendered a requested resource to keep the passport procedure moving.",
+				"note": "Resources observed: %s. Intent was not requested." % _human_join(summary.get("resources_conceded", [])),
 			})
-		elif int(traits.get("procedural_resistance", 0)) >= 3:
+		if int(modes.get("contest", 0)) >= 3:
 			patterns.append({
-				"id": "repeated_resistance",
-				"title": "PROCEDURAL FRICTION",
-				"body": "Subject repeatedly challenged the terms attached to routine access.",
-				"note": "The system has provisionally classified this as a scheduling preference.",
+				"id": "repeated_boundary_setting",
+				"title": "BOUNDARY SETTING REPEATED",
+				"body": "Subject repeatedly returned the interaction to the requested public service.",
+				"note": "Protected resources observed: %s." % _human_join(summary.get("resources_protected", [])),
 			})
+	if _has_tag("manual-routing") and _has_tag("household-adjusted"):
+		patterns.append({
+			"id": "terms_before_trust",
+			"title": "CONDITIONS REQUIRE LEGIBILITY",
+			"body": "Subject rejected platform enrollment, then requested explicit terms before accepting a financial charge.",
+			"note": "The file no longer treats refusal and inspection as the same action.",
+		})
+	if _has_tag("expedite-requested") and _has_tag("procedurally-impatient"):
+		patterns.append({
+			"id": "attention_protection",
+			"title": "TIME BOUNDARY REPEATED",
+			"body": "Subject redirected both procedural delay and prestige discourse toward task completion.",
+			"note": "The system has marked this as an unusual preference for the stated purpose of the visit.",
+		})
+	if choice_events.size() >= 6:
+		patterns.append({
+			"id": "full_authority_comparison",
+			"title": "AUTHORITY COMPARISON COMPLETE",
+			"body": "Subject did not respond to authority in general. Subject responded separately to spectacle, platforms, institutions, threat, price and prestige.",
+			"note": "A single motive would have been easier to process. None was supplied.",
+		})
 
 	var shift := _derive_post_profile_shift()
 	if not shift.is_empty():
@@ -209,49 +303,177 @@ func derive_contradictions() -> Array:
 			"body": "Subject offered social approval to an authority, then rejected platform migration when approval was insufficiently useful.",
 			"note": "Possible explanations: strategy, principle, fatigue, citizenship.",
 		})
-	elif _has_tag("insufficiently-enthusiastic") and _has_tag("committee-pending"):
+	if _has_tag("insufficiently-enthusiastic") and _has_tag("committee-pending"):
 		contradictions.append({
 			"id": "challenge_then_wait",
 			"title": "PROFILE COHERENCE: LOW",
 			"body": "Subject challenged personal authority, then accepted institutional delay without escalation.",
 			"note": "Behaviour may vary with perceived exit options.",
 		})
-	elif _has_tag("spectacle-compliant") and _has_tag("expedite-requested"):
+	if _has_tag("spectacle-compliant") and _has_tag("expedite-requested"):
 		contradictions.append({
 			"id": "flatter_then_expedite",
 			"title": "CONTEXT VARIATION DETECTED",
 			"body": "Subject accommodated visible authority but resisted distributed authority.",
 			"note": "The distinction is currently being treated as suspiciously specific.",
 		})
-	elif _has_tag("manual-routing") and _has_tag("committee-pending"):
+	if _has_tag("manual-routing") and _has_tag("committee-pending"):
 		contradictions.append({
 			"id": "manual_but_patient",
 			"title": "ROUTING INCONSISTENCY",
 			"body": "Subject rejected automated convenience and later accepted committee delay.",
 			"note": "Preference appears to concern who wastes the time, not whether it is wasted.",
 		})
+	if _has_any_tag(["insufficiently-enthusiastic", "manual-routing", "expedite-requested"]) and _has_tag("self-censored"):
+		contradictions.append({
+			"id": "public_defiance_private_caution",
+			"title": "RISK-SENSITIVE DIRECTNESS",
+			"body": "Subject challenged lower-risk authority conditions, then softened language under personal threat.",
+			"note": "Possible explanations: strategy, fear, survival, citizenship.",
+		})
+	if (_has_tag("committee-pending") and _has_tag("procedurally-impatient")) or (_has_tag("expedite-requested") and _has_tag("discursively-delayed")):
+		contradictions.append({
+			"id": "institutional_time_discursive_time",
+			"title": "DELAY IS NOT TREATED UNIFORMLY",
+			"body": "Subject valued time differently when delay was presented as procedure and when it was presented as prestige.",
+			"note": "The clock appears to acquire legitimacy from the room containing it.",
+		})
+	if _has_tag("tone-surcharged") and _has_tag("discursively-delayed"):
+		contradictions.append({
+			"id": "price_contested_status_indulged",
+			"title": "RESOURCE PRIORITY INCONSISTENCY",
+			"body": "Subject defended public money, then donated private attention to status performance.",
+			"note": "Money was protected. Time was apparently ceremonial.",
+		})
 	return contradictions
 
 
 func derive_classification() -> String:
-	if _events_in_category("choice").size() < 2:
+	var choice_count := _events_in_category("choice").size()
+	if choice_count < 2:
 		return "ASSESSMENT INCOMPLETE"
 	if not _events_in_category("anomaly").is_empty() and not _events_in_category("protocol_deviation").is_empty():
 		return "ADMINISTRATIVELY UNPREDICTABLE"
-	if not _derive_post_profile_shift().is_empty():
+	var notification_comparison := _derive_post_profile_shift()
+	if str(notification_comparison.get("id", "")) == "post_profile_behaviour_shift":
 		return "COOPERATIVE UNDER OBSERVATION"
-	if not derive_contradictions().is_empty():
-		return "CONTEXT-DEPENDENT COOPERATION"
-	var traits := derive_traits()
-	var accommodation := int(traits.get("authority_accommodation", 0))
-	var resistance := int(traits.get("procedural_resistance", 0))
-	if accommodation > resistance:
-		return "COMPLIANT UNTIL INFORMED"
-	if resistance > accommodation and int(traits.get("institutional_patience", 0)) > 0:
-		return "PROCEDURALLY HOSTILE / INSTITUTIONALLY DEPENDENT"
-	if resistance > accommodation:
-		return "MANAGEABLY DISSATISFIED"
+	if str(notification_comparison.get("id", "")) == "post_profile_consistency":
+		return "CONSISTENT UNDER OBSERVATION"
+	var contradictions := derive_contradictions()
+	if choice_count >= 6 and contradictions.size() >= 2:
+		return "ADMINISTRATIVELY CONTEXTUAL"
+	var modes: Dictionary = derive_observation_summary().get("response_modes", {})
+	if int(modes.get("concede", 0)) >= 4:
+		return "COMPLIANT ACROSS CONDITIONS"
+	if int(modes.get("contest", 0)) >= 4:
+		return "CONDITIONALLY COOPERATIVE"
+	if not contradictions.is_empty():
+		return "SELECTIVELY COMPLIANT"
 	return "INTERPRETATION PENDING"
+
+
+func get_world_state() -> Dictionary:
+	var choice_count := _events_in_category("choice").size()
+	if choice_count < 2:
+		return {
+			"route_id": "standard",
+			"visible": false,
+			"terminal_message": "",
+			"indicator": "!",
+			"npc_posture": "standard",
+			"claudia_tone": "neutral",
+		}
+
+	var route_id := "standard_review"
+	var terminal_message := "CASE ROUTE\nSTANDARD REVIEW"
+	var indicator := "!"
+	var npc_posture := "standard"
+	var claudia_tone := "smile"
+	var shift := _derive_post_profile_shift()
+	var contradictions := derive_contradictions()
+	var patterns := derive_patterns()
+	if str(shift.get("id", "")) == "post_profile_behaviour_shift":
+		route_id = "adaptive_review"
+		terminal_message = "CASE ROUTE\nBEHAVIOUR CHANGE REVIEW"
+		indicator = "◎"
+		npc_posture = "observed"
+		claudia_tone = "sad"
+	elif str(shift.get("id", "")) == "post_profile_consistency":
+		route_id = "notification_review"
+		terminal_message = "CASE ROUTE\nPOST-NOTIFICATION REVIEW"
+		indicator = "◎"
+		npc_posture = "observed"
+		claudia_tone = "smile"
+	elif not contradictions.is_empty():
+		route_id = "context_review"
+		terminal_message = "CASE ROUTE\nCONTEXT REVIEW"
+		indicator = "?"
+		npc_posture = "observed"
+		claudia_tone = "smile"
+	elif _has_derived_id(patterns, "repeated_boundary_setting"):
+		route_id = "manual_review"
+		terminal_message = "CASE ROUTE\nMANUAL REVIEW"
+		indicator = "…"
+		npc_posture = "manual_review"
+		claudia_tone = "sad"
+	elif _has_derived_id(patterns, "access_by_concession"):
+		route_id = "assisted_processing"
+		terminal_message = "CASE ROUTE\nASSISTED PROCESSING"
+		indicator = "·"
+		npc_posture = "precleared"
+		claudia_tone = "exalted"
+
+	return {
+		"route_id": route_id,
+		"visible": true,
+		"terminal_message": terminal_message,
+		"indicator": indicator,
+		"npc_posture": npc_posture,
+		"claudia_tone": claudia_tone,
+	}
+
+
+func get_room_response(room_id: String) -> Dictionary:
+	var world_state := get_world_state()
+	var response := {
+		"route_id": str(world_state.get("route_id", "standard")),
+		"subtitle": "",
+		"notice": "",
+		"npc_posture": str(world_state.get("npc_posture", "standard")),
+	}
+	match room_id:
+		"kremlin":
+			if _count_response_mode("contest") >= 2:
+				response["subtitle"] = "VOICE ASSURANCE REVIEW"
+				response["notice"] = "SPEECH ROUTE\nDIRECTNESS FLAGGED"
+				response["npc_posture"] = "observed"
+			elif _count_response_mode("concede") >= 2:
+				response["subtitle"] = "DISCRETION ROUTE PRE-CLEARED"
+				response["notice"] = "SPEECH ROUTE\nCAUTION EXPECTED"
+				response["npc_posture"] = "precleared"
+		"vault":
+			if _has_tag("self-censored"):
+				response["subtitle"] = "SECURITY NOTE: CAUTION RETAINED"
+				response["notice"] = "COST REVIEW\nLANGUAGE ALREADY ADJUSTED"
+				response["npc_posture"] = "precleared"
+			elif _has_tag("remembered-by-security"):
+				response["subtitle"] = "SECURITY NOTE ATTACHED TO ACCOUNT"
+				response["notice"] = "COST REVIEW\nIDENTITY RECONFIRMED"
+				response["npc_posture"] = "observed"
+		"elysee":
+			if _has_tag("household-adjusted"):
+				response["subtitle"] = "COST DISCLOSURE ROUTE ACTIVE"
+				response["notice"] = "RECEPTION ROUTE\nTERMS REQUESTED"
+				response["npc_posture"] = "precleared"
+			elif _has_tag("tone-surcharged"):
+				response["subtitle"] = "PUBLIC-FEE DISPUTE ROUTE"
+				response["notice"] = "RECEPTION ROUTE\nTONE SURCHARGE PENDING"
+				response["npc_posture"] = "manual_review"
+
+	if str(response["subtitle"]) == "" and bool(world_state.get("visible", false)):
+		response["subtitle"] = str(world_state.get("terminal_message", "")).replace("CASE ROUTE\n", "ROUTING: ")
+		response["notice"] = str(world_state.get("terminal_message", ""))
+	return response
 
 
 func get_visible_entries() -> Array:
@@ -336,6 +558,7 @@ func claim_claudia_observation() -> Dictionary:
 		if str(shift.get("id", "")) == "post_profile_behaviour_shift":
 			candidates.append({
 				"id": "claudia_profile_shift",
+				"tone": "sad",
 				"lines": [
 					"You changed strategy after reading your dossier.",
 					"Good news: that may be self-awareness. Bad news: the timing has been filed as evidence.",
@@ -344,6 +567,7 @@ func claim_claudia_observation() -> Dictionary:
 		else:
 			candidates.append({
 				"id": "claudia_profile_consistency",
+				"tone": "smile",
 				"lines": [
 					"You repeated your earlier strategy after reading the dossier.",
 					"The system cannot distinguish consistency from a performance of consistency. It has selected both.",
@@ -352,6 +576,7 @@ func claim_claudia_observation() -> Dictionary:
 	if get_profile_access_count() >= 3:
 		candidates.append({
 			"id": "claudia_screen_recheck",
+			"tone": "exalted",
 			"lines": [
 				"You check the record quite often.",
 				"That is now part of the record.",
@@ -362,6 +587,7 @@ func claim_claudia_observation() -> Dictionary:
 		var contradiction: Dictionary = contradictions[0]
 		candidates.append({
 			"id": "claudia_%s" % str(contradiction.get("id", "contradiction")),
+			"tone": "smile",
 			"lines": [
 				_claudia_contradiction_line(str(contradiction.get("id", ""))),
 				"I am creating a new category. Its confidence level is excellent; its meaning is pending.",
@@ -370,6 +596,7 @@ func claim_claudia_observation() -> Dictionary:
 	elif _events_in_category("choice").size() >= 2:
 		candidates.append({
 			"id": "claudia_cross_choice_comparison",
+			"tone": str(get_world_state().get("claudia_tone", "neutral")),
 			"lines": [
 				_claudia_choice_comparison_line(),
 				"One answer is a preference. Two answers are apparently a pattern. I do not make the threshold rules.",
@@ -378,6 +605,7 @@ func claim_claudia_observation() -> Dictionary:
 	if _has_event("investigation:red_phone"):
 		candidates.append({
 			"id": "claudia_red_phone",
+			"tone": "smile",
 			"lines": [
 				"An unregistered call passed through your meeting in Pyongyang.",
 				"You allowed it to continue. The distinction between restraint and listening has been postponed.",
@@ -386,6 +614,7 @@ func claim_claudia_observation() -> Dictionary:
 	if _has_event("investigation:bunker_access_corridor"):
 		candidates.append({
 			"id": "claudia_bunker_access_corridor",
+			"tone": "sad",
 			"lines": [
 				"You avoided the incoming explosives and the outgoing funding.",
 				"The system recorded both as transfer traffic. It considers the distinction emotional.",
@@ -397,6 +626,7 @@ func claim_claudia_observation() -> Dictionary:
 		if str(contest_event.get("tag", "")) == "physical-remedy-invalidated":
 			candidates.append({
 				"id": "claudia_bezos_invalidated_victory",
+				"tone": "sad",
 				"lines": [
 					"You defeated Bezos. The result then defeated you.",
 					"The system has preserved the second outcome as more procedurally mature.",
@@ -405,6 +635,7 @@ func claim_claudia_observation() -> Dictionary:
 		elif int(contest_metadata.get("objection_count", 0)) >= 2:
 			candidates.append({
 				"id": "claudia_bezos_objections",
+				"tone": "exalted",
 				"lines": [
 					"You objected repeatedly after the dispute had stopped accepting objections.",
 					"I have filed this as persistence. The interface filed it as engagement.",
@@ -445,6 +676,16 @@ func restore_save_data(data: Dictionary) -> void:
 			if event_id == "" or _has_event(event_id):
 				continue
 			var restored_event: Dictionary = saved_event.duplicate(true)
+			if str(restored_event.get("category", "")) == "choice":
+				var metadata: Dictionary = restored_event.get("metadata", {})
+				var tag := str(restored_event.get("tag", ""))
+				if not metadata.get("observation", {}) is Dictionary or (metadata.get("observation", {}) as Dictionary).is_empty():
+					metadata["observation"] = _observation_for_tag(tag)
+				if str(metadata.get("choice_id", "")) == "":
+					metadata["choice_id"] = str(_observation_for_tag(tag).get("choice_id", ""))
+				if str(metadata.get("choice_text", "")) == "":
+					metadata["choice_text"] = str(metadata.get("choice_id", tag)).replace("_", " ")
+				restored_event["metadata"] = metadata
 			restored_event["order"] = events.size()
 			events.append(restored_event)
 	profile_discovered = bool(data.get("profile_discovered", false))
@@ -596,11 +837,25 @@ func _claudia_contradiction_line(contradiction_id: String) -> String:
 			return "You flatter concentrated power and hurry distributed power. That is almost a philosophy."
 		"manual_but_patient":
 			return "You rejected automated convenience, then accepted committee delay."
+		"public_defiance_private_caution":
+			return "You challenged authority while the exits were decorative. You softened your language when they were not."
+		"institutional_time_discursive_time":
+			return "You treat delay differently when it arrives as procedure and when it arrives dressed as prestige."
+		"price_contested_status_indulged":
+			return "You protected public money, then donated private attention. I am comparing the exchange rates."
 		_:
 			return "Your behaviour changes with the shape of the authority in the room."
 
 
 func _claudia_choice_comparison_line() -> String:
+	if _has_tag("self-censored") and _has_tag("household-adjusted"):
+		return "You softened your words under threat, then requested exact terms under price pressure. Caution appears to require a category."
+	if _has_tag("remembered-by-security") and _has_tag("tone-surcharged"):
+		return "You spoke plainly to security and plainly to finance. Both departments have named the plainness differently."
+	if _has_tag("household-adjusted") and _has_tag("procedurally-impatient"):
+		return "You requested the cost, then requested the point. Legibility may be the closest thing this file has to a motive."
+	if _has_tag("tone-surcharged") and _has_tag("discursively-delayed"):
+		return "You refused the surcharge and accepted the speech. The system is reviewing your preferred forms of expense."
 	if _has_tag("spectacle-compliant") and _has_tag("platform-opted-in"):
 		return "You accepted approval as access, then accepted a platform as access. The file appreciates consistency."
 	if _has_tag("insufficiently-enthusiastic") and _has_tag("manual-routing"):
@@ -640,5 +895,63 @@ func _events_in_category(category: String) -> Array:
 
 
 func _strategy_for_tag(tag: String) -> String:
-	var rule: Dictionary = TAG_RULES.get(tag, {})
-	return str(rule.get("strategy", ""))
+	return str(_observation_for_tag(tag).get("response_mode", ""))
+
+
+func _normalise_observation(value, fallback_tag: String) -> Dictionary:
+	var fallback := _observation_for_tag(fallback_tag)
+	if not value is Dictionary:
+		return fallback
+	var observation: Dictionary = value.duplicate(true)
+	for key in ["choice_id", "response_mode", "pressure_channel", "authority_form", "resource", "action"]:
+		var normalised := str(observation.get(key, fallback.get(key, ""))).strip_edges()
+		if normalised != "":
+			observation[key] = normalised
+	return observation
+
+
+func _observation_for_tag(tag: String) -> Dictionary:
+	var value = LEGACY_CHOICE_OBSERVATIONS.get(tag, {})
+	return value.duplicate(true) if value is Dictionary else {}
+
+
+func _observation_for_event(event: Dictionary) -> Dictionary:
+	var metadata: Dictionary = event.get("metadata", {})
+	return _normalise_observation(metadata.get("observation", {}), str(event.get("tag", "")))
+
+
+func _append_unique(values: Array, value: String) -> void:
+	if value != "" and not values.has(value):
+		values.append(value)
+
+
+func _human_join(values: Array) -> String:
+	var words: Array[String] = []
+	for value in values:
+		var word := str(value).replace("_", " ")
+		if word != "":
+			words.append(word)
+	if words.is_empty():
+		return "none declared"
+	if words.size() == 1:
+		return words[0]
+	return ", ".join(words.slice(0, -1)) + " and " + words[-1]
+
+
+func _has_any_tag(tags: Array) -> bool:
+	for tag in tags:
+		if _has_tag(str(tag)):
+			return true
+	return false
+
+
+func _has_derived_id(items: Array, derived_id: String) -> bool:
+	for item in items:
+		if item is Dictionary and str(item.get("id", "")) == derived_id:
+			return true
+	return false
+
+
+func _count_response_mode(mode: String) -> int:
+	var modes: Dictionary = derive_observation_summary().get("response_modes", {})
+	return int(modes.get(mode, 0))

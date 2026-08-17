@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const core = require("./generator_core");
 
-const outputDir = path.resolve(__dirname, "..", "..", "assets", "generated");
+const outputDir = path.resolve(__dirname, "..", "..", "tmp", "generated", "civic_asset_lab");
 const pressures = ["time", "access", "trust", "rent", "stress"];
 const defaultProfile = "production";
 const gestureFxFrameCount = 5;
@@ -167,7 +167,7 @@ for (const job of jobs) {
     frame: asset.frame,
     frameCount: asset.frameCount,
     kind: "asset",
-    file: `assets/generated/${asset.id}.svg`
+    file: `tmp/generated/civic_asset_lab/${asset.id}.svg`
   });
 }
 
@@ -191,8 +191,8 @@ for (const sheetJob of sheetJobs) {
     columns: sheet.columns,
     rows: sheet.rows,
     kind: "spritesheet",
-    file: `assets/generated/${sheet.id}.svg`,
-    metadata: `assets/generated/${sheet.id}.json`
+    file: `tmp/generated/civic_asset_lab/${sheet.id}.svg`,
+    metadata: `tmp/generated/civic_asset_lab/${sheet.id}.json`
   });
 }
 

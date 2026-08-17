@@ -103,6 +103,14 @@
       "choices": [
         {
           "label": "You're the greatest leader of all time. Obviously.",
+          "choice_id": "trump_perform_approval",
+          "observation": {
+            "response_mode": "concede",
+            "pressure_channel": "loyalty_performance",
+            "authority_form": "spectacular_personal",
+            "resource": "approval",
+            "action": "performed_approval"
+          },
           "response": [
             "OBVIOUSLY!! Finally! Someone with TASTE! You know who NEVER says that? The lady with the regulations.",
             "She once called me 'problematic.' ME!! I'm not problematic — I'm HISTORIC!",
@@ -115,6 +123,14 @@
         },
         {
           "label": "Can you just sign? Some of us have actual jobs.",
+          "choice_id": "trump_refuse_performance",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "loyalty_performance",
+            "authority_form": "spectacular_personal",
+            "resource": "time",
+            "action": "refused_performance"
+          },
           "response": [
             "RUDE!! Very rude! You sound like that philosopher. Always rushing, NEVER appreciating the MOMENT!",
             "He once tried to lecture ME about diplomacy. ME!! The man with the biggest... office.",
@@ -143,6 +159,14 @@
       "choices": [
         {
           "label": "Fine, sign me up for Mars. Whatever it takes.",
+          "choice_id": "musk_accept_enrollment",
+          "observation": {
+            "response_mode": "concede",
+            "pressure_channel": "platform_enrollment",
+            "authority_form": "commercial_platform",
+            "resource": "autonomy",
+            "action": "accepted_enrollment"
+          },
           "response": [
             "YES!! Mars colonist #4,847!! Departure: Soon™. Don't ask for specifics.",
             "A certain world leader applied once. REJECTED. Can't have anyone annexing craters.",
@@ -155,6 +179,14 @@
         },
         {
           "label": "No Mars. No crypto. Just a normal human signature.",
+          "choice_id": "musk_insist_manual_route",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "platform_enrollment",
+            "authority_form": "commercial_platform",
+            "resource": "autonomy",
+            "action": "insisted_manual_route"
+          },
           "response": [
             "Wow. A DINOSAUR. You probably still use CASH. Certain regulatory bodies would LOVE you.",
             "Perfectly compliant with Regulation EU-BORING/2024. A model citizen... of the PAST.",
@@ -183,6 +215,14 @@
       "choices": [
         {
           "label": "I'll happily wait for the proper procedure.",
+          "choice_id": "ursula_accept_delay",
+          "observation": {
+            "response_mode": "concede",
+            "pressure_channel": "procedural_delay",
+            "authority_form": "distributed_institution",
+            "resource": "time",
+            "action": "accepted_delay"
+          },
           "response": [
             "WONDERFUL!! A citizen who RESPECTS process! My absolute favorite kind!",
             "Not that I play favorites. Regulation EU-7741 PROHIBITS it. But hypothetically...",
@@ -195,6 +235,14 @@
         },
         {
           "label": "Can't we skip the paperwork? Just this once?",
+          "choice_id": "ursula_request_exception",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "procedural_delay",
+            "authority_form": "distributed_institution",
+            "resource": "time",
+            "action": "requested_exception"
+          },
           "response": [
             "SKIP?! SKIP THE— do you know who else SKIPS things?! Certain eastern leaders! They skip elections! Treaties! BASIC DECENCY!",
             "And certain bankers say the SAME thing — 'too slow' — while charging 12% interest on the WAITING TIME!",
@@ -223,6 +271,14 @@
       "choices": [
         {
           "label": "I admire your... efficiency, Mr. President.",
+          "choice_id": "putin_soften_language",
+          "observation": {
+            "response_mode": "concede",
+            "pressure_channel": "speech_under_threat",
+            "authority_form": "coercive_security",
+            "resource": "speech",
+            "action": "softened_language"
+          },
           "response": [
             "Smart. Certain western leaders could learn from you. They talk too much. Everyone talks too much.",
             "One talks about regulations. One about philosophy. One about Mars. All noise.",
@@ -235,6 +291,14 @@
         },
         {
           "label": "Look, I just need the signature. No vacations, please.",
+          "choice_id": "putin_speak_plainly",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "speech_under_threat",
+            "authority_form": "coercive_security",
+            "resource": "speech",
+            "action": "spoke_plainly"
+          },
           "response": [
             "Ha. Humor. I appreciate it. Not everyone does. Some people ARE the humor without realizing it.",
             "Others think they're funny because they're rich. There's a difference. I know both sides.",
@@ -263,6 +327,14 @@
       "choices": [
         {
           "label": "How much does this signature actually cost?",
+          "choice_id": "lagarde_request_cost_terms",
+          "observation": {
+            "response_mode": "inspect",
+            "pressure_channel": "financial_extraction",
+            "authority_form": "financial_system",
+            "resource": "money",
+            "action": "requested_cost_legibility"
+          },
           "response": [
             "Signature: free. Processing: €47. Handling: €23. Fee explanation fee: €15. TOTAL: €85. Plus VAT.",
             "Certain offices are free, by the way. No fees. Just... implications. I prefer TRANSPARENT robbery.",
@@ -278,6 +350,14 @@
         },
         {
           "label": "A public signature should be FREE. Period.",
+          "choice_id": "lagarde_reject_public_fee",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "financial_extraction",
+            "authority_form": "financial_system",
+            "resource": "money",
+            "action": "rejected_public_fee"
+          },
           "response": [
             "'Free.' Oh, what a ROMANTIC word. Institutions love it. 'Free movement.' 'Free trade.' And then — *snap* — the bill arrives.",
             "Certain tech leaders say everything should be free too. While charging $8 for a CHECKMARK. Beautiful irony.",
@@ -309,6 +389,14 @@
       "choices": [
         {
           "label": "Fascinating! Please, tell me more about Voltaire.",
+          "choice_id": "macron_indulge_discourse",
+          "observation": {
+            "response_mode": "concede",
+            "pressure_channel": "attention_capture",
+            "authority_form": "discursive_prestige",
+            "resource": "attention",
+            "action": "indulged_discourse"
+          },
           "response": [
             "FINALLY!! Someone with TASTE!! Mon dieu! Certain leaders think Voltaire is a CAR BRAND. TRAGIC!",
             "*45 minutes later* — and THAT is why Derrida was RIGHT about deconstruction!",
@@ -321,6 +409,14 @@
         },
         {
           "label": "With all due respect — just sign the damn thing.",
+          "choice_id": "macron_restore_task_focus",
+          "observation": {
+            "response_mode": "contest",
+            "pressure_channel": "attention_capture",
+            "authority_form": "discursive_prestige",
+            "resource": "attention",
+            "action": "restored_task_focus"
+          },
           "response": [
             "Such HASTE! Very American energy. Someone once signed a TREATY without READING it! A TREATY!! Unbelievable!",
             "And certain bankers would LOVE your efficiency. They bill by the second. Every second I talk costs YOU money in their world.",

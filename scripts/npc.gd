@@ -22,6 +22,10 @@ var patrol_origin := Vector2.ZERO
 var patrol_dir := 1.0
 var patrol_range := 44.0
 var patrol_speed := 34.0
+var base_interaction_distance := 85.0
+var base_indicator_distance := 125.0
+var base_patrol_range := 44.0
+var base_patrol_speed := 34.0
 var interaction_enabled := true
 var require_reapproach := false
 var look_at_target: Node2D = null
@@ -29,6 +33,10 @@ var look_at_target: Node2D = null
 var interact_cooldown := 0.0
 
 func _ready() -> void:
+	base_interaction_distance = interaction_distance
+	base_indicator_distance = indicator_distance
+	base_patrol_range = patrol_range
+	base_patrol_speed = patrol_speed
 	if sprite:
 		base_scale = sprite.scale
 	_create_interaction_indicator()
@@ -69,6 +77,35 @@ func require_reapproach_before_interaction() -> void:
 	require_reapproach = true
 	if indicator_label:
 		indicator_label.visible = false
+
+
+func set_administrative_posture(posture: String) -> void:
+	interaction_distance = base_interaction_distance
+	indicator_distance = base_indicator_distance
+	patrol_range = base_patrol_range
+	patrol_speed = base_patrol_speed
+	if not indicator_label:
+		return
+	match posture:
+		"precleared":
+			interaction_distance += 10.0
+			indicator_distance += 8.0
+			patrol_speed *= 0.82
+			indicator_label.text = "·"
+			indicator_label.add_theme_color_override("font_color", Color(0.48, 0.9, 0.58))
+		"manual_review":
+			interaction_distance -= 10.0
+			patrol_speed *= 0.68
+			indicator_label.text = "…"
+			indicator_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.16))
+		"observed":
+			patrol_range *= 0.35
+			patrol_speed *= 0.58
+			indicator_label.text = "?"
+			indicator_label.add_theme_color_override("font_color", Color(0.5, 0.82, 0.94))
+		_:
+			indicator_label.text = "!"
+			indicator_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 
 func _draw() -> void:
 	draw_set_transform(Vector2(0, 2), 0, Vector2(1.0, 0.5))
