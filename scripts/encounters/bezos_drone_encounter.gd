@@ -37,52 +37,54 @@ func _create_drone() -> void:
 	bezos_drone_root.z_index = 4
 	entities_layer.add_child(bezos_drone_root)
 
-	# 1. Shadow (remain procedural as it fits perfectly)
 	var shadow := Polygon2D.new()
-	shadow.color = Color(0.0, 0.0, 0.0, 0.18)
-	shadow.polygon = _ellipse_points(Vector2(0, 30), Vector2(40, 12), 16)
+	shadow.name = "DroneShadow"
+	shadow.color = Color(0.0, 0.0, 0.0, 0.22)
+	shadow.polygon = _ellipse_points(Vector2(0, 72), Vector2(54, 15), 20)
+	shadow.z_index = -2
 	bezos_drone_root.add_child(shadow)
 
-	# 2. Advanced Mamazon Drone Sprite
-	var sprite = Sprite2D.new()
-	sprite.texture = load("res://assets/mockups/bezos_drone.png")
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2(0.85, 0.85)
-	sprite.z_index = 1
+	# The scanner sits behind the artwork so the drone reads as an inspecting machine,
+	# not as a static cutout pasted onto the map.
+	var scanner_beam := Polygon2D.new()
+	scanner_beam.name = "ScannerBeam"
+	scanner_beam.color = Color(0.15, 0.9, 1.0, 0.16)
+	scanner_beam.polygon = PackedVector2Array([
+		Vector2(-13, -14),
+		Vector2(-48, 78),
+		Vector2(30, 78)
+	])
+	scanner_beam.z_index = 0
+	bezos_drone_root.add_child(scanner_beam)
+
+	var sprite := Sprite2D.new()
+	sprite.name = "DroneSprite"
+	sprite.texture = load("res://assets/mockups/bezos_drone_v2.png")
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.scale = Vector2(0.125, 0.125)
+	sprite.z_index = 2
 	bezos_drone_root.add_child(sprite)
 
-	var canopy := Polygon2D.new()
-	canopy.color = Color(0.98, 0.82, 0.3, 0.94)
-	canopy.polygon = PackedVector2Array([
-		Vector2(-14, -6),
-		Vector2(14, -6),
-		Vector2(20, 4),
-		Vector2(0, 12),
-		Vector2(-20, 4)
-	])
-	bezos_drone_root.add_child(canopy)
+	var scanner_eye := Polygon2D.new()
+	scanner_eye.name = "ScannerEye"
+	scanner_eye.color = Color(0.28, 0.96, 1.0, 0.9)
+	scanner_eye.polygon = _ellipse_points(Vector2(-12, -18), Vector2(7, 5), 14)
+	scanner_eye.z_index = 3
+	bezos_drone_root.add_child(scanner_eye)
 
-	var glow := Polygon2D.new()
-	glow.name = "GlowLight"
-	glow.color = Color(0.98, 0.82, 0.3, 0.82)
-	glow.polygon = _ellipse_points(Vector2(0, 10), Vector2(10, 6), 12)
-	bezos_drone_root.add_child(glow)
-
-	var logo := Label.new()
-	logo.name = "DroneLogo"
-	logo.text = "A M Z N  AIR"
-	logo.position = Vector2(-52, 44)
-	logo.add_theme_font_size_override("font_size", 12)
-	logo.add_theme_color_override("font_color", Color(0.98, 0.82, 0.3, 0.92))
-	logo.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
-	logo.add_theme_constant_override("shadow_offset_x", 1)
-	logo.add_theme_constant_override("shadow_offset_y", 1)
-	bezos_drone_root.add_child(logo)
+	var status_light := Polygon2D.new()
+	status_light.name = "StatusLight"
+	status_light.color = Color(1.0, 0.18, 0.08, 0.95)
+	status_light.polygon = _ellipse_points(Vector2(1, -51), Vector2(3, 2), 10)
+	status_light.z_index = 3
+	bezos_drone_root.add_child(status_light)
 
 	var motto := Label.new()
 	motto.name = "DroneMotto"
 	motto.text = "DELIVERY IS DESTINY"
-	motto.position = Vector2(-72, 58)
+	motto.position = Vector2(-90, 88)
+	motto.size = Vector2(180, 16)
+	motto.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	motto.add_theme_font_size_override("font_size", 8)
 	motto.add_theme_color_override("font_color", Color(0.98, 0.82, 0.3, 0.92))
 	motto.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
@@ -99,9 +101,9 @@ func _create_drone() -> void:
 	trigger.monitorable = true
 	var trigger_shape := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(160, 112)
+	shape.size = Vector2(190, 150)
 	trigger_shape.shape = shape
-	trigger_shape.position = Vector2(0, 42)
+	trigger_shape.position = Vector2(0, 28)
 	trigger.add_child(trigger_shape)
 	trigger.body_entered.connect(_on_bezos_drone_trigger_body_entered)
 	bezos_drone_root.add_child(trigger)
@@ -150,7 +152,7 @@ func _create_bezos_escalation_bubble() -> void:
 	if bezos_escalation_bubble:
 		bezos_escalation_bubble.queue_free()
 	bezos_escalation_bubble = PanelContainer.new()
-	bezos_escalation_bubble.position = Vector2(-150, -105)
+	bezos_escalation_bubble.position = Vector2(-150, -178)
 	bezos_escalation_bubble.size = Vector2(300, 88)
 	bezos_escalation_bubble.z_index = 10
 	var style := StyleBoxFlat.new()
@@ -229,9 +231,18 @@ func process_frame(delta: float) -> void:
 
 	bezos_drone_hover_time += delta * 2.1
 	bezos_drone_root.position = bezos_drone_base_position + Vector2(0.0, sin(bezos_drone_hover_time) * 3.0)
-	var glow := bezos_drone_root.get_node_or_null("GlowLight") as Polygon2D
-	if glow:
-		glow.modulate.a = 0.75 + sin(bezos_drone_hover_time * 3.6) * 0.18
+	var scanner_beam := bezos_drone_root.get_node_or_null("ScannerBeam") as Polygon2D
+	if scanner_beam:
+		scanner_beam.rotation = sin(bezos_drone_hover_time * 1.7) * 0.11
+		scanner_beam.modulate.a = 0.65 + sin(bezos_drone_hover_time * 2.4) * 0.25
+	var scanner_eye := bezos_drone_root.get_node_or_null("ScannerEye") as Polygon2D
+	if scanner_eye:
+		var eye_pulse := 1.0 + sin(bezos_drone_hover_time * 4.8) * 0.1
+		scanner_eye.scale = Vector2.ONE * eye_pulse
+		scanner_eye.modulate.a = 0.78 + sin(bezos_drone_hover_time * 4.8) * 0.2
+	var status_light := bezos_drone_root.get_node_or_null("StatusLight") as Polygon2D
+	if status_light:
+		status_light.visible = fmod(bezos_drone_hover_time, 1.0) < 0.72
 
 	# --- In-world escalation dialogue ---
 	if not bezos_escalation_active:
