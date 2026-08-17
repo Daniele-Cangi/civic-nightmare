@@ -27,6 +27,7 @@
 
 <p align="center">
   <img alt="Godot 4.6" src="https://img.shields.io/badge/Godot-4.6-478CBF?logo=godot-engine&logoColor=white">
+  <a href="https://github.com/Daniele-Cangi/civic-nightmare/releases/tag/v2.0.0"><img alt="Civic Nightmare 2.0" src="https://img.shields.io/badge/Release-v2.0.0-ffcc33"></a>
   <img alt="16-bit satire" src="https://img.shields.io/badge/Aesthetic-16--bit_Satire-f39c3d">
   <img alt="Source code licensed under MIT" src="https://img.shields.io/badge/Source_Code-MIT-8bd5ca">
   <a href="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml"><img alt="GitHub Pages deployment" src="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml/badge.svg"></a>

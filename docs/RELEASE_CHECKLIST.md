@@ -8,6 +8,6 @@
 5. Merge only after the pull-request workflow passes. Deployment runs only from
    `main`; the Pages step is skipped on pull requests.
 6. Verify the deployed URL and browser console after Pages completes.
-7. When cutting the first tag, move `Unreleased` notes to a dated version and
-   create matching GitHub release notes. Do not imply a tagged release exists
-   before one is actually created.
+7. When cutting a tag, move `Unreleased` notes to a dated version and create
+   matching GitHub release notes. Do not imply a tagged release exists before
+   one is actually created.
