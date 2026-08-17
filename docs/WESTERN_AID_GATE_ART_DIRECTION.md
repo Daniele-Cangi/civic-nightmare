@@ -7,13 +7,40 @@ infrastructure below it. The encounter flow remains unchanged:
 
 `overworld road -> aid gate -> access gauntlet -> mountain bunker`
 
-The production asset is saved at
-`res://assets/landmarks/western_aid_gate_v1.png` as a 576 x 720 transparent PNG.
-The legacy bunker art remains available only as a runtime fallback.
+The production environment patch is saved at
+`res://assets/backgrounds/western_aid_district_patch_v1.png` as a 560 x 700
+opaque crop. It repeats the original district plate at its feathered outer
+edges, so it reads as part of the map rather than a transparent landmark. The
+previous gate cutout and legacy bunker art remain available as runtime
+fallbacks.
 
 ## Generation record
 
 Mode: built-in `image_gen`.
+
+### Integrated environment prompt
+
+```text
+Use case: compositing
+Asset type: exact overworld environment patch for a top-down political-satire videogame
+Input images: Image 1 is the edit target and the absolute source of truth for canvas, geometry, perspective, road position, palette, texture density, haze, contrast and lighting. Image 2 is narrative reference only for the Western Aid Gate's wartime-versus-donor-media idea; do not copy its frontal perspective, floating platform, sharp photorealism or cyan status light.
+Primary request: transform only the LEFT edge of Image 1 into an environment-integrated Western Aid checkpoint leading off-map to a hidden wartime bunker. It must look as if it was authored as part of Image 1, never like a transparent building pasted on top.
+Composition/framing: preserve Image 1's exact portrait canvas and orthographic top-down map view. The existing horizontal road through the vertical center remains exactly where it is and must continue cleanly through a broad left-facing bunker passage at the far-left boundary. Keep the entire rightmost 40 percent visually unchanged. Confine new architecture to roughly the left 45 percent. Build an upper fortified wing into the existing upper-left retaining wall and a lower donor/media checkpoint directly into the existing lower-left pavement; leave the center road completely open from right to the left edge.
+Subject/details: upper wing uses low-profile cracked reinforced concrete, embedded sandbags, a small anti-drone net, antennas and repaired blast damage. Lower wing uses grounded aid crates, one compact customs scanner, two small television cameras and a deliberately short faded red carpet painted or laid directly on dirty pavement, ending at a military barrier. Add restrained tire marks, soot, cable trenches, road repairs and concrete transitions that physically connect every object to the base map. Use only subtle weathered blue and muted yellow identification accents.
+Satirical intent: a besieged wartime logistics checkpoint forced to remain camera-ready for international donors; bleak and bureaucratic, not heroic.
+Style/medium: match Image 1 exactly: premium illustrated map plate, nearly orthographic top-down perspective, cool gray desaturated palette, lifted blacks, soft atmospheric wash, restrained edge sharpness, fine architectural linework and the same apparent scale. The gate must inherit the background's flatter rendering rather than Image 2's three-dimensional cutout look.
+Invariants: preserve Image 1's road alignment and scale, all geometry outside the left integration zone, and especially the top, bottom and right canvas edges for seamless compositing. Preserve an unobstructed central driving/walking lane.
+Constraints: opaque environment patch; no transparent/checkerboard background; no floating slab, island, balcony or diorama; no front-facing monumental arch; no player or human figures; no portraits; no cyan dot; no UI markers; no text, letters, numbers, logos, emblems, readable labels or watermark; no large clean flags; no object blocking the central road.
+Avoid: pasted-on landmark, mismatched perspective, saturated colors, hard black shadows, ultra-sharp photorealism, sleek science fiction, heroic monument, medieval gate, pixel art.
+```
+
+The first 560 x 700 pixels of the relevant district crop were used as the edit
+target. The generated result was resized to that exact contract, color-matched
+against the unchanged right side of the original plate, and blended back into
+the source crop with cosine-feathered top, bottom and right edges. The rightmost
+edge is therefore pixel-identical to the original background.
+
+## Previous transparent cutout record
 
 ### Base generation prompt
 
