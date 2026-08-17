@@ -321,6 +321,9 @@
   {
     "id": "christine_lagarde",
     "name": "Christine Lagarde",
+    "access_challenge_intro": [
+      "To enter, you must stabilize the economy. Please avoid stabilizing your own finances."
+    ],
     "quest_dialogue": {
       "lines": [
         "Good morning. Before we begin — your credit score is... *adjusts glasses* ...concerning.",

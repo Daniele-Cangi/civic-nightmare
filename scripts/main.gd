@@ -10,6 +10,7 @@ const BEZOS_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_encounter
 const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_access_gauntlet.gd")
 const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
+const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
 const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.gd")
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
@@ -138,6 +139,7 @@ var hidden_bunker_ai_ack_active: bool = false
 var bunker_access_complete: bool = false
 var trump_deal_complete: bool = false
 var ursula_consensus_complete: bool = false
+var lagarde_price_stability_complete: bool = false
 var authority_access_intro_pending: String = ""
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
@@ -226,6 +228,10 @@ var consensus_engine: Node
 var consensus_engine_active: bool:
 	get:
 		return bool(consensus_engine.get("active")) if consensus_engine else false
+var price_stability_pinball: Node
+var price_stability_pinball_active: bool:
+	get:
+		return bool(price_stability_pinball.get("active")) if price_stability_pinball else false
 
 
 # --- Final Mission ---
@@ -725,13 +731,16 @@ func _setup_interiors() -> void:
 
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active or price_stability_pinball_active:
 		return
 	if destination == "oval_office" and not trump_deal_complete:
 		_start_greatest_deal()
 		return
 	if destination == "eu_palace" and not ursula_consensus_complete:
 		_start_consensus_engine()
+		return
+	if destination == "vault" and not lagarde_price_stability_complete:
+		_start_price_stability_pinball()
 		return
 	if destination == "mountain_bunker" and not bunker_access_complete:
 		_start_bunker_access_gauntlet()
@@ -865,6 +874,9 @@ func _process(delta: float) -> void:
 		return
 	if consensus_engine_active:
 		consensus_engine.process_frame(delta)
+		return
+	if price_stability_pinball_active:
+		price_stability_pinball.process_frame(delta)
 		return
 	if bunker_access_active:
 		bunker_access_gauntlet.process_frame(delta)
@@ -2548,6 +2560,7 @@ func _can_open_administrative_hold() -> bool:
 		and not bunker_access_active
 		and not greatest_deal_active
 		and not consensus_engine_active
+		and not price_stability_pinball_active
 		and not ufo_abduction_active
 		and not final_mission_awaiting_input
 	)
@@ -2570,6 +2583,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	bunker_access_complete = false
 	trump_deal_complete = false
 	ursula_consensus_complete = false
+	lagarde_price_stability_complete = false
 	authority_access_intro_pending = ""
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
@@ -2579,6 +2593,8 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 		greatest_deal.stop()
 	if consensus_engine:
 		consensus_engine.stop()
+	if price_stability_pinball:
+		price_stability_pinball.stop()
 	_close_start_menu()
 	_setup_intro_sequence()
 
@@ -2617,6 +2633,7 @@ func _build_save_snapshot() -> Dictionary:
 			"bunker_access_complete": bunker_access_complete,
 			"trump_deal_complete": trump_deal_complete,
 			"ursula_consensus_complete": ursula_consensus_complete,
+			"lagarde_price_stability_complete": lagarde_price_stability_complete,
 			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
 			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
 			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
@@ -2683,6 +2700,7 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	# that its access procedure happened off-record and must not be imposed later.
 	trump_deal_complete = bool(story.get("trump_deal_complete", restored_quest_completed.has("donald_trump")))
 	ursula_consensus_complete = bool(story.get("ursula_consensus_complete", restored_quest_completed.has("ursula_von_der_leyen")))
+	lagarde_price_stability_complete = bool(story.get("lagarde_price_stability_complete", restored_quest_completed.has("christine_lagarde")))
 	authority_access_intro_pending = ""
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
@@ -2694,6 +2712,8 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 		greatest_deal.stop()
 	if consensus_engine:
 		consensus_engine.stop()
+	if price_stability_pinball:
+		price_stability_pinball.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
 	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
 	hidden_bunker_ai_ack_active = false
@@ -2788,6 +2808,7 @@ func _is_autosave_safe() -> bool:
 		and not bunker_access_active
 		and not greatest_deal_active
 		and not consensus_engine_active
+		and not price_stability_pinball_active
 		and not ufo_abduction_active
 		and not (administrative_hold and bool(administrative_hold.get("opened")))
 		and not final_mission_awaiting_input
@@ -3237,6 +3258,13 @@ func _setup_authority_access_procedures() -> void:
 	consensus_engine.cancelled.connect(_on_authority_access_cancelled)
 	consensus_engine.setup(self)
 
+	price_stability_pinball = PRICE_STABILITY_PINBALL_SCRIPT.new()
+	price_stability_pinball.name = "PriceStabilityPinball"
+	add_child(price_stability_pinball)
+	price_stability_pinball.completed.connect(_on_price_stability_pinball_completed)
+	price_stability_pinball.cancelled.connect(_on_authority_access_cancelled)
+	price_stability_pinball.setup(self)
+
 
 func _start_greatest_deal() -> void:
 	if trump_deal_complete or greatest_deal_active or authority_access_intro_pending != "" or active_room_id != "":
@@ -3254,6 +3282,15 @@ func _start_consensus_engine() -> void:
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
 	_show_authority_access_intro("ursula_von_der_leyen", "consensus_engine")
+
+
+func _start_price_stability_pinball() -> void:
+	if lagarde_price_stability_complete or price_stability_pinball_active or authority_access_intro_pending != "" or active_room_id != "":
+		return
+	_write_save_checkpoint(true)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	_show_authority_access_intro("christine_lagarde", "price_stability_pinball")
 
 
 func _show_authority_access_intro(character_id: String, procedure_id: String) -> void:
@@ -3283,6 +3320,9 @@ func _launch_authority_access_procedure(procedure_id: String) -> void:
 		"consensus_engine":
 			if not ursula_consensus_complete and not consensus_engine_active:
 				consensus_engine.start()
+		"price_stability_pinball":
+			if not lagarde_price_stability_complete and not price_stability_pinball_active:
+				price_stability_pinball.start()
 		_:
 			player.set_physics_process(true)
 
@@ -3329,6 +3369,25 @@ func _on_consensus_engine_completed(result: Dictionary) -> void:
 
 func _enter_cleared_eu_palace() -> void:
 	use_door("eu_palace", "EntryMarker")
+
+
+func _on_price_stability_pinball_completed(result: Dictionary) -> void:
+	lagarde_price_stability_complete = true
+	var adjusted := str(result.get("route", "")) == "statistical_adjustment"
+	dossier_manager.record_contest(
+		"contest:price_stability_pinball",
+		"vault_access",
+		"methodology-accepted" if adjusted else "metric-stabilized",
+		"Subject stabilized the published indicator%s. Household effects remained outside the measurement perimeter." % (" through a revised methodology" if adjusted else " through active monetary intervention"),
+		result
+	)
+	_write_save_checkpoint(true)
+	door_cooldown_until_ms = 0
+	call_deferred("_enter_cleared_vault")
+
+
+func _enter_cleared_vault() -> void:
+	use_door("vault", "EntryMarker")
 
 
 func _start_bunker_access_gauntlet() -> void:

@@ -1,6 +1,6 @@
 # Asset inventory
 
-Snapshot: 2026-08-17. Sizes are raw tracked file sizes, not Godot import-cache
+Snapshot: 2026-08-18. Sizes are raw tracked file sizes, not Godot import-cache
 or compressed web-build sizes. Literal `res://` references were used to identify
 the conservative runtime closure; dynamic paths and declared fallbacks remain
 runtime until a tested cleanup proves otherwise.
@@ -13,7 +13,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/backgrounds/` | 3 | 10.80 MiB | Runtime overworld plates |
 | `assets/interiors/` | 11 | 7.59 MiB | Runtime authored interiors |
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
-| `assets/encounters/` | 3 | 6.96 MiB | Runtime bunker, Greatest Deal, and Consensus Engine plates |
+| `assets/encounters/` | 4 | 9.22 MiB | Runtime bunker, Greatest Deal, Consensus Engine, and Price Stability plates |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -26,17 +26,18 @@ deterministic Civic Asset Lab output accounted for 380 files / 8.60 MiB and had
 no runtime references. It has been removed from tracking and now regenerates in
 `tmp/generated/civic_asset_lab/`. Together with the small inventory/policy files
 and six promoted props, the checkout before the authority-access games was
-roughly 473 files / 63 MiB. Their two runtime stages bring it to about 67.5 MiB.
+roughly 473 files / 63 MiB. The three authority-access runtime stages bring it
+to about 69.8 MiB.
 
 A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
 35.29 MiB because it is engine code, not project media.
 
-The conservative literal runtime closure is now 103 files / about 53.48 MiB.
+The conservative literal runtime closure is now 104 files / about 55.74 MiB.
 The gap is
 not deleted automatically: it contains fallbacks, README media, vendor sources,
-and older art whose provenance should be retained before removal. The two
-authority-access stages add about 4.50 MiB of intentional runtime artwork.
+and older art whose provenance should be retained before removal. The three
+authority-access stages add about 6.76 MiB of intentional runtime artwork.
 
 ## Ownership and promotion rule
 
@@ -58,7 +59,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | World plates and authority facades | `main.gd`, `AuthorityWorldPatchBuilder`, `WorldLandmarkBuilder` | Project-authored/generated art; repository media policy in `ASSET_NOTICE.md` |
 | Interiors | `oval_office_room.gd` | Project-authored/generated art; room art-direction documents |
 | Character portraits and expressions | `character_visual_catalog.gd`, dialogue/encounter modules | Mixed project-specific generated and curated art; see `ASSET_NOTICE.md` |
-| Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
+| Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd`, `price_stability_pinball.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
 | Six promoted civic props | `oval_office_room.gd` | Pixel-boy/LimeZu subset; retained source and licenses in `docs/ASSET_PACKS.md` |
 | Civic Asset Lab previews | no runtime owner | Deterministic local generator; disposable output under `tmp/` |
 

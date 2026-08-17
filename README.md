@@ -47,7 +47,7 @@ Navigate an authored overworld and confront six different machines of authority.
 - **Christine Lagarde**: A stability vault that protects confidence more carefully than citizens.
 - **Emmanuel Macron**: Managed decline staged as elegance, philosophy, and excellent lighting.
 
-Trump and Ursula now defend their doors with playable procedures. **The Greatest Deal** is readable blackjack first—visible hands, totals, `HIT`, `STAND`, and a target of 21—then asks whether Trump's post-result intervention should be accepted or challenged. **The Consensus Engine** turns 27 approvals into a physical machine of scanners, stamps, translations, moving documents, and lawful exceptions. Clearing either procedure opens the existing encounter without replacing its dialogue.
+Trump, Ursula, and Lagarde now defend their doors with playable procedures. **The Greatest Deal** is readable blackjack first—visible hands, totals, `HIT`, `STAND`, and a target of 21—then asks whether Trump's post-result intervention should be accepted or challenged. **The Consensus Engine** turns 27 approvals into a physical machine of scanners, stamps, translations, moving documents, and lawful exceptions. **The 2% Miracle** makes the citizen physically stabilize an inflation indicator with euro balls, rate bumpers, liquidity injection, and a methodology that becomes more flexible than the economy. Clearing a procedure opens the existing encounter without replacing its dialogue.
 
 ### 🛸 Optional Investigations, Deviations & Anomalies
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.
@@ -93,12 +93,12 @@ These images are all loaded by the current game runtime—not superseded concept
   <tr>
     <td width="33%" align="center"><img src="assets/encounters/greatest_deal_stage_v1.png" alt="The Greatest Deal casino procedure"></td>
     <td width="33%" align="center"><img src="assets/encounters/consensus_engine_stage_v1.png" alt="The Consensus Engine circular bureaucracy"></td>
-    <td width="33%" align="center"><img src="assets/encounters/bunker_aid_corridor_v1.png" alt="The classified bunker access corridor"></td>
+    <td width="33%" align="center"><img src="assets/encounters/price_stability_pinball_stage_v1.png" alt="The 2% Miracle monetary pinball"></td>
   </tr>
   <tr>
     <td align="center"><strong>THE GREATEST DEAL</strong><br><sub>The arithmetic is under review.</sub></td>
     <td align="center"><strong>THE CONSENSUS ENGINE</strong><br><sub>Unanimity has entered production.</sub></td>
-    <td align="center"><strong>AID TRANSFER CORRIDOR</strong><br><sub>Funding outbound. Ordnance inbound.</sub></td>
+    <td align="center"><strong>THE 2% MIRACLE</strong><br><sub>Purchasing power not included.</sub></td>
   </tr>
 </table>
 
@@ -114,7 +114,7 @@ The Administrative Hold and its behavioural dossier are deliberately not fully i
 - **Southern Administrative Annex**: A dedicated optional exterior makes Kim's televised strategic spectacle and Altman's immaculate AI demo visibly depend on the same failing municipal utility layer. The [area art direction](docs/SOUTHERN_ANNEX_ART_DIRECTION.md) records its gate, layout and travel contract.
 - **Classified and Anomalous Interiors**: The bunker now visualizes war as prohibited administrative routine, while the UFO gives the evidence system a room whose clocks, objects, shadows, and geometry cannot agree.
 - **Bunker Access Gauntlet**: The classified route becomes a controls-first dodge encounter with telegraphed ordnance, funding traffic, instant retry, persistent access clearance, and a later dossier interpretation. Its runtime and visual contract are documented in the [gauntlet brief](docs/BUNKER_ACCESS_GAUNTLET.md).
-- **Authority Access Games**: Trump and Ursula gate their existing rooms with two self-contained, controls-first procedures whose outcomes become behavioural evidence. Their shared travel, persistence, and interaction contract is documented in the [authority access brief](docs/AUTHORITY_ACCESS_GAMES.md).
+- **Authority Access Games**: Trump, Ursula, and Lagarde gate their existing rooms with three self-contained, controls-first procedures whose outcomes become behavioural evidence. Their shared travel, persistence, and interaction contract is documented in the [authority access brief](docs/AUTHORITY_ACCESS_GAMES.md).
 - **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 
@@ -148,7 +148,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
 - `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.
 - `scripts/sequences/`: title, intro, MK, and ending presentation timelines.
-- `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos, bunker, Greatest Deal, and Consensus Engine logic.
+- `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos, bunker, Greatest Deal, Consensus Engine, and Price Stability Pinball logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
 - `scenes/interiors/`: reusable interior scenes and room-local behavior.
 - `scenes/areas/`: authored exterior travel containers that reuse the room transition contract without indoor presentation.
