@@ -47,11 +47,6 @@ jobs:
           mkdir -pv build/web
           ./Godot_v4.6-stable_linux.x86_64 --headless --export-release "Web" build/web/index.html
 
-      - name: "Move coi-serviceworker"
-        run: |
-          mkdir -p build/web
-          cp coi-serviceworker.js build/web/
-
       - name: "Deploy to GitHub Pages"
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: JamesIves/github-pages-deploy-action@v4

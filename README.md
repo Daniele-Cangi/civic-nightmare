@@ -174,7 +174,7 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), then use the [`architecture gui
    - Clone the repository.
    - Open `project.godot` in the engine.
    - Run the `main.tscn` scene.
-3. **Web Support**: Optimized for GLES3, with a custom CI/CD pipeline for GitHub Pages deployment.
+3. **Web Support**: Optimized for GLES3 with a single-threaded Godot Web export, avoiding `SharedArrayBuffer` and cross-origin-isolation requirements on itch.io while retaining the gated GitHub Pages pipeline.
 
 Or [play the current build directly in your browser](https://daniele-cangi.github.io/civic-nightmare/).
 

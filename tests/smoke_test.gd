@@ -143,6 +143,15 @@ func _run() -> void:
 	_check(overworld_camera != null and overworld_camera.zoom.is_equal_approx(Vector2(1.35, 1.35)), "the overworld camera reveals slightly more of each district")
 	_check(overworld_camera != null and overworld_camera.limit_left == -1088 and overworld_camera.limit_right == 1088, "the overworld camera cannot reveal beyond the authored horizontal plate")
 	_check(overworld_camera != null and overworld_camera.limit_top == -1427 and overworld_camera.limit_bottom == 1024, "the overworld camera includes the complete northern wall without revealing beyond the authored south edge")
+	var player_node := game.get_node_or_null("Entities/Player") as CharacterBody2D
+	var initial_player_position := player_node.global_position if player_node else Vector2.ZERO
+	if player_node and overworld_camera:
+		player_node.global_position = Vector2(0.0, -930.0)
+		game.call("_update_northern_wall_camera", 0.5)
+		_check(is_equal_approx(overworld_camera.position.y, -150.0), "approaching the northern gate raises the real gameplay framing to reveal its monument")
+		player_node.global_position = initial_player_position
+		game.call("_update_northern_wall_camera", 0.5)
+		_check(overworld_camera.position.is_zero_approx(), "leaving the northern approach restores the neutral overworld framing")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")

@@ -30,6 +30,7 @@ const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plat
 
 @onready var ground_map: TileMap = $GroundMap
 @onready var player: CharacterBody2D = $Entities/Player
+@onready var player_camera: Camera2D = $Entities/Player/Camera2D
 @onready var entities_layer: Node2D = $Entities
 @onready var ui_layer: CanvasLayer = $UI
 
@@ -284,6 +285,10 @@ const PATH_HALF_WIDTH := 1
 const BORDER_WIDTH := 2
 const GREAT_WALL_APPROACH_TILE := Vector2i(0, -31)
 const NORTHERN_WALL_CAMERA_EXTENSION := 403
+const NORTHERN_WALL_FOCUS_BEGIN_Y := -720.0
+const NORTHERN_WALL_FOCUS_FULL_Y := -900.0
+const NORTHERN_WALL_FOCUS_OFFSET_Y := -150.0
+const NORTHERN_WALL_FOCUS_SPEED := 520.0
 const SOUTHERN_ANNEX_GATE_TILE := Vector2i(0, 32)
 const SOUTHERN_ANNEX_WORLD_OFFSET := Vector2(4096.0, 0.0)
 const UFO_TILE := Vector2i(30, -6)
@@ -874,6 +879,7 @@ func _character_display_name(character_id: String) -> String:
 func _process(delta: float) -> void:
 	if start_menu_active:
 		return
+	_update_northern_wall_camera(delta)
 	if news_broadcast_active:
 		news_broadcast_sequence.process_frame(delta)
 		return
@@ -913,6 +919,25 @@ func _process(delta: float) -> void:
 		dialogue_manager.process_frame(delta)
 	_track_safe_world_checkpoint()
 	_flush_autosave()
+
+
+func _update_northern_wall_camera(delta: float) -> void:
+	if player_camera == null or player == null:
+		return
+	var target_offset := Vector2.ZERO
+	if active_room_id == "" and player.global_position.y < NORTHERN_WALL_FOCUS_BEGIN_Y:
+		var focus_amount := clampf(
+			(NORTHERN_WALL_FOCUS_BEGIN_Y - player.global_position.y)
+				/ (NORTHERN_WALL_FOCUS_BEGIN_Y - NORTHERN_WALL_FOCUS_FULL_Y),
+			0.0,
+			1.0
+		)
+		focus_amount = smoothstep(0.0, 1.0, focus_amount)
+		target_offset.y = NORTHERN_WALL_FOCUS_OFFSET_Y * focus_amount
+	player_camera.position = player_camera.position.move_toward(
+		target_offset,
+		NORTHERN_WALL_FOCUS_SPEED * maxf(delta, 0.0)
+	)
 
 
 func _is_in_building_zone(x: int, y: int) -> bool:
