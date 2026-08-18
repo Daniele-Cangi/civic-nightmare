@@ -68,3 +68,11 @@ Cangi for Civic Nightmare. The runtime file is a 48 kHz stereo Ogg Vorbis
 conversion of the supplied WAV master; the editable/master file is not shipped.
 It remains project media under the licensing boundary described above rather
 than becoming MIT-licensed source code.
+
+## Marketing artwork
+
+`asset_sources/marketing/civic_nightmare_itch_cover_v1.png` is an original
+1260×1000 itch.io cover generated with OpenAI built-in image generation for
+the project. It uses the project's own opening-drive background, battered car,
+and citizen pose sheet only as visual references. The final composition is new,
+contains no third-party source art, and is retained outside the exported runtime.

@@ -7,3 +7,5 @@ or web-export graph. Godot ignores the complete directory through `.gdignore`.
 Runtime-ready, deliberately referenced files belong under `assets/`. Disposable
 generator output belongs under `tmp/generated/`. Large editable formats in this
 directory use Git LFS; ordinary runtime PNG files intentionally do not.
+Approved store, press, and community artwork belongs under `marketing/` so it
+can remain versioned without increasing the Godot import or Web-export graph.

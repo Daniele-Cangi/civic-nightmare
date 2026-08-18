@@ -20,6 +20,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
 | `asset_sources/legacy/` | 7 | 8.79 MiB | Superseded v2 world plate and six non-v2 combat portraits |
+| `asset_sources/marketing/` | 2 | 2.57 MiB | Non-exported itch.io cover and its generation/delivery record |
 | `assets/sprites/` | 2 | 1.01 MiB | Runtime contamination asset and fallback |
 | `assets/characters/` | 20 | 0.17 MiB | Small sprites; runtime and alternatives mixed |
 
@@ -66,6 +67,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd`, `price_stability_pinball.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
 | Opening-drive art | `intro_sequence.gd` | Project-specific OpenAI-generated art; prompts and delivery contract recorded in `ASSET_NOTICE.md` and `docs/OPENING_DRIVE_SEQUENCE.md` |
 | Opening-drive music | `intro_sequence.gd` | Original **Coastline Dash** track delivered by project owner Daniele Cangi; runtime conversion and rights boundary recorded in `ASSET_NOTICE.md` |
+| itch.io cover | no runtime owner | Original project marketing art generated with OpenAI; exact prompt and reference roles recorded under `asset_sources/marketing/` |
 | Six promoted civic props | `oval_office_room.gd` | Pixel-boy/LimeZu subset; retained source and licenses in `docs/ASSET_PACKS.md` |
 | Civic Asset Lab previews | no runtime owner | Deterministic local generator; disposable output under `tmp/` |
 
