@@ -82,3 +82,9 @@ unretouched framebuffer captures of the current Godot runtime. They contain only
 project media already documented by this notice and are retained outside the
 exported game for itch.io presentation. Their deterministic capture states and
 approved upload order are recorded in `asset_sources/marketing/README.md`.
+
+The three 1280×720 PNGs under `asset_sources/marketing/residences/` are likewise
+direct, unretouched captures of the current Godot runtime. They show Trump,
+Ursula von der Leyen, and Christine Lagarde inside their authored residences and
+are retained outside the exported game for the repository README. Their framing
+and presentation role are recorded in `asset_sources/marketing/README.md`.
