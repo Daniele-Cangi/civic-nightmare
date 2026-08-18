@@ -14,6 +14,9 @@ web deployment and tagged releases for major public milestones.
   the mandatory approach, with a clean cadence aligned to the engine-death beat.
 - New 5:4 itch.io key art presenting the battered car, passport citizen, and
   monumental administrative district as one readable arcade-poster composition.
+- Five unretouched 1280×720 itch.io gameplay screenshots covering the mandatory
+  drive, Xi's northern gate, Trump's disputed blackjack result, Ursula's
+  847-page approval, and Lagarde's systemic-ball bailout.
 - A playable approximately 90-second sunset highway opening with direct
   steering, perspective road motion, contradictory civic signs, potholes,
   increasing smoke, visible part loss, and an administrative arrival beat.

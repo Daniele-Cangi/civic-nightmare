@@ -18,6 +18,31 @@
   resized with Lanczos filtering to the exact 1260×1000 delivery canvas. No
   generative edit was applied after selection.
 
+## itch.io gameplay screenshots
+
+`screenshots/` contains the approved five-image itch.io gallery. Every image is
+an unretouched 1280×720 framebuffer capture from Godot 4.6.1 running the current
+game code. The capture states are deterministic points in the real runtime;
+there is no image-generation, external compositing, upscaling, or replacement
+UI in these files.
+
+Upload them in filename order:
+
+1. `01_opening_drive_equal_access.png` — the battered citizen car is overtaken
+   as equal access is temporarily suspended during the mandatory approach.
+2. `02_northern_gate_harmonious_entry.png` — the citizen reaches the monumental
+   northern wall and surveillance gate leading to Xi.
+3. `03_trump_claims_victory.png` — the readable blackjack result remains visible
+   while Trump claims a mathematically incompatible victory.
+4. `04_ursula_page_1_of_847.png` — unanimity is achieved through the emergency
+   derogation and the first page of the successful procedure begins printing.
+5. `05_lagarde_systemic_ball_restored.png` — the monetary pinball restores the
+   drained systemic euro ball while the household machinery keeps operating.
+
+The sequence deliberately moves from world premise to political scale and then
+to three distinct playable procedures. This matches itch.io's recommendation to
+provide three to five representative screenshots while showing actual gameplay.
+
 ## Final prompt
 
 ```text
