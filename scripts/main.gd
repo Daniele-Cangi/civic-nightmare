@@ -2854,7 +2854,7 @@ func _write_save_checkpoint(force: bool = false) -> void:
 
 
 # ============================================================
-#  90s CRT TV INTRO SEQUENCE
+#  PLAYABLE ADMINISTRATIVE APPROACH
 # ============================================================
 
 func _setup_intro_sequence() -> void:
