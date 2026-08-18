@@ -15,6 +15,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 4 | 9.22 MiB | Runtime bunker, Greatest Deal, Consensus Engine, and Price Stability plates |
 | `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
+| `assets/audio/` | 2 | 1.92 MiB | Runtime opening-drive music plus its delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -36,7 +37,7 @@ A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
 35.29 MiB because it is engine code, not project media.
 
-The conservative literal runtime closure is now 110 files / about 69.98 MiB.
+The conservative literal runtime closure is now 111 files / about 71.90 MiB.
 The gap is
 not deleted automatically: it contains fallbacks, README media, vendor sources,
 and older art whose provenance should be retained before removal. The three
@@ -64,6 +65,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Character portraits and expressions | `character_visual_catalog.gd`, dialogue/encounter modules | Mixed project-specific generated and curated art; see `ASSET_NOTICE.md` |
 | Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd`, `price_stability_pinball.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
 | Opening-drive art | `intro_sequence.gd` | Project-specific OpenAI-generated art; prompts and delivery contract recorded in `ASSET_NOTICE.md` and `docs/OPENING_DRIVE_SEQUENCE.md` |
+| Opening-drive music | `intro_sequence.gd` | Original **Coastline Dash** track delivered by project owner Daniele Cangi; runtime conversion and rights boundary recorded in `ASSET_NOTICE.md` |
 | Six promoted civic props | `oval_office_room.gd` | Pixel-boy/LimeZu subset; retained source and licenses in `docs/ASSET_PACKS.md` |
 | Civic Asset Lab previews | no runtime owner | Deterministic local generator; disposable output under `tmp/` |
 

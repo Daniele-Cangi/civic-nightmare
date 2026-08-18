@@ -58,6 +58,13 @@ OpenAI built-in image generation and promoted without third-party source art:
   collapse remains animated at runtime.
 
 The sequence adds its road motion, signs, hazards, privilege lane, toll logic,
-receipt, scanner, failed barrier, smoke, damage and display layers in code. Its
-commissioned music is intentionally absent from this change; any delivered
-track must receive a separate provenance and rights note.
+receipt, scanner, failed barrier, smoke, damage and display layers in code.
+
+## Original project music
+
+`assets/audio/civic_nightmare_opening_drive.ogg` is **Coastline Dash**, an
+original instrumental created and delivered directly by project owner Daniele
+Cangi for Civic Nightmare. The runtime file is a 48 kHz stereo Ogg Vorbis
+conversion of the supplied WAV master; the editable/master file is not shipped.
+It remains project media under the licensing boundary described above rather
+than becoming MIT-licensed source code.
