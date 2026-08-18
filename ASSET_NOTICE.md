@@ -76,3 +76,9 @@ than becoming MIT-licensed source code.
 the project. It uses the project's own opening-drive background, battered car,
 and citizen pose sheet only as visual references. The final composition is new,
 contains no third-party source art, and is retained outside the exported runtime.
+
+The five 1280×720 PNGs under `asset_sources/marketing/screenshots/` are direct,
+unretouched framebuffer captures of the current Godot runtime. They contain only
+project media already documented by this notice and are retained outside the
+exported game for itch.io presentation. Their deterministic capture states and
+approved upload order are recorded in `asset_sources/marketing/README.md`.

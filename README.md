@@ -72,6 +72,39 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 
 These images are all loaded by the current game runtime—not superseded concept art.
 
+### Actual gameplay
+
+<table>
+  <tr>
+    <td width="50%"><img src="asset_sources/marketing/screenshots/01_opening_drive_equal_access.png" alt="Battered citizen car during the equal-access motorcade event"></td>
+    <td width="50%"><img src="asset_sources/marketing/screenshots/02_northern_gate_harmonious_entry.png" alt="Citizen beneath Xi's monumental northern surveillance gate"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>EQUAL ACCESS</strong><br><sub>Temporarily suspended at 64 km/h.</sub></td>
+    <td align="center"><strong>HARMONIOUS ENTRY</strong><br><sub>The cameras agree that you have arrived.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="asset_sources/marketing/screenshots/03_trump_claims_victory.png" alt="Trump claims victory after losing a blackjack hand 20 to 18"></td>
+    <td width="50%"><img src="asset_sources/marketing/screenshots/04_ursula_page_1_of_847.png" alt="Ursula Consensus Engine printing page one of 847 after unanimous approval"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>RESULT UNDER REVIEW</strong><br><sub>Twenty to eighteen remains open to interpretation.</sub></td>
+    <td align="center"><strong>UNANIMOUS APPROVAL</strong><br><sub>Procedure successfully completed in accordance with procedure.</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="asset_sources/marketing/screenshots/05_lagarde_systemic_ball_restored.png" alt="Lagarde monetary pinball restoring the systemic euro ball"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><strong>THE 2% MIRACLE</strong><br><sub>The ball is systemic. Your purchasing power is not.</sub></td>
+  </tr>
+</table>
+
+The five full-resolution captures are also the approved itch.io screenshot set;
+their upload order and provenance are recorded in
+[`asset_sources/marketing/README.md`](asset_sources/marketing/README.md).
+
+### Runtime art gallery
+
 <table>
   <tr>
     <td colspan="3" align="center"><img src="assets/sequences/opening_drive_sunset_v2.png" alt="Arcade sunset administrative highway used by the mandatory opening drive"></td>
