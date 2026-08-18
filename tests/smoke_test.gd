@@ -499,14 +499,37 @@ func _run() -> void:
 			"Opening drive exposes the commissioned-music delivery slot"
 		)
 		_check(is_equal_approx(float(intro.call("get_sequence_duration")), 89.8), "Opening drive keeps its authored 80-90 second duration")
+		var opening_set_piece_assets := intro.call("get_set_piece_asset_paths") as PackedStringArray
+		_check(opening_set_piece_assets.size() == 4, "Opening drive declares its four authored physical set-piece assets")
+		for set_piece_asset_path in opening_set_piece_assets:
+			_check(ResourceLoader.exists(set_piece_asset_path), "Opening set-piece asset is importable: %s" % set_piece_asset_path)
 		intro.set("elapsed", 31.9)
 		intro.call("process_frame", 0.2)
-		_check((intro.get("signs") as Array).size() == 3, "Opening drive schedules contradictory civic road signs")
-		_check((intro.get("hazards") as Array).size() == 2, "Opening drive schedules physical road deterioration")
+		_check((intro.get("signs") as Array).size() == 2, "Opening drive schedules contradictory civic road signs without crowding its set pieces")
+		_check((intro.get("hazards") as Array).size() == 1, "Opening drive schedules physical road deterioration without crowding its set pieces")
+		var spawned_opening_set_pieces := intro.get("spawned_set_piece_ids") as Array
+		_check(spawned_opening_set_pieces == ["ceremony"], "The pothole inauguration is the first authored road set piece")
+		var opening_set_piece_root := intro.get("set_piece_root") as Node2D
+		_check(
+			opening_set_piece_root != null
+			and opening_set_piece_root.get_node_or_null("Ceremony/PotholeInauguration") != null,
+			"Pothole inauguration mounts its authored transparent scene"
+		)
 		var road_surface := intro.get("road_surface") as Polygon2D
 		_check(road_surface != null and road_surface.polygon.size() == 38, "Opening drive rebuilds a curved perspective road surface")
 		intro.set("elapsed", 87.9)
 		intro.call("process_frame", 0.2)
+		_check(
+			spawned_opening_set_pieces == ["ceremony", "motorcade", "tollbooth", "checkpoint"],
+			"Opening drive reaches privilege, procedure, and failed-checkpoint set pieces in order"
+		)
+		_check(
+			opening_set_piece_root.get_node_or_null("Motorcade/InstitutionalMotorcade") != null
+			and opening_set_piece_root.get_node_or_null("Tollbooth/MobileAdministrativeTollbooth") != null
+			and opening_set_piece_root.get_node_or_null("Checkpoint/DecayedAdministrativeCheckpoint") != null
+			and opening_set_piece_root.get_node_or_null("Checkpoint/RustFailedBarrierPivot") != null,
+			"Every later set piece owns its expected world object"
+		)
 		_check(bool(intro.get("engine_dead")), "Citizen vehicle dies after the heroic musical window")
 		var arrival_panel := intro.get("arrival_panel") as Control
 		_check(arrival_panel != null and arrival_panel.visible, "Administrative arrival resolves before the game begins")

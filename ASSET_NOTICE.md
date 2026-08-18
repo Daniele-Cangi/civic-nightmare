@@ -39,15 +39,25 @@ OpenAI image generation, then locally resized and promoted into the runtime:
 
 They were art-directed for Civic Nightmare and use existing repository artwork only as a style or character-design reference.
 
-The playable opening drive uses two project-specific assets generated with
+The playable opening drive uses six project-specific assets generated with
 OpenAI built-in image generation and promoted without third-party source art:
 
 - `assets/sequences/opening_drive_sunset_v2.png` — original 1672×941 saturated
   arcade-sunset highway and administrative-district background, regenerated
   from the project's v1 composition without external game art;
 - `assets/sequences/opening_drive_car_v1.png` — original 1536×1024 transparent
-  rear-view battered economy-car sprite.
+  rear-view battered economy-car sprite;
+- `assets/sequences/opening_drive_pothole_ceremony_v1.png` — original 1536×1024
+  transparent official pothole-inauguration set piece;
+- `assets/sequences/opening_drive_motorcade_v1.png` — original 1536×1024
+  transparent armoured-motorcade set piece;
+- `assets/sequences/opening_drive_tollbooth_v1.png` — original 1536×1024
+  transparent three-lane mobile administrative toll;
+- `assets/sequences/opening_drive_checkpoint_v1.png` — original 1536×1024
+  transparent corroded checkpoint arch, authored without a barrier so the
+  collapse remains animated at runtime.
 
-The sequence adds its road motion, signs, hazards, smoke, damage and display
-layers in code. Its commissioned music is intentionally absent from this
-change; any delivered track must receive a separate provenance and rights note.
+The sequence adds its road motion, signs, hazards, privilege lane, toll logic,
+receipt, scanner, failed barrier, smoke, damage and display layers in code. Its
+commissioned music is intentionally absent from this change; any delivered
+track must receive a separate provenance and rights note.

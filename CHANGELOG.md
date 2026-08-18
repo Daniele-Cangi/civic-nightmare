@@ -13,6 +13,9 @@ web deployment and tagged releases for major public milestones.
 - Original runtime artwork for the administrative highway and battered citizen
   vehicle, plus a documented drop-in path for the separately commissioned
   instrumental track.
+- Four escalating road set pieces: an official pothole inauguration, a
+  privilege-only motorcade lane, a self-correcting mobile toll, and a decayed
+  checkpoint whose failed barrier is interpreted as authorization.
 - **The Greatest Deal**, a three-round Trump entry procedure built around
   readable blackjack hands, visible totals, HIT/STAND decisions, post-result
   special moves, and a sharply separated acceptance or challenge phase.
@@ -39,6 +42,8 @@ web deployment and tagged releases for major public milestones.
 - The opening drive now uses a stronger original late-1980s arcade background,
   animated perspective curves, alternating roadside blocks and curve-aware
   placement for the car, signs and potholes.
+- Sparse roadside gags now build into physical civic procedures while retaining
+  one steering grammar, no fail state and no interruption of the heroic drive.
 - New Game now begins with an active arcade-driving contrast instead of the
   former passive CRT news montage; the existing completion and autosave boundary
   remains intact.

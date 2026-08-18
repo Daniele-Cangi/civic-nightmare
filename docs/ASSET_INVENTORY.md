@@ -14,7 +14,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/interiors/` | 11 | 7.59 MiB | Runtime authored interiors |
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 4 | 9.22 MiB | Runtime bunker, Greatest Deal, Consensus Engine, and Price Stability plates |
-| `assets/sequences/` | 2 | 4.65 MiB | Runtime opening-drive highway and transparent citizen vehicle |
+| `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -28,14 +28,15 @@ no runtime references. It has been removed from tracking and now regenerates in
 `tmp/generated/civic_asset_lab/`. Together with the small inventory/policy files
 and six promoted props, the checkout before the authority-access games was
 roughly 473 files / 63 MiB. The three authority-access runtime stages brought it
-to about 69.8 MiB; the opening-drive background and vehicle add 4.65 MiB of
-intentional runtime art.
+to about 69.8 MiB. The complete opening-drive art group now contributes 14.24
+MiB of intentional runtime art: 4.65 MiB for its background and vehicle plus
+9.59 MiB for four physical civic set pieces.
 
 A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
 35.29 MiB because it is engine code, not project media.
 
-The conservative literal runtime closure is now 106 files / about 60.39 MiB.
+The conservative literal runtime closure is now 110 files / about 69.98 MiB.
 The gap is
 not deleted automatically: it contains fallbacks, README media, vendor sources,
 and older art whose provenance should be retained before removal. The three
