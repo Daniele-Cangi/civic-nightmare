@@ -21,18 +21,24 @@ autosave boundary.
 - The road is rebuilt in perspective every frame: long curves, alternating
   shoulder blocks, lane markers, signs and potholes share one centre function,
   so the scene turns as a system rather than sliding unrelated decorations.
-- Road signs, deterioration and bureaucratic contamination arrive gradually;
-  the first seconds remain readable enough to teach steering.
+- Road signs and deterioration arrive gradually; the first seconds remain
+  readable enough to teach steering before four authored civic set pieces turn
+  the road itself into the bureaucracy.
+- The set pieces never remove steering or create a failure state. Avoiding the
+  inauguration, following the corrected toll lane and surviving the checkpoint
+  remain physical jokes inside the same driving grammar.
 
 The authored timeline is approximately:
 
 | Window | Presentation |
 | --- | --- |
 | 0–6 s | Repeated ignition attempts; the adventure promises more than the engine. |
-| 6–32 s | Open highway, simple steering, first contradictory distance signs. |
-| 32–58 s | Busier road, civic instructions, potholes and the first lost parts. |
-| 58–78 s | Maximum motion and deterioration while the district remains majestic. |
-| 78–88 s | Arrival slowdown and final approach. |
+| 6–19 s | Open highway, simple steering, first contradictory distance sign. |
+| 19–31 s | A lavish ceremony inaugurates an unrepaired pothole. |
+| 31–47 s | The car loses parts; an official motorcade creates its own gold lane and removes it after passing. |
+| 47–68 s | A mobile administrative toll changes the valid lane and issues a receipt long enough to trail behind the car. |
+| 68–78 s | Maximum motion and deterioration while the district remains majestic. |
+| 78–88 s | A scanner rejects the vehicle; its rusted barrier collapses and the failure is recorded as access granted. |
 | 88–89.8 s | Music resolves, engine fails, arrival is registered, world begins. |
 
 ## Music delivery contract
@@ -62,8 +68,9 @@ the smoke assertions together. Do not time-stretch the track at runtime.
 
 ## Visual assets and generation record
 
-Built-in OpenAI image generation produced the car in original mode and the v2
-background as a style edit of the project's own v1 composition:
+Built-in OpenAI image generation produced the car and the four isolated civic
+set pieces in original mode, and the v2 background as a style edit of the
+project's own v1 composition:
 
 - `assets/sequences/opening_drive_sunset_v2.png`: an original late-1980s
   arcade-highway genre treatment derived from the project's v1 composition,
@@ -74,8 +81,19 @@ background as a style edit of the project's own v1 composition:
   early-1980s economy hatchback, dented, rusty and rope-repaired, isolated on
   transparency without smoke, road, logos or text so runtime damage remains
   animatable.
+- `assets/sequences/opening_drive_pothole_ceremony_v1.png`: a transparent
+  red-carpet inauguration surrounding the road defect it claims to complete.
+- `assets/sequences/opening_drive_motorcade_v1.png`: a transparent, overlong
+  armoured official motorcade with blank ceremonial pennants and escorts.
+- `assets/sequences/opening_drive_tollbooth_v1.png`: a transparent three-lane
+  mobile procedure with contradictory barriers, scanners and an industrial
+  receipt printer.
+- `assets/sequences/opening_drive_checkpoint_v1.png`: a transparent corroded
+  scanner arch whose central opening deliberately excludes the separately
+  animated rust-failed barrier.
 
 The resulting composition was verified in the actual Godot window at gameplay
 resolution after the parse and smoke checks. Code owns the curved road surface,
 alternating shoulders, perspective markers, edge streaks, road signs, potholes,
-smoke, part loss, HUD and scanline treatment.
+gold institutional lane, toll decisions, receipt trail, scanning beam, barrier
+collapse, smoke, part loss, HUD and scanline treatment.

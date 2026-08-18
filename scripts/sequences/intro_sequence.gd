@@ -5,6 +5,10 @@ signal finished
 const VIEW_SIZE := Vector2(1280, 720)
 const BACKGROUND_PATH := "res://assets/sequences/opening_drive_sunset_v2.png"
 const CAR_PATH := "res://assets/sequences/opening_drive_car_v1.png"
+const CEREMONY_PATH := "res://assets/sequences/opening_drive_pothole_ceremony_v1.png"
+const MOTORCADE_PATH := "res://assets/sequences/opening_drive_motorcade_v1.png"
+const TOLLBOOTH_PATH := "res://assets/sequences/opening_drive_tollbooth_v1.png"
+const CHECKPOINT_PATH := "res://assets/sequences/opening_drive_checkpoint_v1.png"
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_opening_drive.ogg"
 const MUSIC_DURATION := 88.0
 const SEQUENCE_DURATION := 89.8
@@ -17,24 +21,23 @@ const CAR_Y := 580.0
 
 const SIGN_SCHEDULE := [
 	{"time": 12.0, "side": -1.0, "text": "DISTRICT\n12 km", "color": Color("#245f8c")},
-	{"time": 20.0, "side": 1.0, "text": "DISTRICT\n37 km", "color": Color("#245f8c")},
-	{"time": 30.0, "side": -1.0, "text": "FAST LANE\nFORM A", "color": Color("#376f4b")},
-	{"time": 39.0, "side": 1.0, "text": "LANE OPEN\nCLOSED", "color": Color("#a34938")},
+	{"time": 31.0, "side": -1.0, "text": "FAST LANE\nFORM A", "color": Color("#376f4b")},
 	{"time": 48.0, "side": -1.0, "text": "ROAD WORK\nCOMPLETED 1987", "color": Color("#8b6927")},
-	{"time": 57.0, "side": 1.0, "text": "TOLL FREE\nFEE 8€", "color": Color("#376f4b")},
-	{"time": 67.0, "side": -1.0, "text": "WELCOME\nAPPOINTMENT ONLY", "color": Color("#a34938")},
-	{"time": 77.0, "side": 1.0, "text": "ARRIVALS\nRETURN TO START", "color": Color("#245f8c")},
+	{"time": 68.0, "side": -1.0, "text": "WELCOME\nAPPOINTMENT ONLY", "color": Color("#a34938")},
 ]
 
 const HAZARD_SCHEDULE := [
 	{"time": 16.0, "lane": -0.42},
-	{"time": 25.0, "lane": 0.28},
-	{"time": 35.0, "lane": -0.08},
-	{"time": 44.0, "lane": 0.52},
-	{"time": 53.0, "lane": -0.55},
-	{"time": 61.0, "lane": 0.04},
-	{"time": 69.0, "lane": 0.38},
-	{"time": 75.0, "lane": -0.30},
+	{"time": 34.0, "lane": -0.08},
+	{"time": 48.5, "lane": 0.52},
+	{"time": 70.0, "lane": -0.30},
+]
+
+const SET_PIECE_SCHEDULE := [
+	{"time": 19.0, "id": "ceremony"},
+	{"time": 38.0, "id": "motorcade"},
+	{"time": 56.0, "id": "tollbooth"},
+	{"time": 77.0, "id": "checkpoint"},
 ]
 
 const PART_LOSS_TIMES := [32.0, 54.0, 71.0]
@@ -50,8 +53,11 @@ var shake_strength := 0.0
 var next_sign_index := 0
 var next_hazard_index := 0
 var next_part_index := 0
+var next_set_piece_index := 0
 var smoke_timer := 0.0
 var engine_dead := false
+var event_message_until := 0.0
+var receipt_attached := false
 
 var layer: CanvasLayer
 var root_control: Control
@@ -59,7 +65,9 @@ var frame: Control
 var background: TextureRect
 var road_root: Node2D
 var road_surface: Polygon2D
+var institutional_lane: Polygon2D
 var scenery_root: Node2D
+var set_piece_root: Node2D
 var smoke_root: Node2D
 var car_root: Node2D
 var car_sprite: Sprite2D
@@ -68,6 +76,9 @@ var speed_label: Label
 var status_label: Label
 var control_hint: Label
 var arrival_panel: PanelContainer
+var event_panel: PanelContainer
+var event_label: Label
+var receipt_trail: Line2D
 var music_player: AudioStreamPlayer
 var engine_player: AudioStreamPlayer
 var clunk_player: AudioStreamPlayer
@@ -79,6 +90,8 @@ var signs: Array[Dictionary] = []
 var hazards: Array[Dictionary] = []
 var smoke_puffs: Array[Dictionary] = []
 var debris: Array[Dictionary] = []
+var set_pieces: Array[Dictionary] = []
+var spawned_set_piece_ids: Array[String] = []
 
 
 func setup(owner: Node, player_node: CharacterBody2D) -> void:
@@ -102,8 +115,10 @@ func process_frame(delta: float) -> void:
 	_update_car(frame_delta)
 	_update_road(frame_delta)
 	_update_schedule()
+	_update_set_pieces(frame_delta)
 	_update_signs(frame_delta)
 	_update_hazards(frame_delta)
+	_update_receipt()
 	_update_smoke(frame_delta)
 	_update_debris(frame_delta)
 	_update_hud()
@@ -119,6 +134,10 @@ func get_music_asset_path() -> String:
 
 func get_sequence_duration() -> float:
 	return SEQUENCE_DURATION
+
+
+func get_set_piece_asset_paths() -> PackedStringArray:
+	return PackedStringArray([CEREMONY_PATH, MOTORCADE_PATH, TOLLBOOTH_PATH, CHECKPOINT_PATH])
 
 
 func _create_sequence() -> void:
@@ -161,6 +180,10 @@ func _create_sequence() -> void:
 	scenery_root.name = "RoadsideProcedure"
 	frame.add_child(scenery_root)
 
+	set_piece_root = Node2D.new()
+	set_piece_root.name = "CivicRoadSetPieces"
+	frame.add_child(set_piece_root)
+
 	smoke_root = Node2D.new()
 	smoke_root.name = "ExhaustSmoke"
 	frame.add_child(smoke_root)
@@ -180,6 +203,13 @@ func _create_sequence() -> void:
 	debris_root = Node2D.new()
 	debris_root.name = "VehicleIntegrity"
 	frame.add_child(debris_root)
+	receipt_trail = Line2D.new()
+	receipt_trail.name = "AdministrativeReceiptTrail"
+	receipt_trail.width = 22.0
+	receipt_trail.default_color = Color("#f6efd5")
+	receipt_trail.joint_mode = Line2D.LINE_JOINT_ROUND
+	receipt_trail.visible = false
+	debris_root.add_child(receipt_trail)
 
 	_create_hud()
 	_create_scanlines()
@@ -215,6 +245,11 @@ func _create_road_motion() -> void:
 			streak.set_meta("side", edge_side)
 			road_root.add_child(streak)
 			edge_streaks.append(streak)
+	institutional_lane = Polygon2D.new()
+	institutional_lane.name = "TemporaryInstitutionalLane"
+	institutional_lane.color = Color(0.96, 0.70, 0.16, 0.0)
+	institutional_lane.visible = false
+	road_root.add_child(institutional_lane)
 
 
 func _create_hud() -> void:
@@ -237,6 +272,18 @@ func _create_hud() -> void:
 	control_hint.text = "←  →  STEER"
 	control_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	frame.add_child(control_hint)
+
+	event_panel = PanelContainer.new()
+	event_panel.name = "RoadEventNotice"
+	event_panel.position = Vector2(398, 92)
+	event_panel.size = Vector2(484, 76)
+	event_panel.add_theme_stylebox_override("panel", _panel_style(Color("#f0c35b"), Color(0.02, 0.035, 0.07, 0.94), 3))
+	frame.add_child(event_panel)
+	event_label = _make_label(Vector2(12, 8), Vector2(460, 60), 19, Color("#ffe17a"))
+	event_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	event_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	event_panel.add_child(event_label)
+	event_panel.visible = false
 
 	arrival_panel = PanelContainer.new()
 	arrival_panel.position = Vector2(376, 272)
@@ -395,6 +442,275 @@ func _update_schedule() -> void:
 		clunk_player.play()
 		shake_strength = maxf(shake_strength, 0.7)
 		next_part_index += 1
+	while next_set_piece_index < SET_PIECE_SCHEDULE.size() and elapsed >= float(SET_PIECE_SCHEDULE[next_set_piece_index]["time"]):
+		_spawn_set_piece(str(SET_PIECE_SCHEDULE[next_set_piece_index]["id"]))
+		next_set_piece_index += 1
+
+
+func _spawn_set_piece(set_piece_id: String) -> void:
+	var event := {"id": set_piece_id, "age": 0.0, "phase": 0, "hit": false}
+	var node := Node2D.new()
+	node.name = set_piece_id.capitalize().replace(" ", "")
+	set_piece_root.add_child(node)
+	event["node"] = node
+	match set_piece_id:
+		"ceremony":
+			var ceremony := Sprite2D.new()
+			ceremony.name = "PotholeInauguration"
+			ceremony.texture = load(CEREMONY_PATH) if ResourceLoader.exists(CEREMONY_PATH) else null
+			ceremony.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			node.add_child(ceremony)
+		"motorcade":
+			var motorcade := Sprite2D.new()
+			motorcade.name = "InstitutionalMotorcade"
+			motorcade.texture = load(MOTORCADE_PATH) if ResourceLoader.exists(MOTORCADE_PATH) else null
+			motorcade.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			node.add_child(motorcade)
+		"tollbooth":
+			var tollbooth := Sprite2D.new()
+			tollbooth.name = "MobileAdministrativeTollbooth"
+			tollbooth.texture = load(TOLLBOOTH_PATH) if ResourceLoader.exists(TOLLBOOTH_PATH) else null
+			tollbooth.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			node.add_child(tollbooth)
+			_create_tollbooth_indicators(node, event)
+		"checkpoint":
+			_create_checkpoint(node, event)
+	spawned_set_piece_ids.append(set_piece_id)
+	set_pieces.append(event)
+
+
+func _update_set_pieces(delta: float) -> void:
+	for index in range(set_pieces.size() - 1, -1, -1):
+		var event: Dictionary = set_pieces[index]
+		event["age"] = float(event.get("age", 0.0)) + delta
+		match str(event.get("id", "")):
+			"ceremony":
+				_update_ceremony(event)
+			"motorcade":
+				_update_motorcade(event)
+			"tollbooth":
+				_update_tollbooth(event)
+			"checkpoint":
+				_update_checkpoint(event)
+		if bool(event.get("finished", false)):
+			var node: Node2D = event.get("node")
+			if node:
+				node.queue_free()
+			set_pieces.remove_at(index)
+
+
+func _update_ceremony(event: Dictionary) -> void:
+	var age := float(event.get("age", 0.0))
+	var progress := clampf(0.012 + age / 10.8, 0.012, 1.08)
+	var node: Node2D = event.get("node")
+	node.position = Vector2(_road_center(progress) + _road_half_width(progress) * 0.24, _road_y(progress))
+	node.scale = Vector2.ONE * (0.025 + pow(progress, 1.55) * 0.36)
+	if age >= 1.3 and int(event.get("phase", 0)) == 0:
+		event["phase"] = 1
+		_show_event_message("INFRASTRUCTURE\nSUCCESSFULLY COMPLETED", Color("#f0c35b"), 2.8)
+	if progress > 0.78 and progress < 0.98 and not bool(event.get("hit", false)) and absf(node.position.x - car_x) < 150.0:
+		event["hit"] = true
+		shake_strength = 1.1
+		clunk_player.play()
+		_spawn_debris(car_root.position + Vector2(0, 70), 11)
+	if progress >= 1.06:
+		event["finished"] = true
+
+
+func _update_motorcade(event: Dictionary) -> void:
+	var age := float(event.get("age", 0.0))
+	var travel := clampf(age / 8.5, 0.0, 1.0)
+	var progress := lerpf(0.95, 0.08, ease(travel, -1.2))
+	var node: Node2D = event.get("node")
+	node.position = Vector2(_road_center(progress) + _road_half_width(progress) * 0.42, _road_y(progress))
+	var scale_value := lerpf(0.23, 0.045, travel)
+	node.scale = Vector2.ONE * scale_value
+	_update_institutional_lane(age)
+	var phase := int(event.get("phase", 0))
+	if age >= 0.45 and phase == 0:
+		event["phase"] = 1
+		_show_event_message("EQUAL ACCESS\nTEMPORARILY SUSPENDED", Color("#70d6ff"), 2.5)
+	elif age >= 6.4 and phase == 1:
+		event["phase"] = 2
+		_show_event_message("EQUAL ACCESS RESTORED", Color("#8de08d"), 2.3)
+		_spawn_debris(Vector2(_road_center(0.56) + _road_half_width(0.56) * 0.42, _road_y(0.56)), 12)
+		clunk_player.play()
+	if age >= 8.7:
+		institutional_lane.visible = false
+		event["finished"] = true
+
+
+func _update_institutional_lane(age: float) -> void:
+	var visibility := clampf(age / 0.6, 0.0, 1.0) * (1.0 - clampf((age - 6.1) / 1.5, 0.0, 1.0))
+	institutional_lane.visible = visibility > 0.01
+	institutional_lane.color.a = visibility * 0.31
+	var points := PackedVector2Array()
+	for sample_index in range(15):
+		var progress := float(sample_index) / 14.0
+		var center := _road_center(progress) + _road_half_width(progress) * 0.42
+		var width := 3.0 + _road_half_width(progress) * 0.25
+		points.append(Vector2(center - width, _road_y(progress)))
+	for sample_index in range(14, -1, -1):
+		var progress := float(sample_index) / 14.0
+		var center := _road_center(progress) + _road_half_width(progress) * 0.42
+		var width := 3.0 + _road_half_width(progress) * 0.25
+		points.append(Vector2(center + width, _road_y(progress)))
+	institutional_lane.polygon = points
+
+
+func _create_tollbooth_indicators(node: Node2D, event: Dictionary) -> void:
+	var indicators: Array[Polygon2D] = []
+	var open_marks: Array[Polygon2D] = []
+	var closed_marks: Array[Node2D] = []
+	for lane_index in range(3):
+		var indicator := Polygon2D.new()
+		indicator.name = "LaneIndicator%d" % (lane_index + 1)
+		indicator.polygon = PackedVector2Array([Vector2(-58, -37), Vector2(58, -37), Vector2(58, 37), Vector2(-58, 37)])
+		indicator.position = Vector2(float(lane_index - 1) * 480.0, -135.0)
+		node.add_child(indicator)
+		indicators.append(indicator)
+		var arrow := Polygon2D.new()
+		arrow.polygon = PackedVector2Array([
+			Vector2(-9, -25), Vector2(9, -25), Vector2(9, -5), Vector2(28, -5),
+			Vector2(0, 27), Vector2(-28, -5), Vector2(-9, -5),
+		])
+		arrow.color = Color("#ecf7df")
+		indicator.add_child(arrow)
+		open_marks.append(arrow)
+		var cross := Node2D.new()
+		for slope in [-1.0, 1.0]:
+			var stroke := Line2D.new()
+			stroke.width = 10.0
+			stroke.default_color = Color("#fff0df")
+			stroke.add_point(Vector2(-23, slope * -20.0))
+			stroke.add_point(Vector2(23, slope * 20.0))
+			cross.add_child(stroke)
+		indicator.add_child(cross)
+		closed_marks.append(cross)
+	event["indicators"] = indicators
+	event["open_marks"] = open_marks
+	event["closed_marks"] = closed_marks
+
+
+func _update_tollbooth(event: Dictionary) -> void:
+	var age := float(event.get("age", 0.0))
+	var progress := clampf(0.018 + age / 12.7, 0.018, 0.96)
+	var node: Node2D = event.get("node")
+	node.position = Vector2(_road_center(progress), _road_y(progress) - 32.0 * progress)
+	node.scale = Vector2.ONE * (0.028 + pow(progress, 1.48) * 0.39)
+	var phase := int(event.get("phase", 0))
+	if age >= 0.8 and phase == 0:
+		event["phase"] = 1
+		_show_event_message("PRIORITY PROCESSING\nLANE 1 OPEN", Color("#8de08d"), 2.4)
+	elif age >= 5.0 and phase == 1:
+		event["phase"] = 2
+		_show_event_message("STATUS CORRECTED\nLANE 3 OPEN", Color("#ef6b5b"), 2.7)
+		clunk_player.play()
+	var open_lane := 0 if age < 5.0 else 2
+	var indicators: Array = event.get("indicators", [])
+	var open_marks: Array = event.get("open_marks", [])
+	var closed_marks: Array = event.get("closed_marks", [])
+	for lane_index in range(indicators.size()):
+		(indicators[lane_index] as Polygon2D).color = Color(0.20, 0.95, 0.48, 0.92) if lane_index == open_lane else Color(0.95, 0.16, 0.12, 0.88)
+		(open_marks[lane_index] as Polygon2D).visible = lane_index == open_lane
+		(closed_marks[lane_index] as Node2D).visible = lane_index != open_lane
+	if progress > 0.76 and progress < 0.93 and not bool(event.get("hit", false)):
+		var lane_center := _road_center(0.87)
+		var car_lane := int(clampf(round((car_x - lane_center) / 185.0) + 1.0, 0.0, 2.0))
+		if car_lane != open_lane:
+			event["hit"] = true
+			shake_strength = 0.9
+			clunk_player.play()
+			_spawn_debris(car_root.position + Vector2(24, 58), 13)
+	if progress >= 0.89 and not receipt_attached:
+		receipt_attached = true
+		receipt_trail.visible = true
+		_show_event_message("RECEIPT ISSUED", Color("#f6efd5"), 2.1)
+	if progress >= 0.95:
+		event["finished"] = true
+
+
+func _create_checkpoint(node: Node2D, event: Dictionary) -> void:
+	var checkpoint := Sprite2D.new()
+	checkpoint.name = "DecayedAdministrativeCheckpoint"
+	checkpoint.texture = load(CHECKPOINT_PATH) if ResourceLoader.exists(CHECKPOINT_PATH) else null
+	checkpoint.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	node.add_child(checkpoint)
+	var scan_beam := Polygon2D.new()
+	scan_beam.name = "VehicleScanBeam"
+	scan_beam.polygon = PackedVector2Array([Vector2(-385, -95), Vector2(385, -95), Vector2(385, -67), Vector2(-385, -67)])
+	scan_beam.color = Color(0.25, 0.88, 1.0, 0.35)
+	node.add_child(scan_beam)
+	var barrier_pivot := Node2D.new()
+	barrier_pivot.name = "RustFailedBarrierPivot"
+	barrier_pivot.position = Vector2(-400, 54)
+	node.add_child(barrier_pivot)
+	var barrier := Line2D.new()
+	barrier.name = "RustFailedBarrier"
+	barrier.width = 34.0
+	barrier.default_color = Color("#d75143")
+	barrier.add_point(Vector2.ZERO)
+	barrier.add_point(Vector2(800, 0))
+	barrier_pivot.add_child(barrier)
+	for stripe_index in range(7):
+		var stripe := Polygon2D.new()
+		stripe.polygon = PackedVector2Array([Vector2(-22, -18), Vector2(22, -18), Vector2(12, 18), Vector2(-32, 18)])
+		stripe.position = Vector2(75.0 + stripe_index * 108.0, 0)
+		stripe.color = Color("#eee7ce")
+		barrier_pivot.add_child(stripe)
+	event["barrier_pivot"] = barrier_pivot
+	event["scan_beam"] = scan_beam
+
+
+func _update_checkpoint(event: Dictionary) -> void:
+	var age := float(event.get("age", 0.0))
+	var progress := clampf(0.025 + age / 13.5, 0.025, 0.82)
+	var node: Node2D = event.get("node")
+	node.position = Vector2(_road_center(progress), _road_y(progress) - 52.0 * progress)
+	node.scale = Vector2.ONE * (0.045 + pow(progress, 1.25) * 0.57)
+	var scan_beam: Polygon2D = event.get("scan_beam")
+	scan_beam.position.y = -90.0 + fposmod(age * 105.0, 170.0)
+	scan_beam.modulate.a = 0.55 + sin(age * 11.0) * 0.22
+	var phase := int(event.get("phase", 0))
+	if age >= 3.6 and phase == 0:
+		event["phase"] = 1
+		_show_event_message("VEHICLE NOT RECOGNIZED", Color("#ff625a"), 3.2)
+	elif age >= 8.0 and phase == 1:
+		event["phase"] = 2
+		clunk_player.play()
+		shake_strength = 1.25
+		for spark_index in range(5):
+			_spawn_debris(Vector2(_road_center(0.72) - 210.0 + spark_index * 95.0, _road_y(0.72)), 20 + spark_index)
+	elif age >= 8.55 and phase == 2:
+		event["phase"] = 3
+		_show_event_message("ACCESS GRANTED", Color("#8de08d"), 2.8)
+	var barrier_pivot: Node2D = event.get("barrier_pivot")
+	barrier_pivot.rotation = ease(clampf((age - 8.0) / 1.15, 0.0, 1.0), 1.7) * 1.42
+	if age >= 12.2:
+		event["finished"] = true
+
+
+func _show_event_message(message: String, border_color: Color, duration: float) -> void:
+	event_label.text = message
+	event_panel.add_theme_stylebox_override("panel", _panel_style(border_color, Color(0.02, 0.035, 0.07, 0.94), 3))
+	event_panel.visible = true
+	event_message_until = elapsed + duration
+
+
+func _update_receipt() -> void:
+	if not receipt_trail or not receipt_attached:
+		return
+	if elapsed >= 79.0:
+		receipt_trail.modulate.a = maxf(0.0, 1.0 - (elapsed - 79.0) / 2.0)
+		if receipt_trail.modulate.a <= 0.01:
+			receipt_trail.visible = false
+		return
+	var points := PackedVector2Array()
+	var anchor := car_root.position + Vector2(12.0, 64.0)
+	for point_index in range(7):
+		var distance := float(point_index) * 30.0
+		points.append(anchor + Vector2(sin(elapsed * 8.0 + point_index * 1.2) * (5.0 + point_index * 2.0), distance))
+	receipt_trail.points = points
 
 
 func _spawn_sign(data: Dictionary) -> void:
@@ -544,6 +860,7 @@ func _update_hud() -> void:
 	else:
 		status_label.text = "ENGINE RESPONSE: NONE"
 	control_hint.modulate.a = clampf(1.0 - maxf(0.0, elapsed - 14.0) / 4.0, 0.0, 1.0)
+	event_panel.visible = elapsed < event_message_until and not arrival_panel.visible
 
 
 func _begin_engine_death() -> void:
