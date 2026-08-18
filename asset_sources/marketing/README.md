@@ -43,6 +43,21 @@ The sequence deliberately moves from world premise to political scale and then
 to three distinct playable procedures. This matches itch.io's recommendation to
 provide three to five representative screenshots while showing actual gameplay.
 
+## Repository residence gallery
+
+`residences/` contains the three images used by the repository README instead
+of repeating the itch.io procedure gallery. They are unretouched 1280×720
+framebuffer captures from Godot 4.6.1, framed on the current indoor camera and
+using the real room, NPC, citizen, lighting, and CRT presentation:
+
+1. `01_trump_oval_studio.png` — Donald Trump in the camera-filled Oval Studio.
+2. `02_ursula_transparency_chamber.png` — Ursula von der Leyen inside the
+   procedural Transparency Chamber.
+3. `03_lagarde_stability_floor.png` — Christine Lagarde above the divided
+   luxury-and-machinery Stability Floor.
+
+These are repository presentation media, not additional itch.io upload slots.
+
 ## Final prompt
 
 ```text

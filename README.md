@@ -74,34 +74,24 @@ These images are all loaded by the current game runtime—not superseded concept
 
 ### Actual gameplay
 
+Three of the authorities appear below inside the residences that explain them
+before they say a word.
+
 <table>
   <tr>
-    <td width="50%"><img src="asset_sources/marketing/screenshots/01_opening_drive_equal_access.png" alt="Battered citizen car during the equal-access motorcade event"></td>
-    <td width="50%"><img src="asset_sources/marketing/screenshots/02_northern_gate_harmonious_entry.png" alt="Citizen beneath Xi's monumental northern surveillance gate"></td>
+    <td width="33%"><img src="asset_sources/marketing/residences/01_trump_oval_studio.png" alt="Donald Trump surrounded by cameras in the Oval Studio"></td>
+    <td width="33%"><img src="asset_sources/marketing/residences/02_ursula_transparency_chamber.png" alt="Ursula von der Leyen operating the Transparency Chamber"></td>
+    <td width="33%"><img src="asset_sources/marketing/residences/03_lagarde_stability_floor.png" alt="Christine Lagarde presiding over the Stability Floor"></td>
   </tr>
   <tr>
-    <td align="center"><strong>EQUAL ACCESS</strong><br><sub>Temporarily suspended at 64 km/h.</sub></td>
-    <td align="center"><strong>HARMONIOUS ENTRY</strong><br><sub>The cameras agree that you have arrived.</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="asset_sources/marketing/screenshots/03_trump_claims_victory.png" alt="Trump claims victory after losing a blackjack hand 20 to 18"></td>
-    <td width="50%"><img src="asset_sources/marketing/screenshots/04_ursula_page_1_of_847.png" alt="Ursula Consensus Engine printing page one of 847 after unanimous approval"></td>
-  </tr>
-  <tr>
-    <td align="center"><strong>RESULT UNDER REVIEW</strong><br><sub>Twenty to eighteen remains open to interpretation.</sub></td>
-    <td align="center"><strong>UNANIMOUS APPROVAL</strong><br><sub>Procedure successfully completed in accordance with procedure.</sub></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><img src="asset_sources/marketing/screenshots/05_lagarde_systemic_ball_restored.png" alt="Lagarde monetary pinball restoring the systemic euro ball"></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><strong>THE 2% MIRACLE</strong><br><sub>The ball is systemic. Your purchasing power is not.</sub></td>
+    <td align="center"><strong>DONALD TRUMP · THE OVAL STUDIO</strong><br><sub>Executive audience management.</sub></td>
+    <td align="center"><strong>URSULA VON DER LEYEN · TRANSPARENCY CHAMBER</strong><br><sub>Access subject to access.</sub></td>
+    <td align="center"><strong>CHRISTINE LAGARDE · STABILITY FLOOR</strong><br><sub>Conditions apply below.</sub></td>
   </tr>
 </table>
 
-The five full-resolution captures are also the approved itch.io screenshot set;
-their upload order and provenance are recorded in
-[`asset_sources/marketing/README.md`](asset_sources/marketing/README.md).
+The separate five-image itch.io gameplay set and the provenance of both capture
+groups are recorded in [`asset_sources/marketing/README.md`](asset_sources/marketing/README.md).
 
 ### Runtime art gallery
 
