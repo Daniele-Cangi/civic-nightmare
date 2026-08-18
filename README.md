@@ -38,7 +38,7 @@
 ## 🕹️ Game Features
 
 ### 🚗 The Administrative Approach
-New Game opens on an approximately 90-second playable sunset drive toward the district. The citizen can steer, but cannot fail: the road sheds infrastructure, its signs contradict one another, and the battered economy car sheds actual parts while the presentation insists this is the greatest journey ever undertaken. A commissioned original arcade track can drop into the documented music slot without coupling the sequence to the audio delivery.
+New Game opens on an approximately 90-second playable sunset drive toward the district. The citizen must drive but cannot fail: the road curves beneath the car, its signs contradict one another, the infrastructure deteriorates, and the battered economy car sheds actual parts while the presentation insists this is the greatest journey ever undertaken. Because this is gameplay rather than a cinematic, it cannot be skipped. A commissioned original arcade track can drop into the documented music slot without coupling the sequence to the audio delivery.
 
 ### 🏛️ The Great Signature Quest
 Navigate an authored overworld and confront six different machines of authority. To get your document signed, you must deal with:
@@ -74,7 +74,7 @@ These images are all loaded by the current game runtime—not superseded concept
 
 <table>
   <tr>
-    <td colspan="3" align="center"><img src="assets/sequences/opening_drive_sunset_v1.png" alt="Sunset administrative highway used by the playable opening drive"></td>
+    <td colspan="3" align="center"><img src="assets/sequences/opening_drive_sunset_v2.png" alt="Arcade sunset administrative highway used by the mandatory opening drive"></td>
   </tr>
   <tr>
     <td colspan="3" align="center"><strong>THE ADMINISTRATIVE APPROACH</strong><br><sub>The soundtrack believes this vehicle is winning.</sub></td>
@@ -124,7 +124,7 @@ The Administrative Hold and its behavioural dossier are deliberately not fully i
 - **Classified and Anomalous Interiors**: The bunker now visualizes war as prohibited administrative routine, while the UFO gives the evidence system a room whose clocks, objects, shadows, and geometry cannot agree.
 - **Bunker Access Gauntlet**: The classified route becomes a controls-first dodge encounter with telegraphed ordnance, funding traffic, instant retry, persistent access clearance, and a later dossier interpretation. Its runtime and visual contract are documented in the [gauntlet brief](docs/BUNKER_ACCESS_GAUNTLET.md).
 - **Authority Access Games**: Trump, Ursula, and Lagarde gate their existing rooms with three self-contained, controls-first procedures whose outcomes become behavioural evidence. Their shared travel, persistence, and interaction contract is documented in the [authority access brief](docs/AUTHORITY_ACCESS_GAMES.md).
-- **Playable Arcade Opening**: A fixed 16:9 highway sequence owns steering, perspective motion, contradictory signage, road damage, vehicle deterioration, engine sound, arrival, and a drop-in soundtrack contract. See the [opening-drive brief](docs/OPENING_DRIVE_SEQUENCE.md).
+- **Playable Arcade Opening**: A mandatory fixed-16:9 highway sequence owns steering, sweeping perspective curves, alternating shoulders, contradictory signage, road damage, vehicle deterioration, engine sound, arrival, and a drop-in soundtrack contract. See the [opening-drive brief](docs/OPENING_DRIVE_SEQUENCE.md).
 - **VHS/CRT Effects**: Custom shaders preserve the 80s/90s cabinet identity with scanlines, chromatic aberration, vignette, and restrained display noise.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 

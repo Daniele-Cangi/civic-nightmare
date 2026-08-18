@@ -12,11 +12,15 @@ autosave boundary.
 - Fixed authored frame: 1280×720, scaled to the active viewport.
 - Duration: 89.8 seconds; the musical window ends at 88 seconds so the engine
   can die after a clean cadence.
-- Input: left/right steering and Space/Enter to skip.
+- Input: left/right steering. The drive is mandatory gameplay and has no skip;
+  only separate news/video presentation may expose one.
 - No failure state. Potholes produce shake, clunks and debris, but the journey
   always reaches the district.
 - The visual joke is a sincere heroic arcade approach carrying a visibly
   unroadworthy economy car. The music must never perform the joke itself.
+- The road is rebuilt in perspective every frame: long curves, alternating
+  shoulder blocks, lane markers, signs and potholes share one centre function,
+  so the scene turns as a system rather than sliding unrelated decorations.
 - Road signs, deterioration and bureaucratic contamination arrive gradually;
   the first seconds remain readable enough to teach steering.
 
@@ -58,17 +62,20 @@ the smoke assertions together. Do not time-stretch the track at runtime.
 
 ## Visual assets and generation record
 
-Built-in OpenAI image generation produced both runtime images in original mode:
+Built-in OpenAI image generation produced the car in original mode and the v2
+background as a style edit of the project's own v1 composition:
 
-- `assets/sequences/opening_drive_sunset_v1.png`: an original late-1980s
-  arcade-inspired sunset highway, kept free of cars, UI, logos and readable text,
-  with a monumental administrative district on the horizon and enough clean road
-  for procedural motion and gameplay overlays.
+- `assets/sequences/opening_drive_sunset_v2.png`: an original late-1980s
+  arcade-highway genre treatment derived from the project's v1 composition,
+  with a striped low sun, saturated coral/magenta/cyan separation and a
+  monumental administrative district. It remains free of cars, UI, logos,
+  readable text and lane markings so procedural road geometry stays authoritative.
 - `assets/sequences/opening_drive_car_v1.png`: an original rear-view battered
   early-1980s economy hatchback, dented, rusty and rope-repaired, isolated on
   transparency without smoke, road, logos or text so runtime damage remains
   animatable.
 
 The resulting composition was verified in the actual Godot window at gameplay
-resolution after the parse and smoke checks. Code owns the perspective markers,
-edge streaks, road signs, potholes, smoke, part loss, HUD and scanline treatment.
+resolution after the parse and smoke checks. Code owns the curved road surface,
+alternating shoulders, perspective markers, edge streaks, road signs, potholes,
+smoke, part loss, HUD and scanline treatment.

@@ -470,7 +470,7 @@ func _run() -> void:
 		_check(
 			opening_background != null
 			and opening_background.texture != null
-			and opening_background.texture.resource_path == "res://assets/sequences/opening_drive_sunset_v1.png",
+			and opening_background.texture.resource_path == "res://assets/sequences/opening_drive_sunset_v2.png",
 			"Opening drive mounts its authored sunset highway"
 		)
 		_check(
@@ -480,7 +480,20 @@ func _run() -> void:
 			"Opening drive mounts the battered citizen vehicle"
 		)
 		_check((intro.get("road_markers") as Array).size() == 24, "Opening drive owns a perspective road-marker field")
+		_check((intro.get("shoulder_segments") as Array).size() == 36, "Opening drive owns alternating arcade shoulder segments")
 		_check((intro.get("edge_streaks") as Array).size() == 28, "Opening drive owns roadside speed motion")
+		var drive_controls := intro.get("control_hint") as Label
+		_check(drive_controls != null and not drive_controls.text.contains("SKIP"), "Opening drive is mandatory gameplay, not a skippable cinematic")
+		var skip_attempt := InputEventAction.new()
+		skip_attempt.action = "ui_accept"
+		skip_attempt.pressed = true
+		Input.parse_input_event(skip_attempt)
+		intro.call("process_frame", 0.01)
+		_check(bool(intro.get("active")), "Accept input cannot skip the mandatory opening drive")
+		var skip_release := InputEventAction.new()
+		skip_release.action = "ui_accept"
+		skip_release.pressed = false
+		Input.parse_input_event(skip_release)
 		_check(
 			str(intro.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_opening_drive.ogg",
 			"Opening drive exposes the commissioned-music delivery slot"
@@ -490,6 +503,8 @@ func _run() -> void:
 		intro.call("process_frame", 0.2)
 		_check((intro.get("signs") as Array).size() == 3, "Opening drive schedules contradictory civic road signs")
 		_check((intro.get("hazards") as Array).size() == 2, "Opening drive schedules physical road deterioration")
+		var road_surface := intro.get("road_surface") as Polygon2D
+		_check(road_surface != null and road_surface.polygon.size() == 38, "Opening drive rebuilds a curved perspective road surface")
 		intro.set("elapsed", 87.9)
 		intro.call("process_frame", 0.2)
 		_check(bool(intro.get("engine_dead")), "Citizen vehicle dies after the heroic musical window")

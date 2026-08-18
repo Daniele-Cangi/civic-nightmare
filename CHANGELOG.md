@@ -34,9 +34,14 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- The administrative approach is mandatory gameplay: its skip input and prompt
+  have been removed, while unrelated news/video presentation remains untouched.
+- The opening drive now uses a stronger original late-1980s arcade background,
+  animated perspective curves, alternating roadside blocks and curve-aware
+  placement for the car, signs and potholes.
 - New Game now begins with an active arcade-driving contrast instead of the
-  former passive CRT news montage; the existing skip, completion and autosave
-  boundary remains intact.
+  former passive CRT news montage; the existing completion and autosave boundary
+  remains intact.
 - Refreshed the README's visual identity and gallery to use current runtime art,
   replacing the superseded nuclear-plant mockup with the inference reactor and
   adding representative 2.0 landmarks, interiors, anomalies, and combat art.

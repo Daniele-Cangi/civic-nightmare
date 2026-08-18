@@ -42,8 +42,9 @@ They were art-directed for Civic Nightmare and use existing repository artwork o
 The playable opening drive uses two project-specific assets generated with
 OpenAI built-in image generation and promoted without third-party source art:
 
-- `assets/sequences/opening_drive_sunset_v1.png` — original 1672×941 sunset
-  highway and administrative-district background;
+- `assets/sequences/opening_drive_sunset_v2.png` — original 1672×941 saturated
+  arcade-sunset highway and administrative-district background, regenerated
+  from the project's v1 composition without external game art;
 - `assets/sequences/opening_drive_car_v1.png` — original 1536×1024 transparent
   rear-view battered economy-car sprite.
 
