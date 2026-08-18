@@ -10,12 +10,13 @@ web deployment and tagged releases for major public milestones.
 - A short skippable CRT news broadcast before the mandatory opening drive, with
   three authored civic reports, live ticker, signal transitions, and broadcast
   hum generated at runtime.
+- **Coastline Dash**, the original 48 kHz stereo arcade-driving soundtrack for
+  the mandatory approach, with a clean cadence aligned to the engine-death beat.
 - A playable approximately 90-second sunset highway opening with direct
   steering, perspective road motion, contradictory civic signs, potholes,
   increasing smoke, visible part loss, and an administrative arrival beat.
 - Original runtime artwork for the administrative highway and battered citizen
-  vehicle, plus a documented drop-in path for the separately commissioned
-  instrumental track.
+  vehicle, plus a documented and verified runtime music path.
 - Four escalating road set pieces: an official pothole inauguration, a
   privilege-only motorcade lane, a self-correcting mobile toll, and a decayed
   checkpoint whose failed barrier is interpreted as authorization.

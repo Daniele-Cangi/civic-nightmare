@@ -515,9 +515,19 @@ func _run() -> void:
 		skip_release.action = "ui_accept"
 		skip_release.pressed = false
 		Input.parse_input_event(skip_release)
+		var opening_music_path := str(intro.call("get_music_asset_path"))
 		_check(
-			str(intro.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_opening_drive.ogg",
-			"Opening drive exposes the commissioned-music delivery slot"
+			opening_music_path == "res://assets/audio/civic_nightmare_opening_drive.ogg",
+			"Opening drive exposes the approved runtime-music path"
+		)
+		_check(ResourceLoader.exists(opening_music_path), "Opening-drive music is present and importable")
+		var opening_music_player := intro.get("music_player") as AudioStreamPlayer
+		_check(
+			opening_music_player != null
+			and opening_music_player.stream != null
+			and opening_music_player.stream.get_length() >= 87.5
+			and opening_music_player.stream.get_length() <= 90.5,
+			"Opening-drive music resolves inside the authored arrival window"
 		)
 		_check(is_equal_approx(float(intro.call("get_sequence_duration")), 89.8), "Opening drive keeps its authored 80-90 second duration")
 		var opening_set_piece_assets := intro.call("get_set_piece_asset_paths") as PackedStringArray

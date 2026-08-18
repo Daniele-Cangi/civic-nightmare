@@ -42,30 +42,31 @@ The authored timeline is approximately:
 | 78–88 s | A scanner rejects the vehicle; its rusted barrier collapses and the failure is recorded as access granted. |
 | 88–89.8 s | Music resolves, engine fails, arrival is registered, world begins. |
 
-## Music delivery contract
+## Music delivery
 
-The separately commissioned master should be placed at:
+The delivered runtime track is:
 
 `assets/audio/civic_nightmare_opening_drive.ogg`
 
-The sequence checks that path at runtime. If it is absent, the drive still runs
-with its local procedural engine and impact sounds; no placeholder music is
-shipped and no load error is emitted.
+**Coastline Dash** is an original instrumental supplied by project owner
+Daniele Cangi. The runtime file is a 48 kHz stereo Ogg Vorbis conversion of the
+90.4-second WAV master. Audible content resolves at approximately 87.69 seconds
+and the remaining 2.71 seconds are silence, so `MUSIC_DURATION` can start the
+engine-death beat at 88 seconds without cutting the cadence. The sequence still
+falls back to its local engine and impact sounds if the runtime file is absent.
 
-Recommended delivery:
+Delivery properties:
 
-- original instrumental only, with documented contributor and usage rights;
-- 4/4 at approximately 150–158 BPM (154 BPM is the timing reference);
-- 80–90 seconds, ideally 88 seconds including the short ignition introduction;
+- original instrumental with documented project ownership;
+- 90.4 seconds including the intentionally silent arrival tail;
 - 48 kHz stereo Ogg Vorbis for the browser build;
-- confident clean cadence at 88 seconds, not a long fade;
-- safe browser master around -1 dBTP, leaving engine and impact transients room;
-- no embedded engine, crash, dialogue or UI effects: music and gameplay sound
-  remain independently mixable.
+- confident clean cadence before the engine fails, not a runtime fade;
+- music remains separate from engine, crash, dialogue and UI effects.
 
-If the final master is materially shorter or longer, update `MUSIC_DURATION`,
-`ARRIVAL_START`, `SEQUENCE_DURATION`, the authored schedules, this document and
-the smoke assertions together. Do not time-stretch the track at runtime.
+Any future replacement that resolves materially earlier or later must update
+`MUSIC_DURATION`, `ARRIVAL_START`, `SEQUENCE_DURATION`, the authored schedules,
+this document and the smoke assertions together. Do not time-stretch the track
+at runtime.
 
 ## Visual assets and generation record
 
