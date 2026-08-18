@@ -7,6 +7,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- A short skippable CRT news broadcast before the mandatory opening drive, with
+  three authored civic reports, live ticker, signal transitions, and broadcast
+  hum generated at runtime.
 - A playable approximately 90-second sunset highway opening with direct
   steering, perspective road motion, contradictory civic signs, potholes,
   increasing smoke, visible part loss, and an administrative arrival beat.
@@ -37,6 +40,8 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- New Game now follows one explicit opening route: skippable broadcast,
+  mandatory playable drive, then the existing overworld and autosave boundary.
 - The administrative approach is mandatory gameplay: its skip input and prompt
   have been removed, while unrelated news/video presentation remains untouched.
 - The opening drive now uses a stronger original late-1980s arcade background,
@@ -44,9 +49,9 @@ web deployment and tagged releases for major public milestones.
   placement for the car, signs and potholes.
 - Sparse roadside gags now build into physical civic procedures while retaining
   one steering grammar, no fail state and no interruption of the heroic drive.
-- New Game now begins with an active arcade-driving contrast instead of the
-  former passive CRT news montage; the existing completion and autosave boundary
-  remains intact.
+- The former passive montage is no longer coupled to the driving code; the new
+  broadcast and active arcade approach are separate sequence owners joined by
+  one composition-level handoff.
 - Refreshed the README's visual identity and gallery to use current runtime art,
   replacing the superseded nuclear-plant mockup with the inference reactor and
   adding representative 2.0 landmarks, interiors, anomalies, and combat art.

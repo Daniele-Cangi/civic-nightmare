@@ -1,8 +1,9 @@
 # Opening drive sequence
 
 `scripts/sequences/intro_sequence.gd` owns the playable approach that follows
-New Game and precedes the existing overworld. The sequence replaces the former
-passive news montage without changing `main.gd`'s composition contract:
+the skippable `NewsBroadcastSequence` and precedes the existing overworld. It
+does not own or inherit the broadcast's skip input. The sequence keeps
+`main.gd`'s composition contract small:
 `setup(owner, player)` freezes the world player, `process_frame(delta)` advances
 the local state machine, and `finished` returns control and triggers the existing
 autosave boundary.
@@ -13,7 +14,7 @@ autosave boundary.
 - Duration: 89.8 seconds; the musical window ends at 88 seconds so the engine
   can die after a clean cadence.
 - Input: left/right steering. The drive is mandatory gameplay and has no skip;
-  only separate news/video presentation may expose one.
+  only the preceding news broadcast exposes one.
 - No failure state. Potholes produce shake, clunks and debris, but the journey
   always reaches the district.
 - The visual joke is a sincere heroic arcade approach carrying a visibly

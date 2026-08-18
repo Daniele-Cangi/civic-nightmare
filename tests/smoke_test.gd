@@ -11,6 +11,7 @@ const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd"
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
+const NEWS_BROADCAST_SEQUENCE_SCRIPT = preload("res://scripts/sequences/news_broadcast_sequence.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
@@ -68,6 +69,7 @@ func _run() -> void:
 	_test_ai_terminal_assets()
 	_test_ai_terminal_expressions()
 	_test_historical_contamination_asset()
+	_test_news_broadcast_sequence()
 	await _test_xi_intercept_presentation()
 
 	var packed_scene := load("res://scenes/main.tscn") as PackedScene
@@ -105,7 +107,8 @@ func _run() -> void:
 	_check(save_manager != null, "save manager is initialized")
 	_check(start_menu.get("continue_button") != null, "Continue command is present")
 	_check(start_menu.get("new_game_button") != null, "New Game command is present")
-	_check(game.get("intro_sequence") == null, "intro waits for a menu command")
+	_check(game.get("news_broadcast_sequence") == null, "news broadcast waits for a menu command")
+	_check(game.get("intro_sequence") == null, "opening drive waits behind the menu and broadcast")
 	_check(room_manager != null, "room manager is initialized")
 	_check(quest_manager != null, "quest manager is initialized")
 	_check(dialogue_manager != null, "dialogue manager is initialized")
@@ -461,9 +464,27 @@ func _run() -> void:
 
 	game.call("_begin_new_game", false)
 	await process_frame
-	var intro: Node = game.get("intro_sequence")
-	_check(intro != null and bool(intro.get("active")), "New Game starts the intro")
+	var news_broadcast: Node = game.get("news_broadcast_sequence")
+	_check(news_broadcast != null and bool(news_broadcast.get("active")), "New Game starts the skippable news broadcast")
+	_check(game.get("intro_sequence") == null, "Opening drive waits until the broadcast finishes or is skipped")
 	_check(not bool(start_menu.get("active")), "New Game closes the start menu")
+	if news_broadcast:
+		var broadcast_skip_hint := news_broadcast.get("skip_hint") as Label
+		_check(broadcast_skip_hint != null and broadcast_skip_hint.text.contains("SKIP BROADCAST"), "Only the news prologue advertises a skip command")
+		var broadcast_skip := InputEventAction.new()
+		broadcast_skip.action = "ui_accept"
+		broadcast_skip.pressed = true
+		Input.parse_input_event(broadcast_skip)
+		news_broadcast.call("request_skip")
+		news_broadcast.call("process_frame", 0.5)
+		_check(not bool(news_broadcast.get("active")), "Accept input skips the news broadcast")
+		var broadcast_skip_release := InputEventAction.new()
+		broadcast_skip_release.action = "ui_accept"
+		broadcast_skip_release.pressed = false
+		Input.parse_input_event(broadcast_skip_release)
+	await process_frame
+	var intro: Node = game.get("intro_sequence")
+	_check(intro != null and bool(intro.get("active")), "Skipping the broadcast hands off to the mandatory opening drive")
 	if intro:
 		var opening_background := intro.get("background") as TextureRect
 		var opening_car := intro.get("car_sprite") as Sprite2D
@@ -680,6 +701,29 @@ func _run() -> void:
 		_check(hidden_bunker.get_node_or_null("AidGateClearedBeacon") == null, "the cleared gate no longer leaves a floating status marker")
 
 	_finish()
+
+
+func _test_news_broadcast_sequence() -> void:
+	var host := Node.new()
+	root.add_child(host)
+	var preview_player := CharacterBody2D.new()
+	host.add_child(preview_player)
+	var broadcast: Node = NEWS_BROADCAST_SEQUENCE_SCRIPT.new()
+	host.add_child(broadcast)
+	var finish_count := [0]
+	broadcast.finished.connect(func() -> void: finish_count[0] += 1)
+	broadcast.setup(host, preview_player)
+	_check(bool(broadcast.get("active")), "Standalone news broadcast starts active")
+	_check(is_equal_approx(float(broadcast.call("get_duration")), 21.5), "News broadcast remains a short 20-25 second prologue")
+	_check(bool(broadcast.call("is_skippable")), "News broadcast explicitly owns the opening skip contract")
+	_check(not preview_player.is_physics_processing(), "News broadcast freezes overworld movement")
+	var headline := broadcast.get("headline_label") as Label
+	var ticker := broadcast.get("ticker_label") as Label
+	_check(headline != null and ticker != null, "News broadcast mounts headline and ticker presentation")
+	broadcast.set("elapsed", 21.4)
+	broadcast.call("process_frame", 0.2)
+	_check(not bool(broadcast.get("active")) and int(finish_count[0]) == 1, "News broadcast completes naturally and emits one handoff")
+	host.queue_free()
 
 
 func _test_combat_portraits() -> void:
