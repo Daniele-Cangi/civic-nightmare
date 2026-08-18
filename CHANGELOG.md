@@ -46,6 +46,11 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Web exports now use Godot's single-threaded runtime, removing the
+  `SharedArrayBuffer` and cross-origin-isolation requirement that blocked the
+  itch.io build without special frame headers.
+- Approaching Xi's northern gate now raises the actual gameplay camera smoothly,
+  exposing the monumental wall composition shown in the approved screenshot.
 - New Game now follows one explicit opening route: skippable broadcast,
   mandatory playable drive, then the existing overworld and autosave boundary.
 - The administrative approach is mandatory gameplay: its skip input and prompt
