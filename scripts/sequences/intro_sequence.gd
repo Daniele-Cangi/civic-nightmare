@@ -3,18 +3,16 @@ extends Node
 signal finished
 
 const VIEW_SIZE := Vector2(1280, 720)
-const BACKGROUND_PATH := "res://assets/sequences/opening_drive_sunset_v1.png"
+const BACKGROUND_PATH := "res://assets/sequences/opening_drive_sunset_v2.png"
 const CAR_PATH := "res://assets/sequences/opening_drive_car_v1.png"
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_opening_drive.ogg"
 const MUSIC_DURATION := 88.0
 const SEQUENCE_DURATION := 89.8
 const DRIVE_START := 6.2
-const INPUT_GRACE := 0.45
 const ARRIVAL_START := 78.0
 const ROAD_HORIZON_Y := 344.0
 const ROAD_BOTTOM_Y := 735.0
-const CAR_MIN_X := 350.0
-const CAR_MAX_X := 930.0
+const CAR_LANE_HALF_WIDTH := 290.0
 const CAR_Y := 580.0
 
 const SIGN_SCHEDULE := [
@@ -60,6 +58,7 @@ var root_control: Control
 var frame: Control
 var background: TextureRect
 var road_root: Node2D
+var road_surface: Polygon2D
 var scenery_root: Node2D
 var smoke_root: Node2D
 var car_root: Node2D
@@ -74,6 +73,7 @@ var engine_player: AudioStreamPlayer
 var clunk_player: AudioStreamPlayer
 
 var road_markers: Array[Polygon2D] = []
+var shoulder_segments: Array[Polygon2D] = []
 var edge_streaks: Array[Polygon2D] = []
 var signs: Array[Dictionary] = []
 var hazards: Array[Dictionary] = []
@@ -95,11 +95,6 @@ func setup(owner: Node, player_node: CharacterBody2D) -> void:
 
 func process_frame(delta: float) -> void:
 	if not active:
-		return
-	# The Enter press that confirms New Game is still visible during the first
-	# process frame; do not let that same event skip the sequence it just opened.
-	if elapsed >= INPUT_GRACE and Input.is_action_just_pressed("ui_accept"):
-		_finish()
 		return
 	elapsed += delta
 	var frame_delta := minf(delta, 0.1)
@@ -192,6 +187,18 @@ func _create_sequence() -> void:
 
 
 func _create_road_motion() -> void:
+	road_surface = Polygon2D.new()
+	road_surface.name = "CurvingRoadSurface"
+	road_surface.color = Color(0.025, 0.025, 0.065, 0.82)
+	road_root.add_child(road_surface)
+	for shoulder_index in range(18):
+		for shoulder_side in [-1.0, 1.0]:
+			var shoulder := Polygon2D.new()
+			shoulder.color = Color("#fff0c4") if shoulder_index % 2 == 0 else Color("#ef4e64")
+			shoulder.set_meta("offset", float(shoulder_index) / 18.0)
+			shoulder.set_meta("side", shoulder_side)
+			road_root.add_child(shoulder)
+			shoulder_segments.append(shoulder)
 	for marker_index in range(12):
 		for lane_side in [-1.0, 1.0]:
 			var marker := Polygon2D.new()
@@ -226,8 +233,8 @@ func _create_hud() -> void:
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	top_bar.add_child(status_label)
 
-	control_hint = _make_label(Vector2(394, 670), Vector2(492, 34), 17, Color("#fff1ae"))
-	control_hint.text = "←  →  STEER                         SPACE  SKIP"
+	control_hint = _make_label(Vector2(500, 670), Vector2(280, 34), 17, Color("#fff1ae"))
+	control_hint.text = "←  →  STEER"
 	control_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	frame.add_child(control_hint)
 
@@ -305,8 +312,11 @@ func _update_car(delta: float) -> void:
 	var steer := Input.get_axis("ui_left", "ui_right") if drive_active else 0.0
 	var target_velocity := steer * 360.0
 	car_velocity_x = move_toward(car_velocity_x, target_velocity, delta * (900.0 if absf(steer) > 0.01 else 1200.0))
-	car_x = clampf(car_x + car_velocity_x * delta, CAR_MIN_X, CAR_MAX_X)
-	if car_x <= CAR_MIN_X + 0.5 or car_x >= CAR_MAX_X - 0.5:
+	var lane_center := _road_center(0.87)
+	var lane_min := lane_center - CAR_LANE_HALF_WIDTH
+	var lane_max := lane_center + CAR_LANE_HALF_WIDTH
+	car_x = clampf(car_x + car_velocity_x * delta, lane_min, lane_max)
+	if car_x <= lane_min + 0.5 or car_x >= lane_max - 0.5:
 		car_velocity_x *= -0.22
 		shake_strength = maxf(shake_strength, 0.32)
 
@@ -317,13 +327,31 @@ func _update_car(delta: float) -> void:
 	var shake_y := sin(elapsed * 23.0) * (startup_shake * 0.45 + vibration + shake_strength * 5.0)
 	car_root.position = Vector2(car_x + shake_x, CAR_Y + shake_y)
 	car_root.rotation = steer * 0.045 + sin(elapsed * 9.0) * 0.009 + shake_strength * sin(elapsed * 37.0) * 0.035
-	background.position.x = -14.0 - (car_x - 640.0) * 0.014
+	background.position.x = -14.0 - (car_x - lane_center) * 0.014
 
 
 func _update_road(delta: float) -> void:
 	var drive_amount := clampf((elapsed - DRIVE_START) / 4.0, 0.0, 1.0)
 	var arrival_slowdown := 1.0 - clampf((elapsed - MUSIC_DURATION) / 1.2, 0.0, 1.0)
 	road_scroll = fposmod(road_scroll + delta * lerpf(0.0, 0.54, drive_amount) * arrival_slowdown, 1.0)
+	_update_road_surface()
+	for shoulder in shoulder_segments:
+		var progress := fposmod(road_scroll + float(shoulder.get_meta("offset")), 1.0)
+		shoulder.visible = drive_amount > 0.04 and progress < 0.955
+		if not shoulder.visible:
+			continue
+		var tail := minf(progress + 0.038 + progress * 0.026, 0.985)
+		var side := float(shoulder.get_meta("side"))
+		var center0 := _road_center(progress)
+		var center1 := _road_center(tail)
+		var inner0 := center0 + side * _road_half_width(progress)
+		var inner1 := center1 + side * _road_half_width(tail)
+		var outer0 := center0 + side * (_road_half_width(progress) + 4.0 + progress * 14.0)
+		var outer1 := center1 + side * (_road_half_width(tail) + 5.0 + tail * 17.0)
+		shoulder.polygon = PackedVector2Array([
+			Vector2(inner0, _road_y(progress)), Vector2(outer0, _road_y(progress)),
+			Vector2(outer1, _road_y(tail)), Vector2(inner1, _road_y(tail)),
+		])
 	for marker in road_markers:
 		var progress := fposmod(road_scroll + float(marker.get_meta("offset")), 1.0)
 		marker.visible = drive_amount > 0.05 and progress < 0.94
@@ -331,8 +359,8 @@ func _update_road(delta: float) -> void:
 			continue
 		var tail := minf(progress + 0.055 + progress * 0.035, 0.985)
 		var side := float(marker.get_meta("side"))
-		var p0 := Vector2(640.0 + side * _road_half_width(progress) * 0.33, _road_y(progress))
-		var p1 := Vector2(640.0 + side * _road_half_width(tail) * 0.33, _road_y(tail))
+		var p0 := Vector2(_road_center(progress) + side * _road_half_width(progress) * 0.33, _road_y(progress))
+		var p1 := Vector2(_road_center(tail) + side * _road_half_width(tail) * 0.33, _road_y(tail))
 		var width0 := 1.0 + progress * 6.0
 		var width1 := 1.0 + tail * 9.0
 		marker.polygon = PackedVector2Array([
@@ -346,8 +374,8 @@ func _update_road(delta: float) -> void:
 			continue
 		var tail := minf(progress + 0.035 + progress * 0.055, 0.97)
 		var side := float(streak.get_meta("side"))
-		var p0 := Vector2(640.0 + side * (_road_half_width(progress) + 18.0), _road_y(progress))
-		var p1 := Vector2(640.0 + side * (_road_half_width(tail) + 28.0), _road_y(tail))
+		var p0 := Vector2(_road_center(progress) + side * (_road_half_width(progress) + 18.0), _road_y(progress))
+		var p1 := Vector2(_road_center(tail) + side * (_road_half_width(tail) + 28.0), _road_y(tail))
 		var width := 1.0 + progress * 5.0
 		streak.polygon = PackedVector2Array([
 			p0 + Vector2(-width, 0), p0 + Vector2(width, 0),
@@ -398,7 +426,7 @@ func _update_signs(delta: float) -> void:
 		entry["progress"] = progress
 		var node: Node2D = entry.get("node")
 		var side := float(entry.get("side", 1.0))
-		node.position = Vector2(640.0 + side * (_road_half_width(progress) + 75.0 + progress * 90.0), _road_y(progress))
+		node.position = Vector2(_road_center(progress) + side * (_road_half_width(progress) + 75.0 + progress * 90.0), _road_y(progress))
 		node.scale = Vector2.ONE * (0.08 + pow(progress, 1.5) * 1.15)
 		if progress > 1.04:
 			node.queue_free()
@@ -426,7 +454,7 @@ func _update_hazards(delta: float) -> void:
 		entry["progress"] = progress
 		var node: Node2D = entry.get("node")
 		var lane := float(entry.get("lane", 0.0))
-		node.position = Vector2(640.0 + lane * _road_half_width(progress) * 0.72, _road_y(progress))
+		node.position = Vector2(_road_center(progress) + lane * _road_half_width(progress) * 0.72, _road_y(progress))
 		node.scale = Vector2.ONE * (0.03 + pow(progress, 1.65) * 1.3)
 		if progress > 0.80 and progress < 0.98 and not bool(entry.get("hit", false)) and absf(node.position.x - car_x) < 82.0:
 			entry["hit"] = true
@@ -532,6 +560,26 @@ func _begin_engine_death() -> void:
 	var tween := create_tween()
 	tween.tween_property(engine_player, "volume_db", -45.0, 0.7)
 	tween.tween_callback(engine_player.stop)
+
+
+func _update_road_surface() -> void:
+	var road_points := PackedVector2Array()
+	for sample_index in range(19):
+		var progress := float(sample_index) / 18.0
+		road_points.append(Vector2(_road_center(progress) - _road_half_width(progress), _road_y(progress)))
+	for sample_index in range(18, -1, -1):
+		var progress := float(sample_index) / 18.0
+		road_points.append(Vector2(_road_center(progress) + _road_half_width(progress), _road_y(progress)))
+	road_surface.polygon = road_points
+
+
+func _road_center(progress: float) -> float:
+	var drive_amount := clampf((elapsed - DRIVE_START) / 3.5, 0.0, 1.0)
+	var arrival_settle := 1.0 - clampf((elapsed - ARRIVAL_START) / (MUSIC_DURATION - ARRIVAL_START), 0.0, 1.0)
+	var phase := maxf(0.0, elapsed - DRIVE_START)
+	var long_curve := sin(phase * 0.125) * 72.0 + sin(phase * 0.047 + 1.2) * 28.0
+	var road_wobble := sin(phase * 0.22 + progress * 2.5) * 10.0
+	return 640.0 + (long_curve * pow(progress, 1.55) + road_wobble * progress) * drive_amount * arrival_settle
 
 
 func _road_y(progress: float) -> float:
