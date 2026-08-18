@@ -7,6 +7,12 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- A playable approximately 90-second sunset highway opening with direct
+  steering, perspective road motion, contradictory civic signs, potholes,
+  increasing smoke, visible part loss, and an administrative arrival beat.
+- Original runtime artwork for the administrative highway and battered citizen
+  vehicle, plus a documented drop-in path for the separately commissioned
+  instrumental track.
 - **The Greatest Deal**, a three-round Trump entry procedure built around
   readable blackjack hands, visible totals, HIT/STAND decisions, post-result
   special moves, and a sharply separated acceptance or challenge phase.
@@ -28,6 +34,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- New Game now begins with an active arcade-driving contrast instead of the
+  former passive CRT news montage; the existing skip, completion and autosave
+  boundary remains intact.
 - Refreshed the README's visual identity and gallery to use current runtime art,
   replacing the superseded nuclear-plant mockup with the inference reactor and
   adding representative 2.0 landmarks, interiors, anomalies, and combat art.

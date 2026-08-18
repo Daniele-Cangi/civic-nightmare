@@ -37,6 +37,9 @@
 
 ## 🕹️ Game Features
 
+### 🚗 The Administrative Approach
+New Game opens on an approximately 90-second playable sunset drive toward the district. The citizen can steer, but cannot fail: the road sheds infrastructure, its signs contradict one another, and the battered economy car sheds actual parts while the presentation insists this is the greatest journey ever undertaken. A commissioned original arcade track can drop into the documented music slot without coupling the sequence to the audio delivery.
+
 ### 🏛️ The Great Signature Quest
 Navigate an authored overworld and confront six different machines of authority. To get your document signed, you must deal with:
 
@@ -70,6 +73,12 @@ Web persistence uses the browser's IndexedDB-backed `user://` storage and theref
 These images are all loaded by the current game runtime—not superseded concept art.
 
 <table>
+  <tr>
+    <td colspan="3" align="center"><img src="assets/sequences/opening_drive_sunset_v1.png" alt="Sunset administrative highway used by the playable opening drive"></td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center"><strong>THE ADMINISTRATIVE APPROACH</strong><br><sub>The soundtrack believes this vehicle is winning.</sub></td>
+  </tr>
   <tr>
     <td width="33%" align="center"><img src="assets/landmarks/authority_trump_v2.png" alt="Trump authority facade"></td>
     <td width="33%" align="center"><img src="assets/landmarks/inference_reactor_demo_v1.png" alt="Sam Altman's inference reactor demonstration"></td>
@@ -115,7 +124,8 @@ The Administrative Hold and its behavioural dossier are deliberately not fully i
 - **Classified and Anomalous Interiors**: The bunker now visualizes war as prohibited administrative routine, while the UFO gives the evidence system a room whose clocks, objects, shadows, and geometry cannot agree.
 - **Bunker Access Gauntlet**: The classified route becomes a controls-first dodge encounter with telegraphed ordnance, funding traffic, instant retry, persistent access clearance, and a later dossier interpretation. Its runtime and visual contract are documented in the [gauntlet brief](docs/BUNKER_ACCESS_GAUNTLET.md).
 - **Authority Access Games**: Trump, Ursula, and Lagarde gate their existing rooms with three self-contained, controls-first procedures whose outcomes become behavioural evidence. Their shared travel, persistence, and interaction contract is documented in the [authority access brief](docs/AUTHORITY_ACCESS_GAMES.md).
-- **VHS/CRT Effects**: Custom shaders provide a nostalgic 80s/90s television feel, complete with scanlines, chromatic aberration, and "Breaking News" ticker bars.
+- **Playable Arcade Opening**: A fixed 16:9 highway sequence owns steering, perspective motion, contradictory signage, road damage, vehicle deterioration, engine sound, arrival, and a drop-in soundtrack contract. See the [opening-drive brief](docs/OPENING_DRIVE_SEQUENCE.md).
+- **VHS/CRT Effects**: Custom shaders preserve the 80s/90s cabinet identity with scanlines, chromatic aberration, vignette, and restrained display noise.
 - **Authored District Ground**: A continuous 2176×2048 pixel-art plate gives all six authority compounds a distinct material identity without visible tile seams. Path reservations, collisions, forests, encounters, and entrances remain procedural gameplay layers above it. The contract and generation prompt are documented in the [district art direction](docs/WORLD_DISTRICT_ART_DIRECTION.md).
 
 ## 🤝 Contributing
@@ -144,6 +154,8 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `assets/landmarks/`: runtime-sized exterior hero facades for the six required-signature locations.
 - `assets/interiors/`: opaque authored room backgrounds aligned to the shared indoor gameplay canvas.
 - `assets/backgrounds/`: collision-neutral overworld ground art rendered beneath the procedural gameplay layers.
+- `assets/sequences/`: runtime artwork created specifically for authored presentation sequences.
+- `assets/audio/`: delivery point for commissioned runtime music; each accepted track must have an explicit owner and rights note.
 - `assets/runtime/props/`: the small promoted vendor subset actually used by interiors.
 - `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
 - `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.

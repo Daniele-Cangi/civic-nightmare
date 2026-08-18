@@ -38,3 +38,15 @@ OpenAI image generation, then locally resized and promoted into the runtime:
 - `assets/encounters/price_stability_pinball_stage_v1.png`
 
 They were art-directed for Civic Nightmare and use existing repository artwork only as a style or character-design reference.
+
+The playable opening drive uses two project-specific assets generated with
+OpenAI built-in image generation and promoted without third-party source art:
+
+- `assets/sequences/opening_drive_sunset_v1.png` — original 1672×941 sunset
+  highway and administrative-district background;
+- `assets/sequences/opening_drive_car_v1.png` — original 1536×1024 transparent
+  rear-view battered economy-car sprite.
+
+The sequence adds its road motion, signs, hazards, smoke, damage and display
+layers in code. Its commissioned music is intentionally absent from this
+change; any delivered track must receive a separate provenance and rights note.
