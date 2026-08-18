@@ -24,6 +24,8 @@ scenes/main.tscn
     ├── sequences/start_menu.gd     Continue/New Game title flow
     ├── sequences/administrative_hold.gd
     │                               diegetic pause and dossier presentation
+    ├── sequences/news_broadcast_sequence.gd
+    │                               skippable CRT world-news prologue
     ├── sequences/intro_sequence.gd playable arcade-highway opening
     ├── sequences/mk_sequence.gd    final-mission presentation timeline
     ├── sequences/ending_sequence.gd
@@ -55,7 +57,7 @@ scenes/main.tscn
 | Versioned local persistence and dossier validation | `SaveManager` | Stores JSON under `user://`; the composition root owns snapshot assembly and safe resume policy. |
 | Dialogue lifecycle and presentation | `DialogueManager` | Owns typewriter timing, portraits, choices, and open/close animation. |
 | Interior registry and world return points | `RoomManager` | Creates interiors and doors, reparents the player, and owns transition UI. |
-| Title, intro, MK, and ending presentation | `StartMenu`, `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, input, audio, and timers. The opening drive exposes only completion, duration, and its music-delivery path. |
+| Title, opening, MK, and ending presentation | `StartMenu`, `NewsBroadcastSequence`, `IntroSequence`, `MKSequence`, `EndingSequence` | Own their overlays, text, input, audio, and timers. The news broadcast owns the only opening skip; the drive exposes only completion, duration, and its music-delivery path. |
 | Diegetic pause presentation | `AdministrativeHold` | Suspends the tree, reveals only currently unlocked dossier sections, and records profile access through `DossierManager`. |
 | Encounter-only presentation | `scripts/encounters/` | Each node owns one encounter overlay and its local timing. |
 | Character colors, portraits, sprite paths, and authority facades | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
@@ -84,7 +86,8 @@ scenes/main.tscn
 - `scenes/interiors/oval_office.tscn` is the shared interior scene instantiated for configured rooms.
 - `scenes/areas/southern_annex.tscn` implements the smaller optional exterior shared by Kim and Sam. It follows the room travel contract while declaring itself non-indoor, owns its local background, landmark layout, boundary and return markers, and applies area camera limits. `main.gd` only registers the area and records the cross-system investigation consequence.
 - `assets/interiors/` contains all eleven authored room backgrounds: six main authorities, three optional investigations, one classified deviation, and one anomaly. `oval_office_room.gd` suppresses its generic visual tile/prop pass when one is present, but retains the shared NPC/sequence actors, exit, lighting, boundary, dialogue, and room-state behavior. Named code-owned barriers follow baked furniture. See [authority interior art direction](AUTHORITY_INTERIOR_ART_DIRECTION.md).
-- `IntroSequence` replaces the former passive news montage with a no-fail playable approach. It owns a fixed 1280×720 frame, steering, procedural perspective markers, civic signs, potholes, vehicle deterioration, local engine/clunk audio, optional commissioned music, and the arrival beat. `main.gd` retains the existing setup/finish/autosave boundary. See [Opening Drive Sequence](OPENING_DRIVE_SEQUENCE.md).
+- `NewsBroadcastSequence` owns a short fixed-frame CRT bulletin, its three authored reports, broadcast hum, shutdown, and explicit skip boundary. It emits only `finished`; `main.gd` then mounts `IntroSequence`. See [News Broadcast Sequence](NEWS_BROADCAST_SEQUENCE.md).
+- `IntroSequence` owns the mandatory no-fail playable approach: a fixed 1280×720 frame, steering, procedural perspective markers, civic signs, potholes, vehicle deterioration, local engine/clunk audio, optional commissioned music, and the arrival beat. `main.gd` retains the handoff and existing autosave boundary. See [Opening Drive Sequence](OPENING_DRIVE_SEQUENCE.md).
 - `assets/` and `shaders/` remain presentation resources rather than behavior owners.
 - `assets/landmarks/authority_*_v2.png` contains the six runtime-sized satirical authority facades. Their architecture is narrative: spectacle masks neglect for Trump, permanent-beta industry for Musk, inaccessible transparency for Ursula, wartime paranoia for Putin, stratified stability for Lagarde, and theatrical grandeur for Macron. `AuthorityWorldPatchBuilder` owns each physical entrance/collision root and applies a small presentation-only offset that centers the raster composition on the authored plaza without moving navigation. Putin's facade and siege raster share a stronger correction because they read as one wider visual unit. See [World Patch Visual System](WORLD_PATCH_VISUAL_SYSTEM.md).
 - `assets/backgrounds/world_district_plate_v3.png` is a single opaque, collision-neutral HD ground plate matching the 2176×2048 overworld bounds. `main.gd` mounts it below the TileMap at `z=-10` with linear filtering; path reservations, structures, triggers, and collision remain generated runtime layers. The plate supplies broad contemporary civic materials and authored landscaping without the repeated 32 px visual grammar of the fallback atlas. Legacy nature and border tiles are suppressed while the plate is active, but the invisible world-edge collision remains. If the plate cannot load, the generator still falls back to the original ground, path, decoration, and border rendering.

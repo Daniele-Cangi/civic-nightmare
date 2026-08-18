@@ -1,5 +1,6 @@
 extends Node2D
 
+const NEWS_BROADCAST_SEQUENCE_SCRIPT = preload("res://scripts/sequences/news_broadcast_sequence.gd")
 const INTRO_SEQUENCE_SCRIPT = preload("res://scripts/sequences/intro_sequence.gd")
 const ROOM_MANAGER_SCRIPT = preload("res://scripts/managers/room_manager.gd")
 const KIM_PHONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/kim_phone_encounter.gd")
@@ -170,11 +171,18 @@ const CONTAMINATION_SOURCE_OFFSETS := {
 }
 const CONTAMINATION_TERMINAL_OFFSET := Vector2(-140, -8)
 
-# --- Intro sequence ---
+# --- Opening sequences ---
+var news_broadcast_sequence: Node
+var news_broadcast_active: bool:
+	get:
+		return bool(news_broadcast_sequence.get("active")) if news_broadcast_sequence else false
 var intro_sequence: Node
 var intro_active: bool:
 	get:
 		return bool(intro_sequence.get("active")) if intro_sequence else false
+var opening_active: bool:
+	get:
+		return news_broadcast_active or intro_active
 
 # --- Dossier / continue flow ---
 var save_manager: Node
@@ -560,7 +568,7 @@ func _setup_bezos_drone_encounter() -> void:
 func _on_bezos_drone_triggered() -> void:
 	if bezos_cinematic_seen or bezos_cinematic_active or bool(bezos_drone_encounter.get("bezos_escalation_active")) or ufo_abduction_active or contamination_active:
 		return
-	if is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
+	if is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	call_deferred("_start_bezos_escalation")
 
@@ -581,12 +589,12 @@ func _start_bezos_cinematic() -> void:
 	bezos_encounter.start()
 
 func _on_ufo_triggered() -> void:
-	if ufo_abduction_active or is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
+	if ufo_abduction_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	call_deferred("_start_ufo_abduction")
 
 func _start_ufo_abduction() -> void:
-	if ufo_abduction_active or is_room_transition or intro_active or ending_active or is_dialogue_open or active_room_id != "":
+	if ufo_abduction_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	dossier_manager.record_anomaly(
 		"anomaly:ufo_time_discontinuity",
@@ -865,6 +873,9 @@ func _character_display_name(character_id: String) -> String:
 
 func _process(delta: float) -> void:
 	if start_menu_active:
+		return
+	if news_broadcast_active:
+		news_broadcast_sequence.process_frame(delta)
 		return
 	if intro_active:
 		intro_sequence.process_frame(delta)
@@ -2434,7 +2445,7 @@ func _maybe_queue_contamination_event(source: String) -> void:
 		return
 	if contamination_appearance_count >= CONTAMINATION_MAX_APPEARANCES:
 		return
-	if intro_active or ending_active or hidden_bunker_scene_active or is_room_transition:
+	if opening_active or ending_active or hidden_bunker_scene_active or is_room_transition:
 		return
 	if active_room_id != "" or is_dialogue_open or bezos_cinematic_active or ufo_abduction_active:
 		return
@@ -2447,7 +2458,7 @@ func _start_contamination_event(source: String) -> void:
 		return
 	if contamination_appearance_count >= CONTAMINATION_MAX_APPEARANCES:
 		return
-	if intro_active or ending_active or hidden_bunker_scene_active or is_room_transition:
+	if opening_active or ending_active or hidden_bunker_scene_active or is_room_transition:
 		return
 	if active_room_id != "" or is_dialogue_open or bezos_cinematic_active or ufo_abduction_active:
 		return
@@ -2551,7 +2562,7 @@ func _setup_administrative_hold() -> void:
 func _can_open_administrative_hold() -> bool:
 	return (
 		not start_menu_active
-		and not intro_active
+		and not opening_active
 		and not ending_active
 		and not is_room_transition
 		and not hidden_bunker_scene_active
@@ -2596,7 +2607,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	if price_stability_pinball:
 		price_stability_pinball.stop()
 	_close_start_menu()
-	_setup_intro_sequence()
+	_setup_news_broadcast_sequence()
 
 
 func _continue_saved_game() -> void:
@@ -2798,7 +2809,7 @@ func _track_safe_world_checkpoint() -> void:
 func _is_autosave_safe() -> bool:
 	return (
 		not start_menu_active
-		and not intro_active
+		and not opening_active
 		and not ending_active
 		and not is_dialogue_open
 		and not is_room_transition
@@ -2854,8 +2865,24 @@ func _write_save_checkpoint(force: bool = false) -> void:
 
 
 # ============================================================
-#  PLAYABLE ADMINISTRATIVE APPROACH
+#  OPENING BROADCAST + PLAYABLE ADMINISTRATIVE APPROACH
 # ============================================================
+
+func _setup_news_broadcast_sequence() -> void:
+	if news_broadcast_sequence and is_instance_valid(news_broadcast_sequence):
+		return
+	news_broadcast_sequence = NEWS_BROADCAST_SEQUENCE_SCRIPT.new()
+	news_broadcast_sequence.name = "NewsBroadcastSequence"
+	add_child(news_broadcast_sequence)
+	news_broadcast_sequence.finished.connect(_on_news_broadcast_finished)
+	news_broadcast_sequence.setup(self, player)
+
+
+func _on_news_broadcast_finished() -> void:
+	if news_broadcast_sequence and is_instance_valid(news_broadcast_sequence):
+		news_broadcast_sequence.queue_free()
+	news_broadcast_sequence = null
+	_setup_intro_sequence()
 
 func _setup_intro_sequence() -> void:
 	if intro_sequence and is_instance_valid(intro_sequence):
