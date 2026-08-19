@@ -36,6 +36,9 @@ var choice_index: int = 0
 var choice_container: VBoxContainer
 var choice_labels: Array = []
 var typewriter_bip: AudioStreamPlayer
+var sequence_bip: AudioStreamPlayer
+var sequence_bip_tween: Tween
+var active_sequence_voice := ""
 var ai_expression_paths: Dictionary
 var ai_expression_textures: Dictionary = {}
 var active_portrait_id: String = ""
@@ -114,6 +117,67 @@ func create_typewriter_bip() -> void:
 	stream.data = data
 	typewriter_bip.stream = stream
 	add_child(typewriter_bip)
+
+	sequence_bip = AudioStreamPlayer.new()
+	sequence_bip.name = "SequenceDialogueBip"
+	sequence_bip.volume_db = -18.0
+	sequence_bip.stream = stream
+	add_child(sequence_bip)
+
+
+func play_sequence_dialogue_bips(text: String, voice: String) -> void:
+	stop_sequence_dialogue_bips()
+	if sequence_bip == null or text.strip_edges().is_empty():
+		return
+
+	var profiles := {
+		"xi": {"pitch": 0.58, "interval": 0.052},
+		"deepsick": {"pitch": 0.92, "interval": 0.038},
+		"claudia": {"pitch": 1.16, "interval": 0.042},
+		"zelensky": {"pitch": 0.72, "interval": 0.055},
+		"death": {"pitch": 0.36, "interval": 0.075},
+		"contamination": {"pitch": 0.48, "interval": 0.068},
+	}
+	var voice_key := voice.to_lower()
+	var profile: Dictionary = profiles.get(voice_key, {"pitch": 0.82, "interval": 0.05})
+	var spoken_characters := text.replace(" ", "").replace("\n", "").length()
+	var pulse_count := clampi(int(ceil(float(spoken_characters) / 4.0)), 4, 30)
+	var base_pitch := float(profile["pitch"])
+	var interval := float(profile["interval"])
+	active_sequence_voice = voice_key
+	sequence_bip_tween = create_tween()
+	for pulse_index in range(pulse_count):
+		var pitch_variation := float((pulse_index % 5) - 2) * 0.025
+		sequence_bip_tween.tween_callback(
+			Callable(self, "_play_sequence_bip").bind(base_pitch + pitch_variation)
+		)
+		sequence_bip_tween.tween_interval(interval)
+	sequence_bip_tween.tween_callback(
+		Callable(self, "_finish_sequence_dialogue_bips").bind(voice_key)
+	)
+
+
+func stop_sequence_dialogue_bips() -> void:
+	if sequence_bip_tween and sequence_bip_tween.is_valid():
+		sequence_bip_tween.kill()
+	sequence_bip_tween = null
+	active_sequence_voice = ""
+	if sequence_bip:
+		sequence_bip.stop()
+
+
+func _play_sequence_bip(pitch: float) -> void:
+	if sequence_bip == null:
+		return
+	sequence_bip.pitch_scale = pitch
+	sequence_bip.play()
+
+
+func _finish_sequence_dialogue_bips(voice: String) -> void:
+	if active_sequence_voice != voice:
+		return
+	active_sequence_voice = ""
+	sequence_bip_tween = null
 
 
 # ============================================================

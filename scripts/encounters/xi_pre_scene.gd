@@ -1,5 +1,8 @@
 extends Node
 
+signal dialogue_audio_requested(text: String, voice: String)
+signal dialogue_audio_stopped
+
 const FRAME_SIZE := Vector2(1280.0, 720.0)
 const DEEPSICK_PORTRAIT_PATH := "res://assets/mockups/deepsick_state_ai_portrait_v1.png"
 const XI_PORTRAIT_PATH := "res://assets/mockups/xi_jinping_caricature.png"
@@ -119,6 +122,7 @@ func _finish_xi_pre_scene(xi_room: Node) -> void:
 	xi_pre_skip_requested = false
 	xi_pre_scene_seen = true
 	xi_pre_scene_active = false
+	dialogue_audio_stopped.emit()
 	if player and is_instance_valid(player):
 		player.velocity = Vector2.ZERO
 		player.set_physics_process(true)
@@ -399,6 +403,7 @@ func _xi_scene_add_message(channel: String, from_sender: String, text: String) -
 	message_label.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	_xi_set_active_speaker(speaker_key, channel)
 	_xi_update_claudia_portrait(speaker_key, text)
+	dialogue_audio_requested.emit(text, speaker_key)
 
 	var tw := create_tween()
 	tw.set_parallel(true)
