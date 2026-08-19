@@ -815,6 +815,9 @@ func _enter_room(room_id: String, spawn_marker: String) -> void:
 		return
 	active_room_id = room_id
 	var room = room_registry.get(room_id)
+	if room and room_manager.is_room_indoor(room_id) and player_camera:
+		player_camera.position = room.global_position - player.global_position
+		player_camera.reset_smoothing()
 	if room_id == "southern_annex" and dossier_manager.record_investigation(
 		"investigation:southern_annex",
 		"southern_annex",
@@ -830,6 +833,9 @@ func _enter_room(room_id: String, spawn_marker: String) -> void:
 func _exit_room(spawn_marker: String) -> void:
 	room_manager.exit_room(active_room_id, spawn_marker)
 	active_room_id = ""
+	if player_camera:
+		player_camera.position = Vector2.ZERO
+		player_camera.reset_smoothing()
 
 func _fade_transition(target_alpha: float, duration: float) -> void:
 	await room_manager.fade_transition(target_alpha, duration)
@@ -925,7 +931,19 @@ func _update_northern_wall_camera(delta: float) -> void:
 	if player_camera == null or player == null:
 		return
 	var target_offset := Vector2.ZERO
-	if active_room_id == "" and player.global_position.y < NORTHERN_WALL_FOCUS_BEGIN_Y:
+	if (
+		active_room_id != ""
+		and room_manager
+		and room_manager.is_room_indoor(active_room_id)
+		and room_registry.has(active_room_id)
+	):
+		var active_room = room_registry[active_room_id]
+		if active_room:
+			# Authored interiors read as complete satirical tableaux. Keep their
+			# camera on the room composition instead of following the citizen.
+			player_camera.position = active_room.global_position - player.global_position
+			return
+	elif active_room_id == "" and player.global_position.y < NORTHERN_WALL_FOCUS_BEGIN_Y:
 		var focus_amount := clampf(
 			(NORTHERN_WALL_FOCUS_BEGIN_Y - player.global_position.y)
 				/ (NORTHERN_WALL_FOCUS_BEGIN_Y - NORTHERN_WALL_FOCUS_FULL_Y),
@@ -2109,6 +2127,7 @@ func _show_bunker_caption(speaker: String, text: String) -> void:
 	name_label.text = speaker
 	text_label.text = text
 	text_label.scroll_to_line(0)
+	play_sequence_dialogue_bips(text, speaker.to_lower())
 
 	var border := Color(0.46, 0.5, 0.58) if speaker == "ZELENSKY" else Color(0.2, 0.22, 0.26)
 	if speaker == "CONTAMINATION":
@@ -2131,6 +2150,7 @@ func _show_bunker_caption(speaker: String, text: String) -> void:
 		tw.tween_property(dialogue_anchor, "offset_top", dialogue_rest_top, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _hide_bunker_caption() -> void:
+	stop_sequence_dialogue_bips()
 	if not dialogue_anchor or not dialogue_anchor.visible:
 		return
 	var tw := create_tween()
@@ -2333,6 +2353,18 @@ func _ensure_xi_pre_scene_encounter() -> void:
 	xi_pre_scene_encounter.name = "XiPreScene"
 	add_child(xi_pre_scene_encounter)
 	xi_pre_scene_encounter.setup(self, player, character_data_cache)
+	xi_pre_scene_encounter.dialogue_audio_requested.connect(play_sequence_dialogue_bips)
+	xi_pre_scene_encounter.dialogue_audio_stopped.connect(stop_sequence_dialogue_bips)
+
+
+func play_sequence_dialogue_bips(text: String, voice: String) -> void:
+	if dialogue_manager:
+		dialogue_manager.play_sequence_dialogue_bips(text, voice)
+
+
+func stop_sequence_dialogue_bips() -> void:
+	if dialogue_manager:
+		dialogue_manager.stop_sequence_dialogue_bips()
 
 func _start_xi_pre_scene() -> void:
 	_ensure_xi_pre_scene_encounter()

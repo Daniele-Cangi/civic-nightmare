@@ -599,6 +599,14 @@ func _run() -> void:
 		and terminal_mascot.texture.resource_path == CHARACTER_VISUAL_CATALOG.AI_TERMINAL_WORLD_EXPRESSION_PATHS["neutral"],
 		"overworld terminal returns to neutral after dialogue"
 	)
+	game.call("_show_bunker_caption", "DEATH", "Audio channel verification.")
+	await process_frame
+	var sequence_bip := dialogue_manager.get("sequence_bip") as AudioStreamPlayer
+	_check(sequence_bip != null and sequence_bip.stream != null, "cinematic dialogue owns an audible sequence channel")
+	_check(str(dialogue_manager.get("active_sequence_voice")) == "death", "Death's bunker caption selects its distinct low voice")
+	game.call("_hide_bunker_caption")
+	await create_timer(0.25).timeout
+	_check(str(dialogue_manager.get("active_sequence_voice")) == "", "closing a bunker caption stops its sequence voice")
 
 	var integration_choice := {
 		"text": "Tell him it was tremendous.",
@@ -621,6 +629,12 @@ func _run() -> void:
 	var office: Node = registry.get("oval_office")
 	_check(office != null, "Oval Office is registered")
 	if office and office.has_method("get_entity_container"):
+		game.call("_update_northern_wall_camera", 0.1)
+		_check(
+			overworld_camera != null
+			and overworld_camera.global_position.is_equal_approx(office.global_position),
+			"authored interiors keep the gameplay camera on the complete room composition"
+		)
 		_check(player.get_parent() == office.get_entity_container(), "player is reparented into the room")
 		var office_npc := office.get_node_or_null("Entities/DonaldTrumpInterior")
 		_check(office_npc != null, "Oval Office NPC is created")
@@ -632,6 +646,7 @@ func _run() -> void:
 	game.call("_exit_room", "oval_office_exterior")
 	await process_frame
 	_check(str(game.get("active_room_id")) == "", "room manager returns to the world")
+	_check(overworld_camera != null and overworld_camera.position.is_zero_approx(), "leaving an interior restores the player-follow camera")
 	var entities: Node = game.get("entities_layer")
 	_check(player.get_parent() == entities, "player is reparented into the world")
 
@@ -767,6 +782,10 @@ func _test_xi_intercept_presentation() -> void:
 	host.add_child(encounter)
 	encounter.call("setup", host, player, {})
 	encounter.set("xi_scene_total_messages", 3)
+	var requested_audio_voices: Array[String] = []
+	encounter.dialogue_audio_requested.connect(func(_text: String, voice: String) -> void:
+		requested_audio_voices.append(voice)
+	)
 	encounter.call("_build_xi_scene_overlay")
 	await process_frame
 
@@ -787,6 +806,7 @@ func _test_xi_intercept_presentation() -> void:
 	encounter.call("_xi_scene_add_message", "deepsick", "xi", "Test order")
 	encounter.call("_xi_scene_add_message", "claudia", "claudia", "Call it alignment. Everyone is doing it.")
 	await process_frame
+	_check(requested_audio_voices == ["xi", "claudia"], "Xi intercept requests a distinct audible voice for every active speaker")
 	var history_entries: Array = encounter.get("xi_scene_history_entries")
 	_check(history_entries.size() == 1, "Xi intercept moves only previous messages into its short signal buffer")
 	_check(claudia_card != null and claudia_card.modulate.is_equal_approx(Color.WHITE), "Xi intercept visually prioritizes the active speaker")
