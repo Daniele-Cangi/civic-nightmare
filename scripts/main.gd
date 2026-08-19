@@ -289,6 +289,8 @@ const NORTHERN_WALL_FOCUS_BEGIN_Y := -720.0
 const NORTHERN_WALL_FOCUS_FULL_Y := -900.0
 const NORTHERN_WALL_FOCUS_OFFSET_Y := -150.0
 const NORTHERN_WALL_FOCUS_SPEED := 520.0
+const INDOOR_CAMERA_VERTICAL_TRACK_RATIO := 0.48
+const INDOOR_CAMERA_MAX_VERTICAL_OFFSET := 80.0
 const SOUTHERN_ANNEX_GATE_TILE := Vector2i(0, 32)
 const SOUTHERN_ANNEX_WORLD_OFFSET := Vector2(4096.0, 0.0)
 const UFO_TILE := Vector2i(30, -6)
@@ -816,7 +818,7 @@ func _enter_room(room_id: String, spawn_marker: String) -> void:
 	active_room_id = room_id
 	var room = room_registry.get(room_id)
 	if room and room_manager.is_room_indoor(room_id) and player_camera:
-		player_camera.position = room.global_position - player.global_position
+		player_camera.position = _indoor_camera_offset(room)
 		player_camera.reset_smoothing()
 	if room_id == "southern_annex" and dossier_manager.record_investigation(
 		"investigation:southern_annex",
@@ -939,9 +941,10 @@ func _update_northern_wall_camera(delta: float) -> void:
 	):
 		var active_room = room_registry[active_room_id]
 		if active_room:
-			# Authored interiors read as complete satirical tableaux. Keep their
-			# camera on the room composition instead of following the citizen.
-			player_camera.position = active_room.global_position - player.global_position
+			# Keep the authored composition horizontally stable, but permit a
+			# restrained vertical track so the entrance remains visible while the
+			# citizen is using it.
+			player_camera.position = _indoor_camera_offset(active_room)
 			return
 	elif active_room_id == "" and player.global_position.y < NORTHERN_WALL_FOCUS_BEGIN_Y:
 		var focus_amount := clampf(
@@ -956,6 +959,17 @@ func _update_northern_wall_camera(delta: float) -> void:
 		target_offset,
 		NORTHERN_WALL_FOCUS_SPEED * maxf(delta, 0.0)
 	)
+
+
+func _indoor_camera_offset(room: Node2D) -> Vector2:
+	var player_room_y: float = player.global_position.y - room.global_position.y
+	var vertical_focus := clampf(
+		player_room_y * INDOOR_CAMERA_VERTICAL_TRACK_RATIO,
+		-INDOOR_CAMERA_MAX_VERTICAL_OFFSET,
+		INDOOR_CAMERA_MAX_VERTICAL_OFFSET
+	)
+	var focus_position: Vector2 = room.global_position + Vector2(0.0, vertical_focus)
+	return focus_position - player.global_position
 
 
 func _is_in_building_zone(x: int, y: int) -> bool:
