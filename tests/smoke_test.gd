@@ -632,8 +632,17 @@ func _run() -> void:
 		game.call("_update_northern_wall_camera", 0.1)
 		_check(
 			overworld_camera != null
+			and is_equal_approx(overworld_camera.global_position.x, office.global_position.x)
+			and overworld_camera.global_position.y > office.global_position.y
+			and overworld_camera.global_position.y <= office.global_position.y + 80.0,
+			"an authored interior tracks down within a strict limit to keep its entrance visible"
+		)
+		player.global_position = office.global_position
+		game.call("_update_northern_wall_camera", 0.1)
+		_check(
+			overworld_camera != null
 			and overworld_camera.global_position.is_equal_approx(office.global_position),
-			"authored interiors keep the gameplay camera on the complete room composition"
+			"approaching the authority returns the camera to the central room composition"
 		)
 		_check(player.get_parent() == office.get_entity_container(), "player is reparented into the room")
 		var office_npc := office.get_node_or_null("Entities/DonaldTrumpInterior")
