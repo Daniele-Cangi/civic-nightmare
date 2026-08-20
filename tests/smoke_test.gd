@@ -31,7 +31,7 @@ const PUTIN_OPERATION_ASSET_PATHS := [
 	"res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png",
 	"res://assets/encounters/putin_operation/mobilization_copier_v1.png",
 	"res://assets/encounters/putin_operation/state_television_camera_v1.png",
-	"res://assets/encounters/putin_operation/diplomatic_note_launcher_v1.png",
+	"res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png",
 ]
 const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
@@ -1210,7 +1210,11 @@ func _test_putin_special_operation() -> void:
 		_check(texture != null, "%s can be loaded" % asset_path)
 		if texture:
 			var image := texture.get_image()
-			_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s preserves a transparent runtime margin" % asset_path)
+			if asset_path.ends_with("diplomatic_note_launcher_centered_v2.png"):
+				var margin := image.get_pixel(0, 0) if image else Color.BLACK
+				_check(image != null and minf(margin.r, minf(margin.g, margin.b)) > 0.95, "%s preserves the neutral cutout margin" % asset_path)
+			else:
+				_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s preserves a transparent runtime margin" % asset_path)
 
 	var operation := PUTIN_SPECIAL_OPERATION_SCRIPT.new()
 	root.add_child(operation)
@@ -1229,6 +1233,9 @@ func _test_putin_special_operation() -> void:
 	var first_wave_counts: Dictionary = operation.get_enemy_counts()
 	_check(int(first_wave_counts.get("required", 0)) == 2 and int(first_wave_counts.get("cameras", 0)) == 1, "the opening wave separates required defenses from the optional state camera")
 	_check((operation.get("note_marks") as Array).size() == 6 and int(operation.get("notes_loaded")) == 6, "the Diplomatic Note Launcher exposes its six physical notes")
+	var centered_weapon := operation.get("weapon_rect") as TextureRect
+	_check(centered_weapon != null and is_equal_approx(centered_weapon.position.x + centered_weapon.size.x * 0.5, 640.0), "the Diplomatic Note Launcher is physically centered beneath the reticle")
+	_check(centered_weapon != null and centered_weapon.material is ShaderMaterial, "the centered launcher removes its generated neutral margin at runtime")
 	operation.set("player_yaw", PI * 0.5)
 	for note_index in range(6):
 		operation.call("_fire")
@@ -1270,6 +1277,33 @@ func _test_putin_special_operation() -> void:
 	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
 	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
 	operation.queue_free()
+
+	var fair_firefight := PUTIN_SPECIAL_OPERATION_SCRIPT.new()
+	root.add_child(fair_firefight)
+	fair_firefight.setup(root)
+	fair_firefight.start({"intro_duration": 0.0, "combat_enabled": true})
+	fair_firefight.process_frame(0.01)
+	var locked_origin := fair_firefight.get("player_position") as Vector3
+	_check(bool(fair_firefight.call("_begin_enemy_telegraph", 0)), "one enemy visibly reserves an attack lane")
+	var telegraphed_enemy: Dictionary = (fair_firefight.get("enemies") as Array)[0]
+	_check((telegraphed_enemy.get("locked_target") as Vector3).is_equal_approx(Vector3(locked_origin.x, 1.1, locked_origin.z)), "enemy fire locks the player's position before launching")
+	var dodge_position := locked_origin + Vector3(3.0, 0.0, 0.0)
+	fair_firefight.set("player_position", dodge_position)
+	_check(bool(fair_firefight.call("_release_enemy_projectile", 0)), "the warning lane becomes a physical administrative projectile")
+	_check(not bool(fair_firefight.call("_begin_enemy_telegraph", 1)), "only one enemy threat can be active at a time")
+	var integrity_before_dodge := int(fair_firefight.get("case_integrity"))
+	for projectile_step in range(100):
+		fair_firefight.call("_update_enemy_projectiles", 0.05)
+	_check(int(fair_firefight.get("case_integrity")) == integrity_before_dodge, "moving after the warning cleanly dodges non-tracking enemy fire")
+	_check(bool(fair_firefight.call("_segment_hits_cover", Vector3(-3.9, 1.1, 13.5), Vector3(-3.9, 1.1, 10.5), 0.25)), "ceremonial barriers physically intercept incoming forms")
+	_check(bool(fair_firefight.call("_position_hits_cover", Vector3(-3.9, 1.55, 12.0), 0.42)), "ceremonial barriers also block player traversal")
+	_check(bool(fair_firefight.call("_begin_enemy_telegraph", 0)), "an enemy may fire again only after the previous threat resolves")
+	_check(bool(fair_firefight.call("_release_enemy_projectile", 0)), "a stationary target receives the announced projectile")
+	for projectile_step in range(100):
+		fair_firefight.call("_update_enemy_projectiles", 0.05)
+	_check(int(fair_firefight.get("case_integrity")) == integrity_before_dodge - 1, "remaining in the announced lane costs exactly one case-integrity mark")
+	fair_firefight.stop()
+	fair_firefight.queue_free()
 
 
 func _test_ai_terminal_assets() -> void:

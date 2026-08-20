@@ -15,14 +15,36 @@ const SHOT_COOLDOWN := 0.24
 const NOTE_MAGAZINE_SIZE := 6
 const RELOAD_DURATION := 1.15
 const PLAYER_RADIUS := 0.42
+const PLAYER_HIT_RADIUS := 0.62
 const CORRIDOR_HALF_WIDTH := 5.55
 const START_POSITION := Vector3(0.0, 1.55, 2.0)
 const GATE_Z := [18.0, 38.0, 60.0]
+const COVER_POINTS := [
+	Vector3(-3.9, 0.55, 12.0),
+	Vector3(3.8, 0.55, 28.0),
+	Vector3(-3.7, 0.55, 47.0),
+	Vector3(3.7, 0.55, 53.0),
+]
+const COVER_HALF_SIZE := Vector2(0.625, 0.4)
+const MAX_ACTIVE_THREATS := 1
+const PROJECTILE_LIFETIME := 4.8
 
 const MATRYOSHKA_PATH := "res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png"
 const COPIER_PATH := "res://assets/encounters/putin_operation/mobilization_copier_v1.png"
 const CAMERA_PATH := "res://assets/encounters/putin_operation/state_television_camera_v1.png"
-const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_v1.png"
+const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png"
+const WEAPON_CUTOUT_SHADER := """
+shader_type canvas_item;
+
+void fragment() {
+	vec4 color = texture(TEXTURE, UV);
+	float neutral_range = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));
+	if (min(color.r, min(color.g, color.b)) > 0.90 && neutral_range < 0.035) {
+		color.a = 0.0;
+	}
+	COLOR = color;
+}
+"""
 
 enum State { INACTIVE, INTRO, ACTIVE, RETURNED, CLEARED }
 
@@ -77,7 +99,9 @@ var damage_taken := 0
 var cameras_destroyed := 0
 var matryoshka_splits := 0
 var enemies: Array[Dictionary] = []
+var enemy_projectiles: Array[Dictionary] = []
 var enemy_sequence := 0
+var projectile_sequence := 0
 var wave_spawned := [false, false, false]
 var gate_open := [false, false, false]
 var gate_nodes: Array[Node3D] = []
@@ -386,12 +410,9 @@ func _build_corridor() -> void:
 				medal_material
 			)
 
-	# Ceremonial cover that looks expensive but does not meaningfully protect anything.
+	# Ceremonial cover is finally useful: it blocks both the citizen and incoming forms.
 	var cover_material := _make_material(Color("#596056"), Color.TRANSPARENT)
-	for cover in [
-		Vector3(-3.9, 0.55, 12.0), Vector3(3.8, 0.55, 28.0),
-		Vector3(-3.7, 0.55, 47.0), Vector3(3.7, 0.55, 53.0),
-	]:
+	for cover in COVER_POINTS:
 		_add_box("CeremonialCover", Vector3(1.25, 1.1, 0.8), cover, cover_material)
 
 
@@ -704,8 +725,8 @@ func _create_hud() -> void:
 		crosshair_lines.append(line)
 
 	muzzle_flash = ColorRect.new()
-	muzzle_flash.position = Vector2(570, 340)
-	muzzle_flash.size = Vector2(140, 155)
+	muzzle_flash.position = Vector2(608, 350)
+	muzzle_flash.size = Vector2(64, 96)
 	muzzle_flash.color = Color(1.0, 0.76, 0.24, 0.0)
 	muzzle_flash.z_index = 36
 	frame.add_child(muzzle_flash)
@@ -719,6 +740,11 @@ func _create_hud() -> void:
 	weapon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if ResourceLoader.exists(WEAPON_PATH):
 		weapon_rect.texture = load(WEAPON_PATH)
+	var cutout_shader := Shader.new()
+	cutout_shader.code = WEAPON_CUTOUT_SHADER
+	var cutout_material := ShaderMaterial.new()
+	cutout_material.shader = cutout_shader
+	weapon_rect.material = cutout_material
 	weapon_rect.z_index = 37
 	frame.add_child(weapon_rect)
 
@@ -796,6 +822,7 @@ func _process_active_run(delta: float) -> void:
 	_process_player_input(delta)
 	_update_wave_triggers()
 	_update_enemies(delta)
+	_update_enemy_projectiles(delta)
 	_update_gate_progress()
 	_update_camera()
 	if gate_open[2] and player_position.z >= 61.2:
@@ -831,6 +858,7 @@ func _process_player_input(delta: float) -> void:
 
 
 func _try_move(motion: Vector3) -> void:
+	var previous := player_position
 	var candidate := player_position + motion
 	candidate.x = clampf(candidate.x, -CORRIDOR_HALF_WIDTH + PLAYER_RADIUS, CORRIDOR_HALF_WIDTH - PLAYER_RADIUS)
 	candidate.z = clampf(candidate.z, 1.0, 62.5)
@@ -842,6 +870,15 @@ func _try_move(motion: Vector3) -> void:
 			candidate.z = gate_z - 0.64
 		elif player_position.z > gate_z and candidate.z <= gate_z + 0.62:
 			candidate.z = gate_z + 0.64
+	if _position_hits_cover(candidate, PLAYER_RADIUS):
+		var slide_x := Vector3(candidate.x, candidate.y, previous.z)
+		var slide_z := Vector3(previous.x, candidate.y, candidate.z)
+		if not _position_hits_cover(slide_x, PLAYER_RADIUS):
+			candidate = slide_x
+		elif not _position_hits_cover(slide_z, PLAYER_RADIUS):
+			candidate = slide_z
+		else:
+			candidate = previous
 	player_position = candidate
 
 
@@ -959,7 +996,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 	var hp := 2
 	var speed := 0.72
 	var attack_range := 7.2
-	var attack_interval := 1.65
+	var attack_interval := 2.9
+	var attack_windup := 0.8
+	var projectile_speed := 4.7
+	var projectile_radius := 0.38
 	var target_radius := 0.92
 	var sprite_height := 2.55
 	match enemy_type:
@@ -968,7 +1008,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 			hp = 3
 			speed = 0.58
 			attack_range = 6.1
-			attack_interval = 1.9
+			attack_interval = 3.2
+			attack_windup = 0.95
+			projectile_speed = 4.2
+			projectile_radius = 0.44
 			target_radius = 1.02
 			sprite_height = 2.95
 		"matryoshka_small":
@@ -976,7 +1019,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 			hp = 1
 			speed = 1.12
 			attack_range = 4.8
-			attack_interval = 1.45
+			attack_interval = 3.0
+			attack_windup = 0.75
+			projectile_speed = 4.5
+			projectile_radius = 0.32
 			target_radius = 0.62
 			sprite_height = 1.72
 		"state_camera":
@@ -984,7 +1030,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 			hp = 2
 			speed = 0.24
 			attack_range = 12.5
-			attack_interval = 2.25
+			attack_interval = 3.5
+			attack_windup = 1.1
+			projectile_speed = 3.6
+			projectile_radius = 0.58
 			target_radius = 0.88
 			sprite_height = 2.72
 
@@ -1009,7 +1058,14 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 		"speed": speed,
 		"attack_range": attack_range,
 		"attack_interval": attack_interval,
-		"attack_timer": 0.65 + float(enemy_sequence % 4) * 0.22,
+		"attack_windup": attack_windup,
+		"projectile_speed": projectile_speed,
+		"projectile_radius": projectile_radius,
+		"attack_timer": 1.4 + float(enemy_sequence % 4) * 0.2,
+		"attack_state": "idle",
+		"telegraph_timer": 0.0,
+		"locked_target": START_POSITION,
+		"telegraph_node": null,
 		"target_radius": target_radius,
 		"wave": wave_index,
 		"blocks_gate": blocks_gate,
@@ -1036,6 +1092,17 @@ func _update_enemies(delta: float) -> void:
 		var sprite := enemy.get("node") as Sprite3D
 		if not sprite:
 			continue
+		if str(enemy.get("attack_state", "idle")) == "telegraph":
+			enemy["telegraph_timer"] = maxf(0.0, float(enemy.get("telegraph_timer", 0.0)) - delta)
+			var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+			if telegraph and is_instance_valid(telegraph):
+				var pulse := 0.78 + 0.22 * absf(sin(elapsed * 16.0))
+				telegraph.scale.x = pulse
+			sprite.modulate = Color("#ffb0a1") if int(elapsed * 12.0) % 2 == 0 else Color.WHITE
+			enemies[index] = enemy
+			if float(enemy.get("telegraph_timer", 0.0)) <= 0.0:
+				_release_enemy_projectile(index)
+			continue
 		var position := enemy.get("position", Vector3.ZERO) as Vector3
 		var to_player := Vector3(player_position.x - position.x, 0.0, player_position.z - position.z)
 		var distance := to_player.length()
@@ -1054,10 +1121,229 @@ func _update_enemies(delta: float) -> void:
 		sprite.position = Vector3(position.x, float(enemy.get("base_y", 1.3)) + bob, position.z)
 		if float(enemy.get("hit_flash", 0.0)) <= 0.0:
 			sprite.modulate = Color.WHITE
-		if distance <= float(enemy.get("attack_range", 7.0)) and float(enemy.get("attack_timer", 0.0)) <= 0.0:
-			enemy["attack_timer"] = float(enemy.get("attack_interval", 1.7))
-			_enemy_attack(str(enemy.get("type", "")))
 		enemies[index] = enemy
+		if (
+			distance <= float(enemy.get("attack_range", 7.0))
+			and float(enemy.get("attack_timer", 0.0)) <= 0.0
+			and _active_threat_count() < MAX_ACTIVE_THREATS
+		):
+			_begin_enemy_telegraph(index)
+
+
+func _begin_enemy_telegraph(index: int) -> bool:
+	if index < 0 or index >= enemies.size() or state != State.ACTIVE:
+		return false
+	if _active_threat_count() >= MAX_ACTIVE_THREATS:
+		return false
+	var enemy: Dictionary = enemies[index]
+	if not bool(enemy.get("alive", false)) or str(enemy.get("attack_state", "idle")) != "idle":
+		return false
+	var locked_target := Vector3(player_position.x, 1.1, player_position.z)
+	var position := enemy.get("position", Vector3.ZERO) as Vector3
+	var telegraph := _create_warning_lane(position, locked_target, str(enemy.get("type", "")))
+	enemy["attack_state"] = "telegraph"
+	enemy["telegraph_timer"] = float(enemy.get("attack_windup", 0.9))
+	enemy["locked_target"] = locked_target
+	enemy["telegraph_node"] = telegraph
+	enemies[index] = enemy
+	return true
+
+
+func _create_warning_lane(start: Vector3, target: Vector3, enemy_type: String) -> MeshInstance3D:
+	var delta := Vector3(target.x - start.x, 0.0, target.z - start.z)
+	var full_distance := maxf(delta.length(), 0.1)
+	var direction := delta / full_distance
+	var visible_target := target - direction * minf(1.85, full_distance * 0.45)
+	var visible_delta := Vector3(visible_target.x - start.x, 0.0, visible_target.z - start.z)
+	var distance := maxf(visible_delta.length(), 0.1)
+	var width := 0.16
+	var color := Color("#f04c35")
+	if enemy_type == "state_camera":
+		width = 0.55
+		color = Color("#29c8df")
+	elif enemy_type == "mobilization_copier":
+		width = 0.22
+		color = Color("#d7ad37")
+	var material := _make_material(color.darkened(0.45), color)
+	var lane := _add_box("IncomingAdministrativeLane", Vector3(width, 0.045, distance), Vector3.ZERO, material)
+	lane.position = Vector3((start.x + visible_target.x) * 0.5, 0.075, (start.z + visible_target.z) * 0.5)
+	lane.rotation.y = atan2(visible_delta.x, visible_delta.z)
+	return lane
+
+
+func _release_enemy_projectile(index: int) -> bool:
+	if index < 0 or index >= enemies.size():
+		return false
+	var enemy: Dictionary = enemies[index]
+	if not bool(enemy.get("alive", false)) or str(enemy.get("attack_state", "idle")) != "telegraph":
+		return false
+	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+	if telegraph and is_instance_valid(telegraph):
+		telegraph.queue_free()
+	enemy["telegraph_node"] = null
+	enemy["attack_state"] = "idle"
+	enemy["attack_timer"] = float(enemy.get("attack_interval", 3.0))
+	var start_source := enemy.get("position", Vector3.ZERO) as Vector3
+	var start := Vector3(start_source.x, 1.12, start_source.z)
+	var target := enemy.get("locked_target", player_position) as Vector3
+	var flat_direction := Vector3(target.x - start.x, 0.0, target.z - start.z)
+	if flat_direction.length_squared() <= 0.001:
+		flat_direction = Vector3(0.0, 0.0, -1.0)
+	flat_direction = flat_direction.normalized()
+	var enemy_type := str(enemy.get("type", ""))
+	var visual := _create_enemy_projectile_visual(enemy_type)
+	visual.position = start
+	projectile_sequence += 1
+	enemy_projectiles.append({
+		"id": "incoming_form_%02d" % projectile_sequence,
+		"type": enemy_type,
+		"node": visual,
+		"position": start,
+		"velocity": flat_direction * float(enemy.get("projectile_speed", 4.2)),
+		"radius": float(enemy.get("projectile_radius", 0.4)),
+		"lifetime": PROJECTILE_LIFETIME,
+	})
+	var sprite := enemy.get("node") as Sprite3D
+	if sprite:
+		sprite.modulate = Color.WHITE
+	enemies[index] = enemy
+	return true
+
+
+func _create_enemy_projectile_visual(enemy_type: String) -> Node3D:
+	var visual := Node3D.new()
+	visual.name = "IncomingAdministrativeMaterial"
+	world_root.add_child(visual)
+	match enemy_type:
+		"mobilization_copier":
+			var paper := _make_material(Color("#ded4b4"), Color("#766e52"))
+			var urgent := _make_material(Color("#9d2020"), Color("#ff3434"))
+			_add_box_to(visual, "CompulsoryForm", Vector3(0.68, 0.10, 0.46), Vector3.ZERO, paper)
+			_add_box_to(visual, "UrgentMargin", Vector3(0.70, 0.05, 0.10), Vector3(0.0, 0.08, 0.12), urgent)
+		"state_camera":
+			var scan := _make_material(Color("#176d7c"), Color("#35e2f6"))
+			var lens := _make_material(Color("#22282b"), Color("#d5fbff"))
+			_add_box_to(visual, "MandatoryBroadcast", Vector3(1.18, 0.18, 0.22), Vector3.ZERO, scan)
+			_add_box_to(visual, "ApprovedLens", Vector3(0.26, 0.23, 0.25), Vector3(0.0, 0.0, -0.02), lens)
+		_:
+			var seal_mesh := SphereMesh.new()
+			seal_mesh.radius = 0.27 if enemy_type == "matryoshka" else 0.21
+			seal_mesh.height = seal_mesh.radius * 2.0
+			var seal := MeshInstance3D.new()
+			seal.name = "PreApprovedSeal"
+			seal.mesh = seal_mesh
+			seal.material_override = _make_material(Color("#8d1718"), Color("#ff3038"))
+			visual.add_child(seal)
+	return visual
+
+
+func _update_enemy_projectiles(delta: float) -> void:
+	if not combat_enabled:
+		return
+	for index in range(enemy_projectiles.size() - 1, -1, -1):
+		var projectile: Dictionary = enemy_projectiles[index]
+		var previous := projectile.get("position", Vector3.ZERO) as Vector3
+		var velocity := projectile.get("velocity", Vector3.ZERO) as Vector3
+		var next_position := previous + velocity * delta
+		projectile["position"] = next_position
+		projectile["lifetime"] = float(projectile.get("lifetime", 0.0)) - delta
+		var visual := projectile.get("node") as Node3D
+		if visual and is_instance_valid(visual):
+			visual.position = next_position
+			if str(projectile.get("type", "")) != "state_camera":
+				visual.rotation.z += delta * 3.4
+		var radius := float(projectile.get("radius", 0.4))
+		if _segment_hits_cover(previous, next_position, radius):
+			_remove_enemy_projectile(index)
+			continue
+		if _segment_distance_xz(previous, next_position, player_position) <= PLAYER_HIT_RADIUS + radius:
+			_enemy_attack(str(projectile.get("type", "")))
+			_remove_enemy_projectile(index)
+			continue
+		if float(projectile.get("lifetime", 0.0)) <= 0.0:
+			_remove_enemy_projectile(index)
+			continue
+		enemy_projectiles[index] = projectile
+
+
+func _active_threat_count() -> int:
+	var count := enemy_projectiles.size()
+	for enemy in enemies:
+		if bool(enemy.get("alive", false)) and str(enemy.get("attack_state", "idle")) == "telegraph":
+			count += 1
+	return count
+
+
+func _position_hits_cover(position: Vector3, clearance: float = 0.0) -> bool:
+	for cover in COVER_POINTS:
+		if (
+			absf(position.x - cover.x) <= COVER_HALF_SIZE.x + clearance
+			and absf(position.z - cover.z) <= COVER_HALF_SIZE.y + clearance
+		):
+			return true
+	return false
+
+
+func _segment_hits_cover(start: Vector3, finish: Vector3, radius: float) -> bool:
+	for cover in COVER_POINTS:
+		var half_size := COVER_HALF_SIZE + Vector2(radius, radius)
+		if _segment_intersects_rect_xz(start, finish, cover, half_size):
+			return true
+	return false
+
+
+func _segment_intersects_rect_xz(start: Vector3, finish: Vector3, center: Vector3, half_size: Vector2) -> bool:
+	var delta := finish - start
+	var t_min := 0.0
+	var t_max := 1.0
+	var min_x := center.x - half_size.x
+	var max_x := center.x + half_size.x
+	if absf(delta.x) < 0.0001:
+		if start.x < min_x or start.x > max_x:
+			return false
+	else:
+		var tx1 := (min_x - start.x) / delta.x
+		var tx2 := (max_x - start.x) / delta.x
+		if tx1 > tx2:
+			var swap_x := tx1
+			tx1 = tx2
+			tx2 = swap_x
+		t_min = maxf(t_min, tx1)
+		t_max = minf(t_max, tx2)
+		if t_min > t_max:
+			return false
+	var min_z := center.z - half_size.y
+	var max_z := center.z + half_size.y
+	if absf(delta.z) < 0.0001:
+		return start.z >= min_z and start.z <= max_z
+	var tz1 := (min_z - start.z) / delta.z
+	var tz2 := (max_z - start.z) / delta.z
+	if tz1 > tz2:
+		var swap_z := tz1
+		tz1 = tz2
+		tz2 = swap_z
+	t_min = maxf(t_min, tz1)
+	t_max = minf(t_max, tz2)
+	return t_min <= t_max
+
+
+func _segment_distance_xz(start: Vector3, finish: Vector3, point: Vector3) -> float:
+	var segment := Vector2(finish.x - start.x, finish.z - start.z)
+	var to_point := Vector2(point.x - start.x, point.z - start.z)
+	var length_squared := segment.length_squared()
+	if length_squared <= 0.0001:
+		return to_point.length()
+	var amount := clampf(to_point.dot(segment) / length_squared, 0.0, 1.0)
+	return (to_point - segment * amount).length()
+
+
+func _remove_enemy_projectile(index: int) -> void:
+	if index < 0 or index >= enemy_projectiles.size():
+		return
+	var visual := enemy_projectiles[index].get("node") as Node3D
+	if visual and is_instance_valid(visual):
+		visual.queue_free()
+	enemy_projectiles.remove_at(index)
 
 
 func _enemy_attack(enemy_type: String) -> void:
@@ -1065,7 +1351,7 @@ func _enemy_attack(enemy_type: String) -> void:
 		return
 	case_integrity -= 1
 	damage_taken += 1
-	invulnerability_remaining = 0.72
+	invulnerability_remaining = 1.05
 	damage_flash.color = Color(0.85, 0.04, 0.02, 0.62)
 	if enemy_type == "state_camera":
 		damage_flash.color = Color(0.04, 0.67, 0.76, 0.46)
@@ -1082,6 +1368,11 @@ func _destroy_enemy(index: int) -> void:
 	var enemy: Dictionary = enemies[index]
 	if not bool(enemy.get("alive", false)):
 		return
+	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+	if telegraph and is_instance_valid(telegraph):
+		telegraph.queue_free()
+	enemy["telegraph_node"] = null
+	enemy["attack_state"] = "idle"
 	enemy["alive"] = false
 	enemies[index] = enemy
 	var sprite := enemy.get("node") as Sprite3D
@@ -1145,6 +1436,8 @@ func _open_final_defense() -> void:
 func _begin_returned() -> void:
 	state = State.RETURNED
 	state_timer = 0.0
+	_clear_enemy_projectiles()
+	_clear_enemy_telegraphs()
 	status_label.text = "OPERATION RESTARTED ACCORDING TO PLAN"
 	fire_label.text = ""
 
@@ -1152,6 +1445,8 @@ func _begin_returned() -> void:
 func _begin_cleared() -> void:
 	state = State.CLEARED
 	state_timer = 0.0
+	_clear_enemy_projectiles()
+	_clear_enemy_telegraphs()
 	status_label.text = "SPECIAL OPERATION COMPLETED"
 	fire_label.text = "EVERYTHING PROCEEDED ACCORDING TO PLAN"
 	success_audio.play()
@@ -1206,8 +1501,18 @@ func _update_overlay_motion() -> void:
 		muzzle_flash.color.a = move_toward(muzzle_flash.color.a, 0.0, 0.18)
 	if damage_flash:
 		damage_flash.color.a = move_toward(damage_flash.color.a, 0.0, 0.035)
+	var incoming_warning := false
+	for enemy in enemies:
+		if bool(enemy.get("alive", false)) and str(enemy.get("attack_state", "idle")) == "telegraph":
+			incoming_warning = true
+			break
 	for line in crosshair_lines:
-		line.color = Color("#ffdc63") if crosshair_hit_timer > 0.0 else Color("#f1e6c9")
+		if crosshair_hit_timer > 0.0:
+			line.color = Color("#ffdc63")
+		elif incoming_warning:
+			line.color = Color("#ff3b32") if int(elapsed * 12.0) % 2 == 0 else Color("#f1e6c9")
+		else:
+			line.color = Color("#f1e6c9")
 	var title_jitter := sin(elapsed * 17.0) * 1.4
 	if title_echo_red:
 		title_echo_red.position = Vector2(32 + title_jitter, 12)
@@ -1270,11 +1575,35 @@ func _forward_vector() -> Vector3:
 
 func _clear_enemies() -> void:
 	for enemy in enemies:
+		var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+		if telegraph and is_instance_valid(telegraph):
+			telegraph.queue_free()
 		var sprite := enemy.get("node") as Sprite3D
 		if sprite and is_instance_valid(sprite):
 			sprite.queue_free()
 	enemies.clear()
 	enemy_sequence = 0
+	_clear_enemy_projectiles()
+
+
+func _clear_enemy_telegraphs() -> void:
+	for index in range(enemies.size()):
+		var enemy: Dictionary = enemies[index]
+		var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+		if telegraph and is_instance_valid(telegraph):
+			telegraph.queue_free()
+		enemy["telegraph_node"] = null
+		enemy["attack_state"] = "idle"
+		enemies[index] = enemy
+
+
+func _clear_enemy_projectiles() -> void:
+	for projectile in enemy_projectiles:
+		var visual := projectile.get("node") as Node3D
+		if visual and is_instance_valid(visual):
+			visual.queue_free()
+	enemy_projectiles.clear()
+	projectile_sequence = 0
 
 
 func _add_box(name_value: String, size_value: Vector3, position_value: Vector3, material: Material) -> MeshInstance3D:
