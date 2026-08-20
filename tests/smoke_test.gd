@@ -10,6 +10,7 @@ const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_a
 const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
+const PUTIN_SPECIAL_OPERATION_SCRIPT = preload("res://scripts/encounters/putin_special_operation.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 const NEWS_BROADCAST_SEQUENCE_SCRIPT = preload("res://scripts/sequences/news_broadcast_sequence.gd")
 
@@ -26,6 +27,12 @@ const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corri
 const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
 const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
 const PRICE_STABILITY_PINBALL_BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
+const PUTIN_OPERATION_ASSET_PATHS := [
+	"res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png",
+	"res://assets/encounters/putin_operation/mobilization_copier_v1.png",
+	"res://assets/encounters/putin_operation/state_television_camera_v1.png",
+	"res://assets/encounters/putin_operation/diplomatic_note_launcher_v1.png",
+]
 const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
 const AUTHORED_INTERIOR_PATHS := {
 	"oval_office": "res://assets/interiors/oval_office_broadcast_machine_v1.png",
@@ -63,6 +70,7 @@ func _run() -> void:
 	_test_greatest_deal()
 	_test_consensus_engine()
 	_test_price_stability_pinball()
+	_test_putin_special_operation()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -101,6 +109,7 @@ func _run() -> void:
 	var greatest_deal: Node = game.get("greatest_deal")
 	var consensus_engine: Node = game.get("consensus_engine")
 	var price_stability_pinball: Node = game.get("price_stability_pinball")
+	var putin_special_operation: Node = game.get("putin_special_operation")
 	var contamination_root: Node = game.get("contamination_root")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
@@ -159,12 +168,15 @@ func _run() -> void:
 	_check(greatest_deal != null and greatest_deal.get("layer") != null, "Trump's entrance owns the Greatest Deal procedure")
 	_check(consensus_engine != null and consensus_engine.get("layer") != null, "Ursula's entrance owns the Consensus Engine procedure")
 	_check(price_stability_pinball != null and price_stability_pinball.get("layer") != null, "Lagarde's entrance owns the Price Stability procedure")
+	_check(putin_special_operation != null and putin_special_operation.get("layer") != null, "Putin's entrance owns the Special Administrative Operation")
 	var trump_access_lines: Array = game.call("_authority_access_intro_lines", "donald_trump")
 	var ursula_access_lines: Array = game.call("_authority_access_intro_lines", "ursula_von_der_leyen")
 	var lagarde_access_lines: Array = game.call("_authority_access_intro_lines", "christine_lagarde")
+	var putin_access_lines: Array = game.call("_authority_access_intro_lines", "vladimir_putin")
 	_check(trump_access_lines.size() == 1 and str(trump_access_lines[0]).contains("reserve the right to have won"), "Trump introduces his game with one character-specific card")
 	_check(ursula_access_lines.size() == 1 and str(ursula_access_lines[0]).contains("same form"), "Ursula introduces her game with one character-specific card")
 	_check(lagarde_access_lines.size() == 1 and str(lagarde_access_lines[0]).contains("stabilize the economy"), "Lagarde introduces her game with one character-specific card")
+	_check(putin_access_lines.size() == 1 and str(putin_access_lines[0]).contains("defensive perimeter"), "Putin introduces his corridor with one character-specific card")
 	game.call("_start_greatest_deal")
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "greatest_deal", "Trump's entrance opens the card before the table")
 	_check(not bool(greatest_deal.get("active")) and str(dialogue_manager.get("current_character_id")) == "donald_trump", "Trump's game waits behind his portrait card")
@@ -186,6 +198,13 @@ func _run() -> void:
 	await create_timer(0.3).timeout
 	_check(bool(price_stability_pinball.get("active")), "closing Lagarde's card launches the monetary pinball")
 	price_stability_pinball.stop()
+	game.call("_start_putin_special_operation")
+	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "putin_special_operation", "Putin's entrance opens the card before the defensive corridor")
+	_check(not bool(putin_special_operation.get("active")) and str(dialogue_manager.get("current_character_id")) == "vladimir_putin", "Putin's operation waits behind his portrait card")
+	game.call("_finish_dialogue")
+	await create_timer(0.3).timeout
+	_check(bool(putin_special_operation.get("active")), "closing Putin's card launches the pseudo-3D operation")
+	putin_special_operation.stop()
 	var authored_obstacles := {
 		"oval_office": ["ExecutiveBroadcastDesk", "WestCameraNorth", "EastCameraNorth", "WestCameraSouth", "EastCameraSouth", "WestProductionWall", "EastProductionWall"],
 		"spaceship": ["PrototypeCommandConsole", "TestRocket", "PrototypeTable", "UnfinishedTunnel", "HalfInstalledGlass"],
@@ -712,6 +731,7 @@ func _run() -> void:
 	resume_snapshot["story"]["trump_deal_complete"] = true
 	resume_snapshot["story"]["ursula_consensus_complete"] = true
 	resume_snapshot["story"]["lagarde_price_stability_complete"] = true
+	resume_snapshot["story"]["putin_special_operation_complete"] = true
 	resume_snapshot["world"]["safe_position"] = [160.0, 224.0]
 	resume_snapshot["quest"]["quest_index"] = 2
 	resume_snapshot["quest"]["quest_completed"] = {
@@ -728,15 +748,18 @@ func _run() -> void:
 	_check(bool(game.get("trump_deal_complete")), "Continue preserves Greatest Deal access clearance")
 	_check(bool(game.get("ursula_consensus_complete")), "Continue preserves Consensus Engine access clearance")
 	_check(bool(game.get("lagarde_price_stability_complete")), "Continue preserves Price Stability access clearance")
+	_check(bool(game.get("putin_special_operation_complete")), "Continue preserves Putin access clearance without resuming the operation")
 	var legacy_access_snapshot := resume_snapshot.duplicate(true)
 	legacy_access_snapshot["story"].erase("trump_deal_complete")
 	legacy_access_snapshot["story"].erase("ursula_consensus_complete")
 	legacy_access_snapshot["story"].erase("lagarde_price_stability_complete")
+	legacy_access_snapshot["story"].erase("putin_special_operation_complete")
 	legacy_access_snapshot["quest"]["quest_completed"]["ursula_von_der_leyen"] = true
 	legacy_access_snapshot["quest"]["quest_completed"]["christine_lagarde"] = true
+	legacy_access_snapshot["quest"]["quest_completed"]["vladimir_putin"] = true
 	game.call("_apply_save_snapshot", legacy_access_snapshot)
 	await process_frame
-	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")) and bool(game.get("lagarde_price_stability_complete")), "older dossiers infer access clearance from signatures already obtained")
+	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")) and bool(game.get("lagarde_price_stability_complete")) and bool(game.get("putin_special_operation_complete")), "older dossiers infer access clearance from signatures already obtained")
 	if hidden_bunker:
 		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
@@ -1178,6 +1201,64 @@ func _test_price_stability_pinball() -> void:
 	stabilized_pinball.queue_free()
 
 
+func _test_putin_special_operation() -> void:
+	for asset_path in PUTIN_OPERATION_ASSET_PATHS:
+		_check(ResourceLoader.exists(asset_path), "%s exists" % asset_path)
+		if not ResourceLoader.exists(asset_path):
+			continue
+		var texture := load(asset_path) as Texture2D
+		_check(texture != null, "%s can be loaded" % asset_path)
+		if texture:
+			var image := texture.get_image()
+			_check(image != null and image.get_pixel(0, 0).a < 0.05, "%s preserves a transparent runtime margin" % asset_path)
+
+	var operation := PUTIN_SPECIAL_OPERATION_SCRIPT.new()
+	root.add_child(operation)
+	operation.setup(root)
+	operation.start({
+		"intro_duration": 0.0,
+		"outro_duration": 0.0,
+		"combat_enabled": false,
+	})
+	operation.process_frame(0.01)
+	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
+	var first_wave_counts: Dictionary = operation.get_enemy_counts()
+	_check(int(first_wave_counts.get("required", 0)) == 2 and int(first_wave_counts.get("cameras", 0)) == 1, "the opening wave separates required defenses from the optional state camera")
+
+	for wave_index in range(3):
+		for cleanup_pass in range(6):
+			var enemy_snapshot: Array = (operation.get("enemies") as Array).duplicate()
+			for enemy in enemy_snapshot:
+				if not bool(enemy.get("alive", false)) or int(enemy.get("wave", -1)) != wave_index or not bool(enemy.get("blocks_gate", false)):
+					continue
+				var enemy_id := str(enemy.get("id", ""))
+				for hit_index in range(4):
+					operation.register_enemy_hit(enemy_id)
+		operation.process_frame(0.01)
+		if wave_index < 2:
+			_check(bool((operation.get("gate_open") as Array)[wave_index]), "required wave %d opens its continuity gate" % (wave_index + 1))
+			var next_position := operation.get("player_position") as Vector3
+			next_position.z = 21.0 if wave_index == 0 else 41.0
+			operation.set("player_position", next_position)
+			operation.process_frame(0.01)
+
+	_check(bool(operation.get("final_seals_active")), "the final wave exposes the three physical Potemkin seals")
+	_check(int(operation.get("matryoshka_splits")) == 3, "each mandatory armored matryoshka splits into smaller security units")
+	for seal_index in range(3):
+		_check(operation.register_seal_hit(seal_index), "seal %d accepts the first diplomatic note" % (seal_index + 1))
+		_check(operation.register_seal_hit(seal_index), "seal %d accepts the second diplomatic note" % (seal_index + 1))
+	_check(bool((operation.get("gate_open") as Array)[2]), "destroying all three seals collapses the Potemkin defense")
+	var exit_position := operation.get("player_position") as Vector3
+	exit_position.z = 61.4
+	operation.set("player_position", exit_position)
+	operation.process_frame(0.01)
+	operation.process_frame(0.01)
+	var operation_result: Dictionary = operation.get_result()
+	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
+	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
+	operation.queue_free()
+
+
 func _test_ai_terminal_assets() -> void:
 	var portrait_path: String = CHARACTER_VISUAL_CATALOG.PORTRAIT_PATHS["ai_terminal"]
 	var sprite_path := "res://assets/mockups/ai_terminal_sprite_v2.png"
@@ -1395,6 +1476,18 @@ func _test_dossier_manager_round_trip() -> void:
 	var corridor_activity: Array = corridor_only.get_pause_summary("recorded_activity").get("lines", [])
 	_check(not corridor_activity.is_empty() and str(corridor_activity[0]).contains("incoming ordnance"), "Administrative Hold interprets corridor evidence without exposing a score")
 	_check(str(corridor_only.claim_claudia_observation().get("id", "")) == "claudia_bunker_access_corridor", "bunker access evidence creates a sparse CLAUDIA callback")
+	var putin_operation_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(putin_operation_only)
+	putin_operation_only.record_contest(
+		"contest:putin_special_operation",
+		"kremlin_access",
+		"official-reality-suppressed",
+		"Defensive corridor crossed.",
+		{"cameras_destroyed": 2, "shots_fired": 17}
+	)
+	var putin_activity: Array = putin_operation_only.get_pause_summary("recorded_activity").get("lines", [])
+	_check(not putin_activity.is_empty() and str(putin_activity[0]).contains("2 broadcast assets"), "Administrative Hold interprets the operation without exposing combat statistics")
+	_check(str(putin_operation_only.claim_claudia_observation().get("id", "")) == "claudia_putin_special_operation", "the defensive corridor creates a sparse CLAUDIA callback")
 
 	var expected_classification: String = manager.derive_classification()
 	var snapshot: Dictionary = manager.get_save_data()

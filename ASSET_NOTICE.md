@@ -60,6 +60,19 @@ OpenAI built-in image generation and promoted without third-party source art:
 The sequence adds its road motion, signs, hazards, privilege lane, toll logic,
 receipt, scanner, failed barrier, smoke, damage and display layers in code.
 
+The short Putin access operation uses four original transparent runtime assets
+generated with OpenAI built-in image generation, then locally alpha-cropped and
+downscaled without third-party source art:
+
+- `assets/encounters/putin_operation/matryoshka_security_unit_v1.png`;
+- `assets/encounters/putin_operation/mobilization_copier_v1.png`;
+- `assets/encounters/putin_operation/state_television_camera_v1.png`;
+- `assets/encounters/putin_operation/diplomatic_note_launcher_v1.png`.
+
+They were art-directed as original modern pixel-art billboards for Civic
+Nightmare's pseudo-3D bureaucratic corridor. The corridor, attacks, splitting
+behaviour, final Potemkin defense, lighting and HUD are constructed at runtime.
+
 ## Original project music
 
 `assets/audio/civic_nightmare_opening_drive.ogg` is **Coastline Dash**, an

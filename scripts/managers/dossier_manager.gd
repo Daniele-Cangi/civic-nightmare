@@ -620,6 +620,18 @@ func claim_claudia_observation() -> Dictionary:
 				"The system recorded both as transfer traffic. It considers the distinction emotional.",
 			],
 		})
+	if _has_event("contest:putin_special_operation"):
+		var putin_operation := _event_with_id("contest:putin_special_operation")
+		var putin_metadata: Dictionary = putin_operation.get("metadata", {})
+		var cameras_destroyed := int(putin_metadata.get("cameras_destroyed", 0))
+		candidates.append({
+			"id": "claudia_putin_special_operation",
+			"tone": "sad" if cameras_destroyed == 0 else "exalted",
+			"lines": [
+				"You entered a defensive residence through an offensive corridor.",
+				"The system considers this symmetrical.%s" % (" It also noticed that you shot the cameras." if cameras_destroyed > 0 else " The cameras noticed that you did not shoot them."),
+			],
+		})
 	if _has_event("contest:bezos_fulfillment"):
 		var contest_event := _event_with_id("contest:bezos_fulfillment")
 		var contest_metadata: Dictionary = contest_event.get("metadata", {})
@@ -773,7 +785,10 @@ func _recorded_activity_lines() -> Array:
 				lines.append("LOCATION RECORD AMENDED\nAt least one entry could not be reconciled.")
 			"contest":
 				var contest_metadata: Dictionary = event.get("metadata", {})
-				if str(event.get("tag", "")) == "physical-remedy-invalidated":
+				if str(event.get("event_id", "")) == "contest:putin_special_operation":
+					var observed_cameras := int(contest_metadata.get("cameras_destroyed", 0))
+					lines.append("DEFENSIVE ACCESS COMPLETED\nSubject crossed an offensive corridor.\n%d broadcast assets were treated as hostile." % observed_cameras)
+				elif str(event.get("tag", "")) == "physical-remedy-invalidated":
 					lines.append("COMMERCIAL DISPUTE COMPLETED\nPhysical remedy obtained. Recognition withheld.\nMethod retained for behavioural review.")
 				else:
 					lines.append("COMMERCIAL DISPUTE CLOSED\n%d objections retained as engagement data." % int(contest_metadata.get("objection_count", 0)))

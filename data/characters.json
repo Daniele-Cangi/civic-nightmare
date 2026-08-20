@@ -265,6 +265,9 @@
   {
     "id": "vladimir_putin",
     "name": "Vladimir Putin",
+    "access_challenge_intro": [
+      "You want an audience? Excellent. The shortest route is through the defensive perimeter. It has never been breached, especially the parts currently breached."
+    ],
     "quest_dialogue": {
       "lines": [
         "...",
