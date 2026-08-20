@@ -12,6 +12,8 @@ const MOVE_SPEED := 5.4
 const STRAFE_SPEED := 4.25
 const TURN_SPEED := 2.15
 const SHOT_COOLDOWN := 0.24
+const NOTE_MAGAZINE_SIZE := 6
+const RELOAD_DURATION := 1.15
 const PLAYER_RADIUS := 0.42
 const CORRIDOR_HALF_WIDTH := 5.55
 const START_POSITION := Vector3(0.0, 1.55, 2.0)
@@ -39,9 +41,15 @@ var muzzle_flash: ColorRect
 var damage_flash: ColorRect
 var crosshair_lines: Array[ColorRect] = []
 var title_label: Label
+var title_echo_red: Label
+var title_echo_cyan: Label
 var status_label: Label
+var status_plate: ColorRect
 var timer_label: Label
 var fire_label: Label
+var fire_plate: ColorRect
+var note_marks: Array[ColorRect] = []
+var reload_sheet: ColorRect
 var integrity_marks: Array[ColorRect] = []
 var seal_marks: Array[ColorRect] = []
 
@@ -57,6 +65,8 @@ var player_yaw := 0.0
 var case_integrity := MAX_CASE_INTEGRITY
 var invulnerability_remaining := 0.0
 var shot_cooldown_remaining := 0.0
+var notes_loaded := NOTE_MAGAZINE_SIZE
+var reload_remaining := 0.0
 var weapon_kick := 0.0
 var crosshair_hit_timer := 0.0
 var status_timer := 0.0
@@ -78,6 +88,7 @@ var final_seals_active := false
 var result: Dictionary = {}
 
 var shot_audio: AudioStreamPlayer
+var reload_audio: AudioStreamPlayer
 var hit_audio: AudioStreamPlayer
 var damage_audio: AudioStreamPlayer
 var gate_audio: AudioStreamPlayer
@@ -126,6 +137,7 @@ func process_frame(delta: float) -> void:
 
 	state_timer += delta
 	shot_cooldown_remaining = maxf(0.0, shot_cooldown_remaining - delta)
+	_update_reload(delta)
 	invulnerability_remaining = maxf(0.0, invulnerability_remaining - delta)
 	weapon_kick = move_toward(weapon_kick, 0.0, delta * 5.5)
 	crosshair_hit_timer = maxf(0.0, crosshair_hit_timer - delta)
@@ -460,15 +472,67 @@ func _create_hud() -> void:
 	top_bar.z_index = 30
 	frame.add_child(top_bar)
 
+	var propaganda_rule := ColorRect.new()
+	propaganda_rule.position = Vector2(0, 70)
+	propaganda_rule.size = Vector2(1280, 12)
+	propaganda_rule.color = Color("#a71920")
+	propaganda_rule.z_index = 31
+	frame.add_child(propaganda_rule)
+
+	var title_plate := ColorRect.new()
+	title_plate.position = Vector2(20, 12)
+	title_plate.size = Vector2(505, 52)
+	title_plate.rotation = deg_to_rad(-1.0)
+	title_plate.color = Color("#64161b")
+	title_plate.z_index = 31
+	frame.add_child(title_plate)
+
+	title_echo_red = Label.new()
+	title_echo_red.position = Vector2(32, 12)
+	title_echo_red.size = Vector2(490, 54)
+	title_echo_red.text = "THREE-MINUTE SPECIAL OPERATION"
+	title_echo_red.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_echo_red.add_theme_font_size_override("font_size", 25)
+	title_echo_red.add_theme_color_override("font_color", Color("#e3242b"))
+	title_echo_red.rotation = deg_to_rad(-1.0)
+	title_echo_red.z_index = 32
+	frame.add_child(title_echo_red)
+
+	title_echo_cyan = Label.new()
+	title_echo_cyan.position = Vector2(26, 8)
+	title_echo_cyan.size = Vector2(490, 54)
+	title_echo_cyan.text = "THREE-MINUTE SPECIAL OPERATION"
+	title_echo_cyan.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_echo_cyan.add_theme_font_size_override("font_size", 25)
+	title_echo_cyan.add_theme_color_override("font_color", Color("#2b9c9d"))
+	title_echo_cyan.rotation = deg_to_rad(-1.0)
+	title_echo_cyan.z_index = 32
+	frame.add_child(title_echo_cyan)
+
 	title_label = Label.new()
-	title_label.position = Vector2(28, 10)
-	title_label.size = Vector2(460, 58)
-	title_label.text = "THE THREE-MINUTE SPECIAL OPERATION"
+	title_label.position = Vector2(29, 9)
+	title_label.size = Vector2(490, 58)
+	title_label.text = "THREE-MINUTE SPECIAL OPERATION"
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_size_override("font_size", 25)
-	title_label.add_theme_color_override("font_color", Color("#f0dfb6"))
-	title_label.z_index = 31
+	title_label.add_theme_color_override("font_color", Color("#fff1c9"))
+	title_label.add_theme_color_override("font_outline_color", Color("#180406"))
+	title_label.add_theme_constant_override("outline_size", 4)
+	title_label.rotation = deg_to_rad(-1.0)
+	title_label.z_index = 33
 	frame.add_child(title_label)
+
+	var timer_frame := ColorRect.new()
+	timer_frame.position = Vector2(550, 10)
+	timer_frame.size = Vector2(180, 58)
+	timer_frame.color = Color("#8f181e")
+	timer_frame.z_index = 31
+	frame.add_child(timer_frame)
+	var timer_well := ColorRect.new()
+	timer_well.position = Vector2(5, 5)
+	timer_well.size = Vector2(170, 48)
+	timer_well.color = Color("#050707")
+	timer_frame.add_child(timer_well)
 
 	timer_label = Label.new()
 	timer_label.position = Vector2(558, 8)
@@ -477,7 +541,9 @@ func _create_hud() -> void:
 	timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	timer_label.add_theme_font_size_override("font_size", 38)
 	timer_label.add_theme_color_override("font_color", Color("#f2eee2"))
-	timer_label.z_index = 31
+	timer_label.add_theme_color_override("font_outline_color", Color("#8f181e"))
+	timer_label.add_theme_constant_override("outline_size", 2)
+	timer_label.z_index = 33
 	frame.add_child(timer_label)
 
 	var case_label := Label.new()
@@ -524,6 +590,14 @@ func _create_hud() -> void:
 		frame.add_child(mark)
 		seal_marks.append(mark)
 
+	status_plate = ColorRect.new()
+	status_plate.position = Vector2(220, 96)
+	status_plate.size = Vector2(840, 50)
+	status_plate.color = Color(0.38, 0.025, 0.035, 0.90)
+	status_plate.rotation = deg_to_rad(-0.8)
+	status_plate.z_index = 31
+	frame.add_child(status_plate)
+
 	status_label = Label.new()
 	status_label.position = Vector2(245, 92)
 	status_label.size = Vector2(790, 58)
@@ -532,23 +606,91 @@ func _create_hud() -> void:
 	status_label.add_theme_font_size_override("font_size", 29)
 	status_label.add_theme_color_override("font_color", Color.WHITE)
 	status_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	status_label.add_theme_color_override("font_outline_color", Color("#7d1118"))
+	status_label.add_theme_constant_override("outline_size", 5)
 	status_label.add_theme_constant_override("shadow_offset_x", 3)
 	status_label.add_theme_constant_override("shadow_offset_y", 3)
 	status_label.z_index = 32
 	frame.add_child(status_label)
 
+	fire_plate = ColorRect.new()
+	fire_plate.position = Vector2(1035, 614)
+	fire_plate.size = Vector2(205, 62)
+	fire_plate.color = Color("#94171d")
+	fire_plate.rotation = deg_to_rad(-2.0)
+	fire_plate.z_index = 39
+	frame.add_child(fire_plate)
+	var fire_well := ColorRect.new()
+	fire_well.position = Vector2(6, 6)
+	fire_well.size = Vector2(193, 50)
+	fire_well.color = Color("#100c0b")
+	fire_plate.add_child(fire_well)
+
 	fire_label = Label.new()
-	fire_label.position = Vector2(1030, 615)
-	fire_label.size = Vector2(220, 70)
+	fire_label.position = Vector2(1030, 607)
+	fire_label.size = Vector2(220, 76)
 	fire_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	fire_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	fire_label.add_theme_font_size_override("font_size", 27)
+	fire_label.add_theme_font_size_override("font_size", 29)
 	fire_label.add_theme_color_override("font_color", Color("#f5ead0"))
 	fire_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	fire_label.add_theme_color_override("font_outline_color", Color("#a71920"))
+	fire_label.add_theme_constant_override("outline_size", 5)
 	fire_label.add_theme_constant_override("shadow_offset_x", 3)
 	fire_label.add_theme_constant_override("shadow_offset_y", 3)
 	fire_label.z_index = 40
 	frame.add_child(fire_label)
+
+	var notes_caption := Label.new()
+	notes_caption.position = Vector2(1015, 501)
+	notes_caption.size = Vector2(245, 28)
+	notes_caption.text = "DIPLOMATIC NOTES"
+	notes_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notes_caption.add_theme_font_size_override("font_size", 15)
+	notes_caption.add_theme_color_override("font_color", Color("#f1d59f"))
+	notes_caption.add_theme_color_override("font_outline_color", Color.BLACK)
+	notes_caption.add_theme_constant_override("outline_size", 3)
+	notes_caption.rotation = deg_to_rad(1.2)
+	notes_caption.z_index = 40
+	frame.add_child(notes_caption)
+	for note_index in range(NOTE_MAGAZINE_SIZE):
+		var note := ColorRect.new()
+		note.position = Vector2(1035 + note_index * 34, 536 + (note_index % 2) * 3)
+		note.size = Vector2(25, 34)
+		note.rotation = deg_to_rad(-5.0 + note_index * 1.7)
+		note.color = Color("#ede0bd")
+		note.z_index = 40
+		frame.add_child(note)
+		var note_line := ColorRect.new()
+		note_line.position = Vector2(4, 16)
+		note_line.size = Vector2(17, 4)
+		note_line.color = Color("#a71920")
+		note.add_child(note_line)
+		note_marks.append(note)
+
+	reload_sheet = ColorRect.new()
+	reload_sheet.position = Vector2(590, 126)
+	reload_sheet.size = Vector2(100, 132)
+	reload_sheet.rotation = deg_to_rad(4.0)
+	reload_sheet.color = Color("#f0e4c5")
+	reload_sheet.visible = false
+	reload_sheet.z_index = 38
+	frame.add_child(reload_sheet)
+	for form_line_index in range(5):
+		var form_line := ColorRect.new()
+		form_line.position = Vector2(13, 20 + form_line_index * 18)
+		form_line.size = Vector2(74, 4)
+		form_line.color = Color("#7b8580") if form_line_index < 4 else Color("#9e1d23")
+		reload_sheet.add_child(form_line)
+	var reload_stamp := Label.new()
+	reload_stamp.position = Vector2(7, 84)
+	reload_stamp.size = Vector2(86, 42)
+	reload_stamp.text = "R-6"
+	reload_stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reload_stamp.add_theme_font_size_override("font_size", 31)
+	reload_stamp.add_theme_color_override("font_color", Color("#a71920"))
+	reload_stamp.rotation = deg_to_rad(-7.0)
+	reload_sheet.add_child(reload_stamp)
 
 	for rect in [
 		Rect2(635, 337, 10, 2), Rect2(639, 333, 2, 10),
@@ -586,6 +728,10 @@ func _create_audio() -> void:
 	shot_audio.stream = _make_tone(92.0, 0.13, 0.42)
 	shot_audio.volume_db = -5.0
 	add_child(shot_audio)
+	reload_audio = AudioStreamPlayer.new()
+	reload_audio.stream = _make_tone(146.0, 0.24, 0.26)
+	reload_audio.volume_db = -7.0
+	add_child(reload_audio)
 	hit_audio = AudioStreamPlayer.new()
 	hit_audio.stream = _make_tone(310.0, 0.11, 0.22)
 	hit_audio.volume_db = -8.0
@@ -614,6 +760,8 @@ func _reset_attempt(first_attempt: bool) -> void:
 	case_integrity = MAX_CASE_INTEGRITY
 	invulnerability_remaining = 0.0
 	shot_cooldown_remaining = 0.0
+	notes_loaded = NOTE_MAGAZINE_SIZE
+	reload_remaining = 0.0
 	weapon_kick = 0.0
 	status_timer = 0.0
 	wave_spawned = [false, false, false]
@@ -629,7 +777,7 @@ func _reset_attempt(first_attempt: bool) -> void:
 		seal.visible = true
 		seal.scale = Vector3.ONE
 	_spawn_wave(0)
-	status_label.text = "W / S     A / D     Q / E     SPACE"
+	status_label.text = "W/S ADVANCE  //  A/D TURN  //  Q/E EVADE  //  SPACE STAMP"
 	fire_label.text = ""
 	if not first_attempt:
 		intro_duration = minf(intro_duration, 0.85)
@@ -640,7 +788,7 @@ func _begin_active_run() -> void:
 	state = State.ACTIVE
 	state_timer = 0.0
 	status_label.text = ""
-	fire_label.text = "SPACE   FIRE"
+	fire_label.text = "SPACE  STAMP"
 
 
 func _process_active_run(delta: float) -> void:
@@ -657,9 +805,9 @@ func _process_active_run(delta: float) -> void:
 func _process_player_input(delta: float) -> void:
 	var turn_input := 0.0
 	if Input.is_action_pressed("ui_left") or Input.is_physical_key_pressed(Key.KEY_A):
-		turn_input -= 1.0
-	if Input.is_action_pressed("ui_right") or Input.is_physical_key_pressed(Key.KEY_D):
 		turn_input += 1.0
+	if Input.is_action_pressed("ui_right") or Input.is_physical_key_pressed(Key.KEY_D):
+		turn_input -= 1.0
 	player_yaw += turn_input * TURN_SPEED * delta
 
 	var forward_input := 0.0
@@ -669,14 +817,16 @@ func _process_player_input(delta: float) -> void:
 		forward_input -= 1.0
 	var strafe_input := float(Input.is_physical_key_pressed(Key.KEY_E)) - float(Input.is_physical_key_pressed(Key.KEY_Q))
 	var forward := _forward_vector()
-	var right := Vector3(forward.z, 0.0, -forward.x)
+	var right := Vector3(-forward.z, 0.0, forward.x)
 	var motion := forward * forward_input * MOVE_SPEED + right * strafe_input * STRAFE_SPEED
 	if motion.length_squared() > MOVE_SPEED * MOVE_SPEED:
 		motion = motion.normalized() * MOVE_SPEED
 	_try_move(motion * delta)
 
+	if Input.is_physical_key_pressed(Key.KEY_R) and reload_remaining <= 0.0 and notes_loaded < NOTE_MAGAZINE_SIZE:
+		_begin_reload()
 	var fire_pressed := Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
-	if fire_pressed and shot_cooldown_remaining <= 0.0:
+	if fire_pressed and shot_cooldown_remaining <= 0.0 and reload_remaining <= 0.0:
 		_fire()
 
 
@@ -696,11 +846,19 @@ func _try_move(motion: Vector3) -> void:
 
 
 func _fire() -> void:
+	if reload_remaining > 0.0:
+		return
+	if notes_loaded <= 0:
+		_begin_reload()
+		return
 	shot_cooldown_remaining = SHOT_COOLDOWN
+	notes_loaded -= 1
 	shots_fired += 1
 	weapon_kick = 1.0
 	muzzle_flash.color.a = 0.78
 	shot_audio.play()
+	if notes_loaded <= 0:
+		_begin_reload()
 
 	var forward := _forward_vector()
 	var best_kind := ""
@@ -749,6 +907,29 @@ func _fire() -> void:
 	elif best_kind == "seal":
 		register_seal_hit(best_index)
 		crosshair_hit_timer = 0.12
+
+
+func _begin_reload() -> void:
+	if reload_remaining > 0.0 or notes_loaded >= NOTE_MAGAZINE_SIZE:
+		return
+	reload_remaining = RELOAD_DURATION
+	shot_cooldown_remaining = RELOAD_DURATION
+	weapon_kick = 0.0
+	reload_audio.pitch_scale = 1.0
+	reload_audio.play()
+	_show_status("RE-FILING UNDER EMERGENCY DECREE", 0.82)
+
+
+func _update_reload(delta: float) -> void:
+	if reload_remaining <= 0.0:
+		return
+	reload_remaining = maxf(0.0, reload_remaining - delta)
+	if reload_remaining > 0.0:
+		return
+	notes_loaded = NOTE_MAGAZINE_SIZE
+	reload_audio.pitch_scale = 1.42
+	reload_audio.play()
+	_show_status("SIX NOTES CERTIFIED WITHOUT REVIEW", 0.68)
 
 
 func _spawn_wave(wave_index: int) -> void:
@@ -1004,25 +1185,51 @@ func _update_camera() -> void:
 
 
 func _update_overlay_motion() -> void:
+	var reload_progress := 0.0
+	if reload_remaining > 0.0:
+		reload_progress = 1.0 - reload_remaining / RELOAD_DURATION
 	if weapon_rect:
 		var walking := state == State.ACTIVE and (
 			Input.is_action_pressed("ui_up") or Input.is_action_pressed("ui_down")
 			or Input.is_physical_key_pressed(Key.KEY_W) or Input.is_physical_key_pressed(Key.KEY_S)
 		)
 		var bob := sin(elapsed * 10.0) * 4.0 if walking else 0.0
-		weapon_rect.position = Vector2(314, 270 + bob + weapon_kick * 29.0)
+		var reload_drop := sin(reload_progress * PI) * 58.0 if reload_remaining > 0.0 else 0.0
+		weapon_rect.position = Vector2(314, 270 + bob + weapon_kick * 29.0 + reload_drop)
+	if reload_sheet:
+		reload_sheet.visible = reload_remaining > 0.0
+		if reload_sheet.visible:
+			var feed_curve := reload_progress * reload_progress * (3.0 - 2.0 * reload_progress)
+			reload_sheet.position = Vector2(590 + sin(reload_progress * PI) * 18.0, 126 + feed_curve * 188.0)
+			reload_sheet.rotation = deg_to_rad(7.0 - reload_progress * 10.0)
 	if muzzle_flash:
 		muzzle_flash.color.a = move_toward(muzzle_flash.color.a, 0.0, 0.18)
 	if damage_flash:
 		damage_flash.color.a = move_toward(damage_flash.color.a, 0.0, 0.035)
 	for line in crosshair_lines:
 		line.color = Color("#ffdc63") if crosshair_hit_timer > 0.0 else Color("#f1e6c9")
+	var title_jitter := sin(elapsed * 17.0) * 1.4
+	if title_echo_red:
+		title_echo_red.position = Vector2(32 + title_jitter, 12)
+	if title_echo_cyan:
+		title_echo_cyan.position = Vector2(26 - title_jitter, 8)
 	if state == State.INTRO:
 		status_label.modulate.a = 0.55 + 0.45 * absf(sin(state_timer * 4.0))
 	else:
 		status_label.modulate.a = 1.0
 	if status_timer <= 0.0 and state == State.ACTIVE:
 		status_label.text = ""
+	if status_plate:
+		status_plate.visible = status_label.text != ""
+		status_plate.rotation = deg_to_rad(-0.8 + sin(elapsed * 11.0) * 0.35)
+	if status_label:
+		status_label.rotation = deg_to_rad(sin(elapsed * 13.0) * 0.28 if status_label.text != "" else 0.0)
+	if fire_plate:
+		fire_plate.visible = state == State.ACTIVE
+		fire_plate.rotation = deg_to_rad(-2.0 + sin(elapsed * 8.0) * (1.3 if reload_remaining > 0.0 else 0.35))
+	if fire_label and state == State.ACTIVE:
+		fire_label.text = "AUTO-FILING" if reload_remaining > 0.0 else "SPACE  STAMP"
+		fire_label.add_theme_color_override("font_color", Color("#ff3941") if reload_remaining > 0.0 else Color("#f5ead0"))
 
 
 func _update_hud() -> void:
@@ -1033,6 +1240,8 @@ func _update_hud() -> void:
 	timer_label.text = "%02d:%02d" % [minutes, seconds]
 	for index in range(integrity_marks.size()):
 		integrity_marks[index].modulate = Color.WHITE if index < case_integrity else Color(0.18, 0.18, 0.18, 0.34)
+	for index in range(note_marks.size()):
+		note_marks[index].modulate = Color.WHITE if index < notes_loaded else Color(0.16, 0.12, 0.10, 0.32)
 	for index in range(seal_marks.size()):
 		if not final_seals_active:
 			seal_marks[index].color = Color("#32282a")

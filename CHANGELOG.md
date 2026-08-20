@@ -52,6 +52,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Putin's access operation now uses corrected left/right turning and strafing,
+  a six-note automatic reload visibly fed into the launcher's upper receiver,
+  and a more aggressive offset propaganda/stamp HUD.
 - Web exports now use Godot's single-threaded runtime, removing the
   `SharedArrayBuffer` and cross-origin-isolation requirement that blocked the
   itch.io build without special frame headers.

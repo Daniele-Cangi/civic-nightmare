@@ -1222,8 +1222,21 @@ func _test_putin_special_operation() -> void:
 	})
 	operation.process_frame(0.01)
 	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
+	Input.action_press("ui_left")
+	operation.process_frame(0.1)
+	Input.action_release("ui_left")
+	_check(float(operation.get("player_yaw")) > 0.0, "left input turns the operation toward the player's visible left")
 	var first_wave_counts: Dictionary = operation.get_enemy_counts()
 	_check(int(first_wave_counts.get("required", 0)) == 2 and int(first_wave_counts.get("cameras", 0)) == 1, "the opening wave separates required defenses from the optional state camera")
+	_check((operation.get("note_marks") as Array).size() == 6 and int(operation.get("notes_loaded")) == 6, "the Diplomatic Note Launcher exposes its six physical notes")
+	operation.set("player_yaw", PI * 0.5)
+	for note_index in range(6):
+		operation.call("_fire")
+	operation.process_frame(0.01)
+	_check(int(operation.get("notes_loaded")) == 0 and float(operation.get("reload_remaining")) > 0.0 and bool((operation.get("reload_sheet") as ColorRect).visible), "the empty launcher visibly feeds a new R-6 form into its upper receiver")
+	operation.process_frame(1.2)
+	_check(int(operation.get("notes_loaded")) == 6 and is_zero_approx(float(operation.get("reload_remaining"))), "automatic re-filing restores exactly six diplomatic notes")
+	operation.set("player_yaw", 0.0)
 
 	for wave_index in range(3):
 		for cleanup_pass in range(6):
