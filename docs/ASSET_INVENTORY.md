@@ -13,13 +13,13 @@ runtime until a tested cleanup proves otherwise.
 | `assets/backgrounds/` | 3 | 10.80 MiB | Runtime overworld plates |
 | `assets/interiors/` | 11 | 7.59 MiB | Runtime authored interiors |
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
-| `assets/encounters/` | 8 | 10.96 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/weapon |
+| `assets/encounters/` | 8 | 11.69 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/centered weapon |
 | `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
 | `assets/audio/` | 2 | 1.92 MiB | Runtime opening-drive music plus its delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
-| `asset_sources/legacy/` | 7 | 8.79 MiB | Superseded v2 world plate and six non-v2 combat portraits |
+| `asset_sources/legacy/` | 8 | 9.21 MiB | Superseded v2 world plate, six non-v2 combat portraits, and the diagonal Putin launcher source |
 | `asset_sources/marketing/` | 7 | 9.84 MiB | Non-exported itch.io cover, five runtime screenshots, and their delivery record |
 | `assets/sprites/` | 2 | 1.01 MiB | Runtime contamination asset and fallback |
 | `assets/characters/` | 20 | 0.17 MiB | Small sprites; runtime and alternatives mixed |

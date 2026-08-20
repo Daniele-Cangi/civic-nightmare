@@ -52,6 +52,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Putin's firefight now aligns the launcher with the reticle and replaces
+  unavoidable hitscan damage with slow locked-position projectiles, generous
+  warnings, one active threat at a time, and working ceremonial cover.
 - Putin's access operation now uses corrected left/right turning and strafing,
   a six-note automatic reload visibly fed into the launcher's upper receiver,
   and a more aggressive offset propaganda/stamp HUD.
