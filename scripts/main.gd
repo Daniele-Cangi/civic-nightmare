@@ -12,6 +12,7 @@ const BUNKER_ACCESS_GAUNTLET_SCRIPT = preload("res://scripts/encounters/bunker_a
 const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd")
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
+const PUTIN_SPECIAL_OPERATION_SCRIPT = preload("res://scripts/encounters/putin_special_operation.gd")
 const ENDING_SEQUENCE_SCRIPT = preload("res://scripts/sequences/ending_sequence.gd")
 const MK_SEQUENCE_SCRIPT = preload("res://scripts/sequences/mk_sequence.gd")
 const ENVIRONMENT_EFFECTS_SCRIPT = preload("res://scripts/managers/environment_effects.gd")
@@ -142,6 +143,7 @@ var bunker_access_complete: bool = false
 var trump_deal_complete: bool = false
 var ursula_consensus_complete: bool = false
 var lagarde_price_stability_complete: bool = false
+var putin_special_operation_complete: bool = false
 var authority_access_intro_pending: String = ""
 var contamination_active: bool = false
 var contamination_seen_sources: Dictionary = {}
@@ -241,6 +243,10 @@ var price_stability_pinball: Node
 var price_stability_pinball_active: bool:
 	get:
 		return bool(price_stability_pinball.get("active")) if price_stability_pinball else false
+var putin_special_operation: Node
+var putin_special_operation_active: bool:
+	get:
+		return bool(putin_special_operation.get("active")) if putin_special_operation else false
 
 
 # --- Final Mission ---
@@ -746,7 +752,7 @@ func _setup_interiors() -> void:
 
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active or price_stability_pinball_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active or price_stability_pinball_active or putin_special_operation_active:
 		return
 	if destination == "oval_office" and not trump_deal_complete:
 		_start_greatest_deal()
@@ -756,6 +762,9 @@ func use_door(destination: String, spawn_marker: String) -> void:
 		return
 	if destination == "vault" and not lagarde_price_stability_complete:
 		_start_price_stability_pinball()
+		return
+	if destination == "kremlin" and not putin_special_operation_complete:
+		_start_putin_special_operation()
 		return
 	if destination == "mountain_bunker" and not bunker_access_complete:
 		_start_bunker_access_gauntlet()
@@ -902,6 +911,9 @@ func _process(delta: float) -> void:
 		return
 	if price_stability_pinball_active:
 		price_stability_pinball.process_frame(delta)
+		return
+	if putin_special_operation_active:
+		putin_special_operation.process_frame(delta)
 		return
 	if bunker_access_active:
 		bunker_access_gauntlet.process_frame(delta)
@@ -2643,6 +2655,7 @@ func _can_open_administrative_hold() -> bool:
 		and not greatest_deal_active
 		and not consensus_engine_active
 		and not price_stability_pinball_active
+		and not putin_special_operation_active
 		and not ufo_abduction_active
 		and not final_mission_awaiting_input
 	)
@@ -2666,6 +2679,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	trump_deal_complete = false
 	ursula_consensus_complete = false
 	lagarde_price_stability_complete = false
+	putin_special_operation_complete = false
 	authority_access_intro_pending = ""
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
@@ -2677,6 +2691,8 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 		consensus_engine.stop()
 	if price_stability_pinball:
 		price_stability_pinball.stop()
+	if putin_special_operation:
+		putin_special_operation.stop()
 	_close_start_menu()
 	_setup_news_broadcast_sequence()
 
@@ -2716,6 +2732,7 @@ func _build_save_snapshot() -> Dictionary:
 			"trump_deal_complete": trump_deal_complete,
 			"ursula_consensus_complete": ursula_consensus_complete,
 			"lagarde_price_stability_complete": lagarde_price_stability_complete,
+			"putin_special_operation_complete": putin_special_operation_complete,
 			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
 			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
 			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
@@ -2783,6 +2800,7 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	trump_deal_complete = bool(story.get("trump_deal_complete", restored_quest_completed.has("donald_trump")))
 	ursula_consensus_complete = bool(story.get("ursula_consensus_complete", restored_quest_completed.has("ursula_von_der_leyen")))
 	lagarde_price_stability_complete = bool(story.get("lagarde_price_stability_complete", restored_quest_completed.has("christine_lagarde")))
+	putin_special_operation_complete = bool(story.get("putin_special_operation_complete", restored_quest_completed.has("vladimir_putin")))
 	authority_access_intro_pending = ""
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
@@ -2796,6 +2814,8 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 		consensus_engine.stop()
 	if price_stability_pinball:
 		price_stability_pinball.stop()
+	if putin_special_operation:
+		putin_special_operation.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
 	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
 	hidden_bunker_ai_ack_active = false
@@ -2891,6 +2911,7 @@ func _is_autosave_safe() -> bool:
 		and not greatest_deal_active
 		and not consensus_engine_active
 		and not price_stability_pinball_active
+		and not putin_special_operation_active
 		and not ufo_abduction_active
 		and not (administrative_hold and bool(administrative_hold.get("opened")))
 		and not final_mission_awaiting_input
@@ -3363,6 +3384,13 @@ func _setup_authority_access_procedures() -> void:
 	price_stability_pinball.cancelled.connect(_on_authority_access_cancelled)
 	price_stability_pinball.setup(self)
 
+	putin_special_operation = PUTIN_SPECIAL_OPERATION_SCRIPT.new()
+	putin_special_operation.name = "PutinSpecialOperation"
+	add_child(putin_special_operation)
+	putin_special_operation.completed.connect(_on_putin_special_operation_completed)
+	putin_special_operation.cancelled.connect(_on_authority_access_cancelled)
+	putin_special_operation.setup(self)
+
 
 func _start_greatest_deal() -> void:
 	if trump_deal_complete or greatest_deal_active or authority_access_intro_pending != "" or active_room_id != "":
@@ -3389,6 +3417,15 @@ func _start_price_stability_pinball() -> void:
 	player.velocity = Vector2.ZERO
 	player.set_physics_process(false)
 	_show_authority_access_intro("christine_lagarde", "price_stability_pinball")
+
+
+func _start_putin_special_operation() -> void:
+	if putin_special_operation_complete or putin_special_operation_active or authority_access_intro_pending != "" or active_room_id != "":
+		return
+	_write_save_checkpoint(true)
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	_show_authority_access_intro("vladimir_putin", "putin_special_operation")
 
 
 func _show_authority_access_intro(character_id: String, procedure_id: String) -> void:
@@ -3421,6 +3458,9 @@ func _launch_authority_access_procedure(procedure_id: String) -> void:
 		"price_stability_pinball":
 			if not lagarde_price_stability_complete and not price_stability_pinball_active:
 				price_stability_pinball.start()
+		"putin_special_operation":
+			if not putin_special_operation_complete and not putin_special_operation_active:
+				putin_special_operation.start()
 		_:
 			player.set_physics_process(true)
 
@@ -3486,6 +3526,25 @@ func _on_price_stability_pinball_completed(result: Dictionary) -> void:
 
 func _enter_cleared_vault() -> void:
 	use_door("vault", "EntryMarker")
+
+
+func _on_putin_special_operation_completed(result: Dictionary) -> void:
+	putin_special_operation_complete = true
+	var broadcast_suppressed := int(result.get("cameras_destroyed", 0)) > 0
+	dossier_manager.record_contest(
+		"contest:putin_special_operation",
+		"kremlin_access",
+		"official-reality-suppressed" if broadcast_suppressed else "defensive-route-completed",
+		"Subject crossed a defensive residence through an offensive administrative corridor.",
+		result
+	)
+	_write_save_checkpoint(true)
+	door_cooldown_until_ms = 0
+	call_deferred("_enter_cleared_kremlin")
+
+
+func _enter_cleared_kremlin() -> void:
+	use_door("kremlin", "EntryMarker")
 
 
 func _start_bunker_access_gauntlet() -> void:

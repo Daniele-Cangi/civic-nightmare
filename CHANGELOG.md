@@ -7,6 +7,12 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- **The Three-Minute Special Operation**, an original short pseudo-3D Putin
+  access game with a Diplomatic Note Launcher, splitting armoured matryoshkas,
+  hostile mobilization copiers, optional State television cameras, continuity
+  gates, and a three-seal Potemkin defense.
+- Sparse dossier consequences distinguish a corridor crossed under fire from
+  one in which the player also chose to suppress the broadcast equipment.
 - A short skippable CRT news broadcast before the mandatory opening drive, with
   three authored civic reports, live ticker, signal transitions, and broadcast
   hum generated at runtime.
