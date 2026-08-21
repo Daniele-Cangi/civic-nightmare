@@ -32,8 +32,14 @@ const PROJECTILE_LIFETIME := 4.8
 const MATRYOSHKA_PATH := "res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png"
 const COPIER_PATH := "res://assets/encounters/putin_operation/mobilization_copier_v1.png"
 const CAMERA_PATH := "res://assets/encounters/putin_operation/state_television_camera_v1.png"
+const STRATEGIC_BEAR_PATH := "res://assets/encounters/putin_operation/strategic_bear_washer_boss_v1.png"
 const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png"
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_putin_special_operation.ogg"
+const STRATEGIC_BEAR_MAX_HEALTH := 6
+const STRATEGIC_BEAR_RELOAD_DURATION := 2.25
+const STRATEGIC_BEAR_DEPARTURE_DURATION := 1.75
+const STRATEGIC_BEAR_POSITION := Vector3(0.0, 0.0, 64.0)
+const STRATEGIC_BEAR_TARGET_POSITION := Vector3(0.0, 2.12, 63.78)
 const WEAPON_CUTOUT_SHADER := """
 shader_type canvas_item;
 
@@ -75,6 +81,7 @@ var note_marks: Array[ColorRect] = []
 var reload_sheet: ColorRect
 var integrity_marks: Array[ColorRect] = []
 var seal_marks: Array[ColorRect] = []
+var seal_caption_label: Label
 
 var active := false
 var state: State = State.INACTIVE
@@ -115,6 +122,15 @@ var seal_damaged_material: StandardMaterial3D
 var seal_health := [2, 2, 2]
 var seal_hit_flash := [0.0, 0.0, 0.0]
 var final_seals_active := false
+var final_seals_resolved := false
+var strategic_bear_target: Node3D
+var strategic_bear_id := ""
+var strategic_bear_active := false
+var strategic_bear_defeated := false
+var strategic_bear_departure_active := false
+var strategic_bear_departure_timer := 0.0
+var strategic_bear_departure_stage := 0
+var strategic_bear_hits := 0
 var result: Dictionary = {}
 
 var shot_audio: AudioStreamPlayer
@@ -154,6 +170,8 @@ func stop() -> void:
 	active = false
 	state = State.INACTIVE
 	_clear_enemies()
+	if strategic_bear_target:
+		strategic_bear_target.visible = false
 	if music_player:
 		music_player.stop()
 	if layer:
@@ -222,11 +240,32 @@ func get_enemy_counts() -> Dictionary:
 	}
 
 
+func get_strategic_bear_state() -> Dictionary:
+	var health := 0
+	var vulnerable := false
+	for enemy in enemies:
+		if str(enemy.get("id", "")) != strategic_bear_id:
+			continue
+		health = int(enemy.get("hp", 0))
+		vulnerable = bool(enemy.get("vulnerable", false))
+		break
+	return {
+		"id": strategic_bear_id,
+		"active": strategic_bear_active,
+		"defeated": strategic_bear_defeated,
+		"departing": strategic_bear_departure_active,
+		"health": health,
+		"vulnerable": vulnerable,
+	}
+
+
 func register_enemy_hit(enemy_id: String) -> bool:
 	for index in range(enemies.size()):
 		var enemy: Dictionary = enemies[index]
 		if str(enemy.get("id", "")) != enemy_id or not bool(enemy.get("alive", false)):
 			continue
+		if str(enemy.get("type", "")) == "strategic_bear":
+			return _register_strategic_bear_hit(index, enemy)
 		shots_hit += 1
 		enemy["hp"] = int(enemy.get("hp", 1)) - 1
 		enemy["hit_flash"] = 0.14
@@ -240,6 +279,33 @@ func register_enemy_hit(enemy_id: String) -> bool:
 			hit_audio.play()
 		return true
 	return false
+
+
+func _register_strategic_bear_hit(index: int, enemy: Dictionary) -> bool:
+	var sprite := enemy.get("node") as Sprite3D
+	if not bool(enemy.get("vulnerable", false)):
+		enemy["hit_flash"] = 0.10
+		enemies[index] = enemy
+		if sprite:
+			sprite.modulate = Color("#c7d2cb")
+		hit_audio.pitch_scale = 0.68
+		hit_audio.play()
+		_show_status("DAMAGE NOT RECOGNIZED OUTSIDE THE WASH CYCLE", 0.62)
+		return false
+	shots_hit += 1
+	strategic_bear_hits += 1
+	enemy["hp"] = int(enemy.get("hp", STRATEGIC_BEAR_MAX_HEALTH)) - 1
+	enemy["hit_flash"] = 0.18
+	enemies[index] = enemy
+	if sprite:
+		sprite.modulate = Color("#ff9b7e")
+	hit_audio.pitch_scale = 1.18
+	hit_audio.play()
+	if int(enemy.get("hp", 0)) <= 0:
+		_defeat_strategic_bear(index)
+	else:
+		_show_status("LOAD BECOMING ADMINISTRATIVELY UNBALANCED", 0.58)
+	return true
 
 
 func register_seal_hit(seal_index: int) -> bool:
@@ -259,7 +325,7 @@ func register_seal_hit(seal_index: int) -> bool:
 	hit_audio.pitch_scale = 1.08 + float(seal_index) * 0.12
 	hit_audio.play()
 	if _remaining_seals() == 0:
-		_open_final_defense()
+		_summon_strategic_bear()
 	elif final_display_label:
 		var remaining := _remaining_seals()
 		final_display_label.text = "STAMP %d FLASHING SEAL%s" % [remaining, "" if remaining == 1 else "S"]
@@ -353,6 +419,7 @@ func _create_world() -> void:
 	_build_corridor()
 	_build_gates()
 	_build_final_display()
+	_build_strategic_bear_target()
 
 
 func _build_corridor() -> void:
@@ -540,6 +607,19 @@ func _build_final_display() -> void:
 	final_display.add_child(final_light)
 
 
+func _build_strategic_bear_target() -> void:
+	strategic_bear_target = Node3D.new()
+	strategic_bear_target.name = "StrategicBearDrumTarget"
+	strategic_bear_target.position = STRATEGIC_BEAR_TARGET_POSITION
+	strategic_bear_target.visible = false
+	world_root.add_child(strategic_bear_target)
+	var target_material := _make_material(Color("#5f1114"), Color("#ff3138"))
+	_add_box_to(strategic_bear_target, "TopBracket", Vector3(0.84, 0.09, 0.07), Vector3(0, 0.82, 0), target_material)
+	_add_box_to(strategic_bear_target, "BottomBracket", Vector3(0.84, 0.09, 0.07), Vector3(0, -0.82, 0), target_material)
+	_add_box_to(strategic_bear_target, "LeftBracket", Vector3(0.09, 0.84, 0.07), Vector3(-0.82, 0, 0), target_material)
+	_add_box_to(strategic_bear_target, "RightBracket", Vector3(0.09, 0.84, 0.07), Vector3(0.82, 0, 0), target_material)
+
+
 func _create_hud() -> void:
 	damage_flash = ColorRect.new()
 	damage_flash.position = Vector2.ZERO
@@ -656,15 +736,15 @@ func _create_hud() -> void:
 		sheet.add_child(red_line)
 		integrity_marks.append(sheet)
 
-	var seals_label := Label.new()
-	seals_label.position = Vector2(724, 17)
-	seals_label.size = Vector2(64, 42)
-	seals_label.text = "SEALS"
-	seals_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	seals_label.add_theme_font_size_override("font_size", 16)
-	seals_label.add_theme_color_override("font_color", Color("#b9ad94"))
-	seals_label.z_index = 31
-	frame.add_child(seals_label)
+	seal_caption_label = Label.new()
+	seal_caption_label.position = Vector2(724, 17)
+	seal_caption_label.size = Vector2(64, 42)
+	seal_caption_label.text = "SEALS"
+	seal_caption_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	seal_caption_label.add_theme_font_size_override("font_size", 16)
+	seal_caption_label.add_theme_color_override("font_color", Color("#b9ad94"))
+	seal_caption_label.z_index = 31
+	frame.add_child(seal_caption_label)
 
 	for seal_index in range(3):
 		var mark := ColorRect.new()
@@ -865,12 +945,27 @@ func _reset_attempt(first_attempt: bool) -> void:
 	gate_open = [false, false, false]
 	seal_health = [2, 2, 2]
 	seal_hit_flash = [0.0, 0.0, 0.0]
+	final_seals_resolved = false
+	strategic_bear_id = ""
+	strategic_bear_active = false
+	strategic_bear_defeated = false
+	strategic_bear_departure_active = false
+	strategic_bear_departure_timer = 0.0
+	strategic_bear_departure_stage = 0
+	strategic_bear_hits = 0
 	if hit_audio:
 		hit_audio.pitch_scale = 1.0
 	if music_player and music_player.stream:
 		music_player.play()
 	final_seals_active = false
 	_clear_enemies()
+	if strategic_bear_target:
+		strategic_bear_target.visible = false
+		strategic_bear_target.position = STRATEGIC_BEAR_TARGET_POSITION
+		strategic_bear_target.scale = Vector3.ONE
+		strategic_bear_target.rotation = Vector3.ZERO
+	if seal_caption_label:
+		seal_caption_label.text = "SEALS"
 	for gate_index in range(gate_nodes.size()):
 		gate_nodes[gate_index].visible = true
 	if final_display:
@@ -907,6 +1002,7 @@ func _process_active_run(delta: float) -> void:
 	_update_wave_triggers()
 	_update_enemies(delta)
 	_update_enemy_projectiles(delta)
+	_update_strategic_bear_departure(delta)
 	_update_gate_progress()
 	_update_camera()
 	if gate_open[2] and player_position.z >= 61.2:
@@ -1023,8 +1119,8 @@ func _fire() -> void:
 				best_index = seal_index
 
 	if best_kind == "enemy":
-		register_enemy_hit(str(enemies[best_index].get("id", "")))
-		crosshair_hit_timer = 0.12
+		if register_enemy_hit(str(enemies[best_index].get("id", ""))):
+			crosshair_hit_timer = 0.12
 	elif best_kind == "seal":
 		register_seal_hit(best_index)
 		crosshair_hit_timer = 0.12
@@ -1120,6 +1216,17 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 			projectile_radius = 0.58
 			target_radius = 0.88
 			sprite_height = 2.72
+		"strategic_bear":
+			texture_path = STRATEGIC_BEAR_PATH
+			hp = STRATEGIC_BEAR_MAX_HEALTH
+			speed = 0.0
+			attack_range = 18.0
+			attack_interval = 1.15
+			attack_windup = 1.0
+			projectile_speed = 4.0
+			projectile_radius = 0.62
+			target_radius = 1.35
+			sprite_height = 4.7
 
 	var sprite := Sprite3D.new()
 	sprite.name = enemy_id
@@ -1155,6 +1262,9 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 		"blocks_gate": blocks_gate,
 		"alive": true,
 		"hit_flash": 0.0,
+		"vulnerable": false,
+		"reload_timer": 0.0,
+		"cycle_index": 0,
 	})
 	return enemy_id
 
@@ -1175,6 +1285,26 @@ func _update_enemies(delta: float) -> void:
 			continue
 		var sprite := enemy.get("node") as Sprite3D
 		if not sprite:
+			continue
+		if str(enemy.get("type", "")) == "strategic_bear" and str(enemy.get("attack_state", "idle")) == "reload":
+			enemy["reload_timer"] = maxf(0.0, float(enemy.get("reload_timer", 0.0)) - delta)
+			enemy["hit_flash"] = maxf(0.0, float(enemy.get("hit_flash", 0.0)) - delta)
+			var reload_pulse := 0.92 + 0.08 * absf(sin(elapsed * 14.0))
+			sprite.scale = Vector3.ONE * reload_pulse
+			sprite.position.x = sin(elapsed * 5.0) * 0.08
+			if float(enemy.get("hit_flash", 0.0)) <= 0.0:
+				sprite.modulate = Color.WHITE
+			if strategic_bear_target:
+				strategic_bear_target.position.x = sprite.position.x
+				strategic_bear_target.scale = Vector3.ONE * (0.92 + 0.12 * absf(sin(elapsed * 12.0)))
+			if float(enemy.get("reload_timer", 0.0)) <= 0.0:
+				enemy["attack_state"] = "idle"
+				enemy["attack_timer"] = 0.82
+				enemy["vulnerable"] = false
+				sprite.scale = Vector3.ONE
+				if strategic_bear_target:
+					strategic_bear_target.visible = false
+			enemies[index] = enemy
 			continue
 		if str(enemy.get("attack_state", "idle")) == "telegraph":
 			enemy["telegraph_timer"] = maxf(0.0, float(enemy.get("telegraph_timer", 0.0)) - delta)
@@ -1222,6 +1352,25 @@ func _begin_enemy_telegraph(index: int) -> bool:
 	var enemy: Dictionary = enemies[index]
 	if not bool(enemy.get("alive", false)) or str(enemy.get("attack_state", "idle")) != "idle":
 		return false
+	if str(enemy.get("type", "")) == "strategic_bear":
+		var cycle := int(enemy.get("cycle_index", 0)) % 3
+		enemy["cycle_index"] = cycle + 1
+		match cycle:
+			0:
+				enemy["attack_windup"] = 0.95
+				enemy["projectile_speed"] = 4.0
+				enemy["projectile_radius"] = 0.58
+				_show_status("SPIN CYCLE — MOVE", 0.9)
+			1:
+				enemy["attack_windup"] = 1.12
+				enemy["projectile_speed"] = 3.65
+				enemy["projectile_radius"] = 0.76
+				_show_status("RINSE CYCLE — MOVE", 1.05)
+			_:
+				enemy["attack_windup"] = 1.28
+				enemy["projectile_speed"] = 4.45
+				enemy["projectile_radius"] = 0.52
+				_show_status("HEAVY LOAD — MOVE", 1.18)
 	var locked_target := Vector3(player_position.x, 1.1, player_position.z)
 	var position := enemy.get("position", Vector3.ZERO) as Vector3
 	var telegraph := _create_warning_lane(position, locked_target, str(enemy.get("type", "")))
@@ -1248,6 +1397,9 @@ func _create_warning_lane(start: Vector3, target: Vector3, enemy_type: String) -
 	elif enemy_type == "mobilization_copier":
 		width = 0.22
 		color = Color("#d7ad37")
+	elif enemy_type == "strategic_bear":
+		width = 0.92
+		color = Color("#55d7e8")
 	var material := _make_material(color.darkened(0.45), color)
 	var lane := _add_box("IncomingAdministrativeLane", Vector3(width, 0.045, distance), Vector3.ZERO, material)
 	lane.position = Vector3((start.x + visible_target.x) * 0.5, 0.075, (start.z + visible_target.z) * 0.5)
@@ -1265,8 +1417,16 @@ func _release_enemy_projectile(index: int) -> bool:
 	if telegraph and is_instance_valid(telegraph):
 		telegraph.queue_free()
 	enemy["telegraph_node"] = null
-	enemy["attack_state"] = "idle"
-	enemy["attack_timer"] = float(enemy.get("attack_interval", 3.0))
+	if str(enemy.get("type", "")) == "strategic_bear":
+		enemy["attack_state"] = "reload"
+		enemy["reload_timer"] = STRATEGIC_BEAR_RELOAD_DURATION
+		enemy["vulnerable"] = true
+		if strategic_bear_target:
+			strategic_bear_target.visible = true
+		_show_status("RELOAD — STAMP THE OPEN DRUM", 1.8)
+	else:
+		enemy["attack_state"] = "idle"
+		enemy["attack_timer"] = float(enemy.get("attack_interval", 3.0))
 	var start_source := enemy.get("position", Vector3.ZERO) as Vector3
 	var start := Vector3(start_source.x, 1.12, start_source.z)
 	var target := enemy.get("locked_target", player_position) as Vector3
@@ -1299,6 +1459,21 @@ func _create_enemy_projectile_visual(enemy_type: String) -> Node3D:
 	visual.name = "IncomingAdministrativeMaterial"
 	world_root.add_child(visual)
 	match enemy_type:
+		"strategic_bear":
+			var drum_shell := _make_material(Color("#d8d0bd"), Color("#438b96"))
+			var drum_warning := _make_material(Color("#8c171c"), Color("#ff3538"))
+			var drum_mesh := CylinderMesh.new()
+			drum_mesh.top_radius = 0.44
+			drum_mesh.bottom_radius = 0.44
+			drum_mesh.height = 0.24
+			drum_mesh.radial_segments = 18
+			var drum := MeshInstance3D.new()
+			drum.name = "WeaponizedSpinCycle"
+			drum.mesh = drum_mesh
+			drum.material_override = drum_shell
+			drum.rotation.x = PI * 0.5
+			visual.add_child(drum)
+			_add_box_to(visual, "UnbalancedLoad", Vector3(0.72, 0.10, 0.12), Vector3(0, 0.0, -0.18), drum_warning)
 		"mobilization_copier":
 			var paper := _make_material(Color("#ded4b4"), Color("#766e52"))
 			var urgent := _make_material(Color("#9d2020"), Color("#ff3434"))
@@ -1441,6 +1616,8 @@ func _enemy_attack(enemy_type: String) -> void:
 		damage_flash.color = Color(0.04, 0.67, 0.76, 0.46)
 	elif enemy_type == "mobilization_copier":
 		damage_flash.color = Color(0.92, 0.86, 0.68, 0.52)
+	elif enemy_type == "strategic_bear":
+		damage_flash.color = Color(0.18, 0.70, 0.78, 0.52)
 	damage_audio.play()
 	if case_integrity <= 0:
 		_begin_returned()
@@ -1479,6 +1656,91 @@ func _destroy_enemy(index: int) -> void:
 		_show_status("UNIT REPOSITIONED VOLUNTARILY", 0.78)
 
 
+func _summon_strategic_bear() -> void:
+	if final_seals_resolved or strategic_bear_active or strategic_bear_defeated:
+		return
+	final_seals_active = false
+	final_seals_resolved = true
+	if final_display:
+		final_display.visible = false
+	if gate_nodes.size() > 2:
+		# The slab disappears visually to reveal the arena, while its traversal
+		# boundary remains closed until the appliance exits.
+		gate_nodes[2].visible = false
+	for target in seal_target_nodes:
+		target.visible = false
+	_clear_enemy_projectiles()
+	for enemy_index in range(enemies.size()):
+		var remaining_enemy: Dictionary = enemies[enemy_index]
+		if str(remaining_enemy.get("type", "")) != "state_camera" or not bool(remaining_enemy.get("alive", false)):
+			continue
+		remaining_enemy["alive"] = false
+		var remaining_camera := remaining_enemy.get("node") as Sprite3D
+		if remaining_camera:
+			remaining_camera.visible = false
+		enemies[enemy_index] = remaining_enemy
+	strategic_bear_active = true
+	strategic_bear_id = _spawn_enemy("strategic_bear", STRATEGIC_BEAR_POSITION, 2, true)
+	if seal_caption_label:
+		seal_caption_label.text = "LOAD"
+	_show_status("FINAL DEFENSE — STRATEGIC BEAR", 1.55)
+	gate_audio.pitch_scale = 0.72
+	gate_audio.play()
+
+
+func _defeat_strategic_bear(index: int) -> void:
+	if index < 0 or index >= enemies.size() or strategic_bear_defeated:
+		return
+	var enemy: Dictionary = enemies[index]
+	enemy["hp"] = 0
+	enemy["alive"] = false
+	enemy["vulnerable"] = false
+	enemy["attack_state"] = "departing"
+	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
+	if telegraph and is_instance_valid(telegraph):
+		telegraph.queue_free()
+	enemy["telegraph_node"] = null
+	enemies[index] = enemy
+	strategic_bear_active = false
+	strategic_bear_defeated = true
+	strategic_bear_departure_active = true
+	strategic_bear_departure_timer = 0.0
+	strategic_bear_departure_stage = 0
+	if strategic_bear_target:
+		strategic_bear_target.visible = false
+	_clear_enemy_projectiles()
+	_show_status("FINAL SPIN", 0.75)
+	gate_audio.pitch_scale = 1.28
+	gate_audio.play()
+
+
+func _update_strategic_bear_departure(delta: float) -> void:
+	if not strategic_bear_departure_active:
+		return
+	strategic_bear_departure_timer += delta
+	var progress := clampf(strategic_bear_departure_timer / STRATEGIC_BEAR_DEPARTURE_DURATION, 0.0, 1.0)
+	var sprite: Sprite3D
+	for enemy in enemies:
+		if str(enemy.get("id", "")) == strategic_bear_id:
+			sprite = enemy.get("node") as Sprite3D
+			break
+	if sprite:
+		var vibration := sin(strategic_bear_departure_timer * 34.0) * (0.06 + progress * 0.10)
+		sprite.position.x = progress * progress * 8.5 + vibration
+		sprite.rotation.z = vibration * 0.5 + progress * 0.22
+		sprite.scale = Vector3.ONE * (1.0 + absf(vibration) * 0.25)
+	if strategic_bear_departure_stage == 0 and strategic_bear_departure_timer >= 0.52:
+		strategic_bear_departure_stage = 1
+		_show_status("LOAD UNBALANCED", 1.0)
+	if strategic_bear_departure_timer < STRATEGIC_BEAR_DEPARTURE_DURATION:
+		return
+	strategic_bear_departure_active = false
+	strategic_bear_departure_stage = 2
+	if sprite:
+		sprite.visible = false
+	_open_final_defense()
+
+
 func _update_gate_progress() -> void:
 	for wave_index in range(3):
 		if not wave_spawned[wave_index] or gate_open[wave_index]:
@@ -1491,12 +1753,16 @@ func _update_gate_progress() -> void:
 			continue
 		if wave_index < 2:
 			_open_gate(wave_index)
-		elif not final_seals_active:
+		elif not final_seals_active and not final_seals_resolved:
 			_activate_final_seals()
 
 
 func _activate_final_seals() -> void:
+	if final_seals_resolved:
+		return
 	final_seals_active = true
+	if seal_caption_label:
+		seal_caption_label.text = "SEALS"
 	for target in seal_target_nodes:
 		target.visible = true
 	if final_display_label:
@@ -1522,7 +1788,7 @@ func _open_final_defense() -> void:
 		gate_nodes[2].visible = false
 	if final_display:
 		final_display.visible = false
-	_show_status("DEFENSE WITHDREW AS A GESTURE OF GOODWILL", 1.5)
+	_show_status("APPLIANCE RELOCATION COMPLETE", 1.5)
 	gate_audio.play()
 
 
@@ -1561,6 +1827,8 @@ func _finish_success() -> void:
 		"damage_taken": damage_taken,
 		"cameras_destroyed": cameras_destroyed,
 		"matryoshka_splits": matryoshka_splits,
+		"strategic_bear_defeated": strategic_bear_defeated,
+		"strategic_bear_hits": strategic_bear_hits,
 		"elapsed_seconds": snappedf(elapsed, 0.1),
 	}
 	active = false
@@ -1610,10 +1878,11 @@ func _update_overlay_motion() -> void:
 			incoming_warning = true
 			break
 	var aiming_at_seal := _is_aiming_at_live_seal()
+	var aiming_at_bear_drum := _is_aiming_at_vulnerable_bear()
 	for line in crosshair_lines:
 		if crosshair_hit_timer > 0.0:
 			line.color = Color("#ffdc63")
-		elif aiming_at_seal:
+		elif aiming_at_seal or aiming_at_bear_drum:
 			line.color = Color("#ff4338") if int(elapsed * 14.0) % 2 == 0 else Color("#ffe08a")
 		elif incoming_warning:
 			line.color = Color("#ff3b32") if int(elapsed * 12.0) % 2 == 0 else Color("#f1e6c9")
@@ -1679,7 +1948,11 @@ func _update_hud() -> void:
 	for index in range(note_marks.size()):
 		note_marks[index].modulate = Color.WHITE if index < notes_loaded else Color(0.16, 0.12, 0.10, 0.32)
 	for index in range(seal_marks.size()):
-		if not final_seals_active:
+		if strategic_bear_active or strategic_bear_departure_active or strategic_bear_defeated:
+			var bear_health := _strategic_bear_health()
+			var active_loads := ceili(float(bear_health) / 2.0)
+			seal_marks[index].color = Color("#d52a31") if index < active_loads else Color("#29372d")
+		elif not final_seals_active:
 			seal_marks[index].color = Color("#32282a")
 		elif seal_health[index] > 1:
 			var mark_wave := 0.68 + 0.32 * absf(sin(elapsed * 7.5 + float(index) * 1.8))
@@ -1719,6 +1992,29 @@ func _is_aiming_at_live_seal() -> bool:
 		if angle <= 0.085:
 			return true
 	return false
+
+
+func _is_aiming_at_vulnerable_bear() -> bool:
+	if not strategic_bear_active:
+		return false
+	var forward := _forward_vector()
+	for enemy in enemies:
+		if str(enemy.get("id", "")) != strategic_bear_id or not bool(enemy.get("vulnerable", false)):
+			continue
+		var offset := (enemy.get("position", Vector3.ZERO) as Vector3) - player_position
+		var flat_offset := Vector3(offset.x, 0.0, offset.z)
+		var distance := flat_offset.length()
+		if distance <= 0.01 or distance > 21.0:
+			return false
+		return acos(clampf(forward.dot(flat_offset / distance), -1.0, 1.0)) <= 0.11
+	return false
+
+
+func _strategic_bear_health() -> int:
+	for enemy in enemies:
+		if str(enemy.get("id", "")) == strategic_bear_id:
+			return maxi(0, int(enemy.get("hp", 0)))
+	return 0
 
 
 func _forward_vector() -> Vector3:

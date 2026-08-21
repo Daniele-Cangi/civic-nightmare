@@ -65,6 +65,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Interiors | `oval_office_room.gd` | Project-authored/generated art; room art-direction documents |
 | Character portraits and expressions | `character_visual_catalog.gd`, dialogue/encounter modules | Mixed project-specific generated and curated art; see `ASSET_NOTICE.md` |
 | Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd`, `price_stability_pinball.gd`, `putin_special_operation.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
+| Putin-operation figures | `putin_special_operation.gd` | Four original corridor/boss billboards, including the transparent Strategic Bear washing-machine cutout; OpenAI built-in generation provenance recorded in `ASSET_NOTICE.md` |
 | Opening-drive art | `intro_sequence.gd` | Project-specific OpenAI-generated art; prompts and delivery contract recorded in `ASSET_NOTICE.md` and `docs/OPENING_DRIVE_SEQUENCE.md` |
 | Opening-drive music | `intro_sequence.gd` | **Coastline Dash**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Putin-operation music | `putin_special_operation.gd` | **Three-Minute Special Operation**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
