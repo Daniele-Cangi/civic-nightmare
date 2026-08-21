@@ -1066,6 +1066,10 @@ func _test_consensus_engine() -> void:
 	engine.setup(root)
 	engine.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0, "timers_enabled": false})
 	engine.process_frame(0.01)
+	for audio_name in ["station_audio", "approval_audio", "error_audio", "phase_audio", "printer_audio"]:
+		var procedure_audio := engine.get(audio_name) as AudioStreamPlayer
+		_check(procedure_audio != null and procedure_audio.stream != null, "Consensus Engine owns generated %s feedback" % audio_name)
+	_check(engine.get("procedure_flash") != null and engine.get("action_stamp_label") != null and engine.get("action_burst") != null, "Consensus Engine owns a dedicated machine-impact layer")
 	var approval_lights: Array = engine.get("lights")
 	var first_light_style := (approval_lights[0] as PanelContainer).get_theme_stylebox("panel") as StyleBoxFlat
 	_check(approval_lights.size() == 27 and first_light_style != null and first_light_style.bg_color.a > 0.99, "all 27 approvals use complete physical indicators")
@@ -1075,8 +1079,13 @@ func _test_consensus_engine() -> void:
 	_check((engine.get("dossier_root") as Node2D).get_child_count() >= 9 and str((engine.get("dossier_stamp") as Label).text) == "00 / 27", "the movable dossier is a layered physical case with a live approval counter")
 	var derogation_style := (engine.get("emergency_panel") as PanelContainer).get_theme_stylebox("panel") as StyleBoxFlat
 	_check(derogation_style != null and derogation_style.bg_color.a > 0.99, "the emergency derogation is housed in a complete physical console")
-	for station_id in ["scanner", "stamp", "submit"]:
+	_check(not engine.interact_at_station("translation"), "an incorrect first counter is rejected")
+	_check(str((engine.get("action_stamp_label") as Label).text) == "MISROUTED" and float((engine.get("procedure_flash") as ColorRect).modulate.a) > 0.0, "a misroute produces immediate red machine feedback")
+	_check(engine.interact_at_station("scanner"), "simple-majority route accepts scanner")
+	_check(is_equal_approx(float((engine.get("station_audio") as AudioStreamPlayer).pitch_scale), 1.34) and str((engine.get("action_stamp_label") as Label).text) == "SCANNED", "the scanner resolves with its own physical stamp and pitch")
+	for station_id in ["stamp", "submit"]:
 		_check(engine.interact_at_station(station_id), "simple-majority route accepts %s" % station_id)
+	_check(is_equal_approx(float((engine.get("station_audio") as AudioStreamPlayer).pitch_scale), 0.92) and str((engine.get("action_stamp_label") as Label).text) == "INSUFFICIENT", "filing retains its own pitch before the machine replaces its stamp with a phase ruling")
 	engine.process_frame(0.01)
 	_check(int(engine.get("phase_index")) == 1 and int(engine.get("approvals")) == 8, "simple majority is achieved and then declared insufficient")
 	for station_id in ["stamp", "translation", "mobile_stamp", "submit"]:
@@ -1088,6 +1097,7 @@ func _test_consensus_engine() -> void:
 	_check(bool(engine.get("derogation_unlocked")), "Annex B exposes the lawful emergency derogation")
 	_check(engine.activate_derogation(), "the discovered derogation can complete unanimity")
 	engine.process_frame(3.0)
+	_check(int(engine.get("last_print_audio_line")) > 0 and bool((engine.get("printer_label") as Label).visible), "the 847-page printout advances with mechanical line feedback")
 	engine.process_frame(0.01)
 	_check(not bool(engine.get("active")), "printed unanimous approval closes the procedure")
 	var consensus_result: Dictionary = engine.get_result()
@@ -1112,18 +1122,26 @@ func _test_price_stability_pinball() -> void:
 		"timers_enabled": false,
 	})
 	pinball.process_frame(0.01)
+	for audio_name in ["bumper_audio", "flipper_audio", "event_audio", "bailout_audio", "success_audio"]:
+		var monetary_audio := pinball.get(audio_name) as AudioStreamPlayer
+		_check(monetary_audio != null and monetary_audio.stream != null, "Price Stability owns generated %s feedback" % audio_name)
+	_check(pinball.get("table_flash") != null and pinball.get("impact_burst") != null and pinball.get("celebration_root") != null, "Price Stability owns a dedicated monetary-impact layer")
 	_check(str(pinball.get("title_label").text) == "THE 2% MIRACLE", "Lagarde's procedure names its impossible target immediately")
 	_check(is_equal_approx(float(pinball.get("inflation")), 4.8) and str(pinball.get("target_label").text).contains("2.00%"), "the inflation reading and target are visible before play")
 	_check((pinball.get("bumper_nodes") as Dictionary).size() == 6, "the monetary table exposes six physical policy and household bumpers")
 	_check((pinball.get("balls") as Array).size() == 1 and pinball.get("left_flipper") != null and pinball.get("right_flipper") != null, "the procedure begins as a readable two-flipper pinball table")
-	for bumper_id in ["rates_left", "energy", "rates_right", "rent", "rates_left"]:
+	_check(pinball.register_bumper_hit("rates_left"), "the first policy bumper accepts a deterministic hit")
+	_check(float((pinball.get("bumper_audio") as AudioStreamPlayer).pitch_scale) > 1.0 and (pinball.get("impact_burst") as Line2D).position == Vector2(427, 276), "rate policy produces a bright localized pinball impact")
+	for bumper_id in ["energy", "rates_right", "rent", "rates_left"]:
 		_check(pinball.register_bumper_hit(bumper_id), "policy table accepts the %s bumper" % bumper_id)
 	_check(bool(pinball.get("multiball_spawned")) and (pinball.get("balls") as Array).size() == 2, "five interventions trigger the readable liquidity-injection multiball")
+	_check(is_equal_approx(float((pinball.get("event_audio") as AudioStreamPlayer).pitch_scale), 1.42) and str((pinball.get("policy_message_label") as Label).text) == "LIQUIDITY INJECTION", "liquidity injection receives a distinct audiovisual super-move cue")
 	for bumper_id in ["wages", "rates_right", "bank_rescue", "energy", "rates_left"]:
 		_check(pinball.register_bumper_hit(bumper_id), "accelerated policy table accepts the %s bumper" % bumper_id)
 	_check(bool(pinball.get("rate_shock_active")), "ten interventions trigger the authored rate shock")
 	_check(pinball.simulate_ball_loss(), "a drained economy reaches the bailout rule")
 	_check(int(pinball.get("bailouts")) == 1 and (pinball.get("balls") as Array).size() == 1, "the last drained ball is restored as a systemic bailout")
+	_check(float((pinball.get("bailout_audio") as AudioStreamPlayer).pitch_scale) > 0.9 and (pinball.get("impact_burst") as Line2D).position == Vector2(640, 555), "systemic bailout returns with a central serve impact")
 	_check(pinball.force_statistical_adjustment(), "the timeout route can publish the target statistically")
 	pinball.process_frame(0.01)
 	pinball.process_frame(0.01)
@@ -1194,6 +1212,7 @@ func _test_price_stability_pinball() -> void:
 		_check(stabilized_pinball.register_bumper_hit("rates_left"), "rate policy hit %d is deterministic" % (hit_index + 1))
 	_check(is_equal_approx(float(stabilized_pinball.get("inflation")), 2.1), "six rate hits reach the visible stability band without hidden arithmetic")
 	stabilized_pinball.process_frame(2.1)
+	_check((stabilized_pinball.get("celebration_root") as Node2D).get_child_count() == 18 and is_equal_approx(float((stabilized_pinball.get("success_audio") as AudioStreamPlayer).pitch_scale), 1.0), "real stabilization explodes into a full euro celebration and success cue")
 	stabilized_pinball.process_frame(0.01)
 	stabilized_pinball.process_frame(0.01)
 	stabilized_pinball.process_frame(0.01)

@@ -69,6 +69,15 @@ var emergency_fill: ColorRect
 var emergency_panel: PanelContainer
 var printer_sheet: ColorRect
 var printer_label: Label
+var procedure_flash: ColorRect
+var action_stamp_label: Label
+var action_burst: Line2D
+
+var station_audio: AudioStreamPlayer
+var approval_audio: AudioStreamPlayer
+var error_audio: AudioStreamPlayer
+var phase_audio: AudioStreamPlayer
+var printer_audio: AudioStreamPlayer
 
 var active := false
 var state: State = State.INACTIVE
@@ -91,12 +100,14 @@ var misroutes := 0
 var station_actions := 0
 var attempts := 1
 var completion_route := ""
+var last_print_audio_line := 0
 var result: Dictionary = {}
 
 
 func setup(owner: Node) -> void:
 	host = owner
 	_create_overlay()
+	_create_audio()
 
 
 func start(options: Dictionary = {}) -> void:
@@ -118,10 +129,14 @@ func start(options: Dictionary = {}) -> void:
 	station_actions = 0
 	attempts = 1
 	completion_route = ""
+	last_print_audio_line = 0
 	result.clear()
 	active = true
 	layer.visible = true
 	_layout_frame()
+	procedure_flash.modulate.a = 0.0
+	action_stamp_label.modulate.a = 0.0
+	action_burst.modulate.a = 0.0
 	_set_state(State.INTRO)
 	_refresh_phase()
 
@@ -129,6 +144,9 @@ func start(options: Dictionary = {}) -> void:
 func stop() -> void:
 	active = false
 	state = State.INACTIVE
+	for player in [station_audio, approval_audio, error_audio, phase_audio, printer_audio]:
+		if player:
+			player.stop()
 	if layer:
 		layer.visible = false
 
@@ -171,11 +189,14 @@ func interact_at_station(station_id: String) -> bool:
 	if station_id != expected:
 		misroutes += 1
 		prompt_label.text = "WRONG DEPARTMENT"
+		_play_error_feedback(station_id)
 		return false
+	var previous_approvals := approvals
 	station_actions += 1
 	step_index += 1
 	approvals = int(PHASE_APPROVAL_STEPS[phase_index][step_index - 1])
 	_refresh_approvals()
+	_play_station_feedback(station_id, previous_approvals, approvals)
 	if phase_index == 2 and step_index >= 3:
 		derogation_unlocked = true
 		emergency_panel.visible = true
@@ -197,6 +218,8 @@ func activate_derogation() -> bool:
 	completion_route = "emergency_derogation"
 	approvals = 27
 	_refresh_approvals()
+	_play_phase_audio(1.42)
+	_show_machine_impact(Color(1.0, 0.28, 0.18, 0.42), "DEROGATION", "emergency")
 	_begin_printing()
 	return true
 
@@ -278,6 +301,8 @@ func _show_phase_result() -> void:
 	else:
 		requirement_label.text = "64% REPRESENTED\n65% REQUIRED"
 	prompt_label.text = ""
+	_play_phase_audio(0.72 if phase_index == 0 else 0.58)
+	_show_machine_impact(Color(1.0, 0.66, 0.12, 0.32), "INSUFFICIENT", "")
 	_set_state(State.PHASE_RESULT)
 
 
@@ -288,6 +313,8 @@ func _advance_phase() -> void:
 	dossier_position = Vector2(640, 604)
 	phase_time_remaining = 35.0 if phase_index == 1 else 999.0
 	_refresh_phase()
+	_play_phase_audio(1.08 + float(phase_index) * 0.16)
+	_show_machine_impact(Color(0.22, 0.72, 1.0, 0.24), "PROCEDURE UPDATED", "")
 	_set_state(State.ACTIVE)
 
 
@@ -299,6 +326,7 @@ func _reset_expired_phase() -> void:
 	phase_time_remaining = 30.0 if phase_index == 0 else 35.0
 	dossier_position = Vector2(640, 604)
 	requirement_label.text = "APPROVALS EXPIRED  ·  RESUBMIT"
+	_play_error_feedback("")
 	_refresh_phase()
 
 
@@ -308,11 +336,19 @@ func _begin_printing() -> void:
 	printer_sheet.visible = true
 	printer_sheet.size.y = 0.0
 	printer_label.visible = false
+	last_print_audio_line = 0
+	_play_phase_audio(1.62)
+	_show_machine_impact(Color(0.20, 1.0, 0.55, 0.30), "UNANIMOUS", "submit")
 	_set_state(State.PRINTING)
 
 
 func _process_printing(delta: float) -> void:
 	printer_sheet.size.y = minf(315.0, printer_sheet.size.y + delta * 178.0)
+	var printed_audio_line := mini(18, int(printer_sheet.size.y / 16.0))
+	if printed_audio_line > last_print_audio_line:
+		last_print_audio_line = printed_audio_line
+		printer_audio.pitch_scale = 0.92 + float(printed_audio_line % 4) * 0.08
+		printer_audio.play()
 	if printer_sheet.size.y >= 270.0:
 		printer_label.visible = true
 		printer_label.text = "PAGE 1 OF 847"
@@ -328,6 +364,8 @@ func _process_printing(delta: float) -> void:
 		}
 		title_label.text = "UNANIMOUS APPROVAL"
 		requirement_label.text = "ACCESS AUTHORIZED"
+		_play_phase_audio(1.92)
+		_show_machine_impact(Color(0.30, 1.0, 0.62, 0.34), "ACCESS GRANTED", "")
 		_set_state(State.CLEARED)
 
 
@@ -426,6 +464,129 @@ func _update_dossier_position() -> void:
 func _refresh_emergency_fill() -> void:
 	if emergency_fill:
 		emergency_fill.size.x = 152.0 * clampf(derogation_hold / DEROGATION_HOLD, 0.0, 1.0)
+
+
+func _play_station_feedback(station_id: String, previous_approvals: int, current_approvals: int) -> void:
+	var pitch_by_station := {
+		"scanner": 1.34,
+		"stamp": 0.72,
+		"translation": 1.56,
+		"mobile_stamp": 0.58,
+		"submit": 0.92,
+	}
+	station_audio.pitch_scale = float(pitch_by_station.get(station_id, 1.0))
+	station_audio.play()
+	approval_audio.pitch_scale = 0.92 + float(current_approvals) / 54.0
+	approval_audio.play()
+	var stamp_text: String = str({
+		"scanner": "SCANNED",
+		"stamp": "BLUE INK",
+		"translation": "TRANSLATED",
+		"mobile_stamp": "65%",
+		"submit": "FILED",
+	}.get(station_id, "APPROVED"))
+	_show_machine_impact(Color(0.22, 0.78, 1.0, 0.28), stamp_text, station_id)
+	for approval_index in range(previous_approvals, current_approvals):
+		if approval_index < 0 or approval_index >= lights.size():
+			continue
+		var light := lights[approval_index]
+		light.pivot_offset = light.size * 0.5
+		light.scale = Vector2.ONE * 0.28
+		var light_tween := create_tween()
+		light_tween.tween_interval(minf(0.42, float(approval_index - previous_approvals) * 0.025))
+		light_tween.tween_property(light, "scale", Vector2.ONE * 1.22, 0.10)
+		light_tween.tween_property(light, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _play_error_feedback(station_id: String) -> void:
+	error_audio.pitch_scale = 0.92 + float(misroutes % 3) * 0.08
+	error_audio.play()
+	_show_machine_impact(Color(1.0, 0.12, 0.16, 0.38), "MISROUTED", station_id)
+
+
+func _play_phase_audio(pitch: float) -> void:
+	phase_audio.pitch_scale = pitch
+	phase_audio.play()
+
+
+func _show_machine_impact(color: Color, stamp_text: String, station_id: String) -> void:
+	if not procedure_flash or not action_stamp_label or not action_burst:
+		return
+	var impact_position := dossier_position
+	if station_id != "":
+		impact_position = _station_position(station_id)
+	procedure_flash.color = color
+	procedure_flash.modulate.a = 1.0
+	var flash_tween := create_tween()
+	flash_tween.tween_property(procedure_flash, "modulate:a", 0.0, 0.24)
+
+	action_stamp_label.text = stamp_text
+	action_stamp_label.position = impact_position + Vector2(-155, -72)
+	action_stamp_label.rotation = -0.075 + float((station_actions + misroutes) % 3) * 0.065
+	action_stamp_label.scale = Vector2.ONE * 0.68
+	action_stamp_label.modulate = Color(color.r, color.g, color.b, 1.0)
+	var stamp_tween := create_tween().set_parallel(true)
+	stamp_tween.tween_property(action_stamp_label, "scale", Vector2.ONE * 1.12, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	stamp_tween.tween_property(action_stamp_label, "position:y", action_stamp_label.position.y - 24.0, 0.38)
+	stamp_tween.tween_property(action_stamp_label, "modulate:a", 0.0, 0.42).set_delay(0.12)
+
+	action_burst.position = impact_position
+	action_burst.scale = Vector2.ONE * 0.35
+	action_burst.default_color = Color(color.r, color.g, color.b, 0.95)
+	action_burst.modulate.a = 1.0
+	var burst_tween := create_tween().set_parallel(true)
+	burst_tween.tween_property(action_burst, "scale", Vector2.ONE * 1.65, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	burst_tween.tween_property(action_burst, "modulate:a", 0.0, 0.34)
+
+	if dossier_root:
+		dossier_root.scale = Vector2.ONE * 1.12
+		dossier_root.rotation = -0.055 if (station_actions + misroutes) % 2 == 0 else 0.055
+		var dossier_tween := create_tween().set_parallel(true)
+		dossier_tween.tween_property(dossier_root, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		dossier_tween.tween_property(dossier_root, "rotation", 0.0, 0.18)
+
+	var station_visual: Control
+	if station_nodes.has(station_id):
+		station_visual = station_nodes[station_id]
+	elif station_id == "mobile_stamp":
+		station_visual = mobile_stamp_node
+	elif station_id == "emergency":
+		station_visual = emergency_panel
+	if station_visual:
+		station_visual.pivot_offset = station_visual.size * 0.5
+		station_visual.scale = Vector2.ONE * 1.09
+		var station_tween := create_tween()
+		station_tween.tween_property(station_visual, "scale", Vector2.ONE, 0.20).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _create_audio() -> void:
+	if station_audio:
+		return
+	station_audio = AudioStreamPlayer.new()
+	station_audio.name = "ProcedureStationAudio"
+	station_audio.stream = _make_tone(310.0, 0.11, 0.08)
+	station_audio.volume_db = -3.0
+	add_child(station_audio)
+	approval_audio = AudioStreamPlayer.new()
+	approval_audio.name = "ApprovalAudio"
+	approval_audio.stream = _make_tone(620.0, 0.16, 0.02)
+	approval_audio.volume_db = -3.5
+	add_child(approval_audio)
+	error_audio = AudioStreamPlayer.new()
+	error_audio.name = "WrongDepartmentAudio"
+	error_audio.stream = _make_tone(92.0, 0.24, 0.32)
+	error_audio.volume_db = -1.5
+	add_child(error_audio)
+	phase_audio = AudioStreamPlayer.new()
+	phase_audio.name = "ProcedurePhaseAudio"
+	phase_audio.stream = _make_tone(214.0, 0.38, 0.11)
+	phase_audio.volume_db = -2.5
+	add_child(phase_audio)
+	printer_audio = AudioStreamPlayer.new()
+	printer_audio.name = "RegulationPrinterAudio"
+	printer_audio.stream = _make_tone(890.0, 0.055, 0.24)
+	printer_audio.volume_db = -5.0
+	add_child(printer_audio)
 
 
 func _create_overlay() -> void:
@@ -645,6 +806,31 @@ func _create_overlay() -> void:
 	printer_sheet.visible = false
 	printer_label.visible = false
 
+	procedure_flash = ColorRect.new()
+	procedure_flash.name = "ProcedureImpactFlash"
+	procedure_flash.size = VIEW_SIZE
+	procedure_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	procedure_flash.modulate.a = 0.0
+	procedure_flash.z_index = 40
+	frame.add_child(procedure_flash)
+	action_burst = Line2D.new()
+	action_burst.name = "ProcedureImpactBurst"
+	action_burst.width = 7.0
+	action_burst.closed = true
+	for point_index in range(32):
+		var angle := TAU * float(point_index) / 32.0
+		action_burst.add_point(Vector2(cos(angle), sin(angle)) * 54.0)
+	action_burst.modulate.a = 0.0
+	action_burst.z_index = 42
+	frame.add_child(action_burst)
+	action_stamp_label = _make_label(Vector2.ZERO, Vector2(310, 72), 34, Color.WHITE)
+	action_stamp_label.name = "ProcedureActionStamp"
+	action_stamp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	action_stamp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	action_stamp_label.modulate.a = 0.0
+	action_stamp_label.z_index = 43
+	frame.add_child(action_stamp_label)
+
 
 func _create_station(id: String, position_value: Vector2, size_value: Vector2, color: Color, technical_label: String) -> void:
 	var panel := _make_panel(position_value, size_value, color, Color("#10232c"), 5)
@@ -748,6 +934,27 @@ func _make_label(position_value: Vector2, size_value: Vector2, font_size: int, c
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+
+
+func _make_tone(frequency: float, duration: float, noise_amount: float) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var sample_count := maxi(1, int(duration * sample_rate))
+	var bytes := PackedByteArray()
+	bytes.resize(sample_count)
+	for i in range(sample_count):
+		var time := float(i) / float(sample_rate)
+		var envelope := pow(1.0 - float(i) / float(sample_count), 1.65)
+		var primary := sin(TAU * frequency * time)
+		var harmonic := sin(TAU * frequency * 2.01 * time) * 0.24
+		var noise := sin(float(i * 7919 % 997) * 0.013) * noise_amount
+		var wave := (primary + harmonic) * (1.0 - noise_amount) + noise
+		bytes[i] = clampi(int(128.0 + wave * envelope * 88.0), 0, 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = bytes
+	return stream
 
 
 func _layout_frame() -> void:
