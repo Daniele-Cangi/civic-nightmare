@@ -33,6 +33,7 @@ const MATRYOSHKA_PATH := "res://assets/encounters/putin_operation/matryoshka_sec
 const COPIER_PATH := "res://assets/encounters/putin_operation/mobilization_copier_v1.png"
 const CAMERA_PATH := "res://assets/encounters/putin_operation/state_television_camera_v1.png"
 const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png"
+const MUSIC_PATH := "res://assets/audio/civic_nightmare_putin_special_operation.ogg"
 const WEAPON_CUTOUT_SHADER := """
 shader_type canvas_item;
 
@@ -106,8 +107,13 @@ var wave_spawned := [false, false, false]
 var gate_open := [false, false, false]
 var gate_nodes: Array[Node3D] = []
 var final_display: Node3D
+var final_display_label: Label3D
 var seal_nodes: Array[MeshInstance3D] = []
+var seal_target_nodes: Array[Node3D] = []
+var seal_ready_material: StandardMaterial3D
+var seal_damaged_material: StandardMaterial3D
 var seal_health := [2, 2, 2]
+var seal_hit_flash := [0.0, 0.0, 0.0]
 var final_seals_active := false
 var result: Dictionary = {}
 
@@ -117,6 +123,7 @@ var hit_audio: AudioStreamPlayer
 var damage_audio: AudioStreamPlayer
 var gate_audio: AudioStreamPlayer
 var success_audio: AudioStreamPlayer
+var music_player: AudioStreamPlayer
 
 
 func setup(owner: Node) -> void:
@@ -147,6 +154,8 @@ func stop() -> void:
 	active = false
 	state = State.INACTIVE
 	_clear_enemies()
+	if music_player:
+		music_player.stop()
 	if layer:
 		layer.visible = false
 
@@ -163,6 +172,8 @@ func process_frame(delta: float) -> void:
 	shot_cooldown_remaining = maxf(0.0, shot_cooldown_remaining - delta)
 	_update_reload(delta)
 	invulnerability_remaining = maxf(0.0, invulnerability_remaining - delta)
+	for seal_index in range(seal_hit_flash.size()):
+		seal_hit_flash[seal_index] = maxf(0.0, float(seal_hit_flash[seal_index]) - delta)
 	weapon_kick = move_toward(weapon_kick, 0.0, delta * 5.5)
 	crosshair_hit_timer = maxf(0.0, crosshair_hit_timer - delta)
 	status_timer = maxf(0.0, status_timer - delta)
@@ -186,6 +197,10 @@ func process_frame(delta: float) -> void:
 
 func get_result() -> Dictionary:
 	return result.duplicate(true)
+
+
+func get_music_asset_path() -> String:
+	return MUSIC_PATH
 
 
 func get_enemy_counts() -> Dictionary:
@@ -234,13 +249,20 @@ func register_seal_hit(seal_index: int) -> bool:
 		return false
 	shots_hit += 1
 	seal_health[seal_index] -= 1
+	seal_hit_flash[seal_index] = 0.22
 	var seal := seal_nodes[seal_index] if seal_index < seal_nodes.size() else null
 	if seal:
-		seal.scale = Vector3.ONE * (1.28 if seal_health[seal_index] > 0 else 0.01)
-	if seal_health[seal_index] <= 0:
-		hit_audio.play()
+		seal.material_override = seal_damaged_material if seal_health[seal_index] > 0 else seal_ready_material
+		seal.scale = Vector3.ONE * (1.34 if seal_health[seal_index] > 0 else 0.01)
+	if seal_index < seal_target_nodes.size() and seal_health[seal_index] <= 0:
+		seal_target_nodes[seal_index].visible = false
+	hit_audio.pitch_scale = 1.08 + float(seal_index) * 0.12
+	hit_audio.play()
 	if _remaining_seals() == 0:
 		_open_final_defense()
+	elif final_display_label:
+		var remaining := _remaining_seals()
+		final_display_label.text = "STAMP %d FLASHING SEAL%s" % [remaining, "" if remaining == 1 else "S"]
 	return true
 
 
@@ -302,21 +324,21 @@ func _create_world() -> void:
 
 	var world_environment := Environment.new()
 	world_environment.background_mode = Environment.BG_COLOR
-	world_environment.background_color = Color("#141918")
+	world_environment.background_color = Color("#090d0c")
 	world_environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	world_environment.ambient_light_color = Color("#7e8a82")
-	world_environment.ambient_light_energy = 0.92
+	world_environment.ambient_light_color = Color("#718078")
+	world_environment.ambient_light_energy = 0.78
 	world_environment.fog_enabled = true
-	world_environment.fog_light_color = Color("#242a29")
-	world_environment.fog_density = 0.010
+	world_environment.fog_light_color = Color("#101716")
+	world_environment.fog_density = 0.016
 	environment_node = WorldEnvironment.new()
 	environment_node.environment = world_environment
 	world_root.add_child(environment_node)
 
 	var key_light := DirectionalLight3D.new()
 	key_light.rotation_degrees = Vector3(-46, -24, 0)
-	key_light.light_color = Color("#e7d4ad")
-	key_light.light_energy = 1.15
+	key_light.light_color = Color("#e5d2ae")
+	key_light.light_energy = 1.05
 	key_light.shadow_enabled = true
 	world_root.add_child(key_light)
 
@@ -334,32 +356,41 @@ func _create_world() -> void:
 
 
 func _build_corridor() -> void:
-	var floor_material := _make_material(Color("#454b4a"), Color.TRANSPARENT)
-	var ceiling_material := _make_material(Color("#252a2a"), Color.TRANSPARENT)
-	var wall_material := _make_material(Color("#5d6257"), Color.TRANSPARENT)
-	var recess_material := _make_material(Color("#303638"), Color.TRANSPARENT)
-	var seam_material := _make_material(Color("#252b2b"), Color.TRANSPARENT)
-	var lane_material := _make_material(Color("#735c2b"), Color("#c3983c"))
-	var red_light_material := _make_material(Color("#62161a"), Color("#db2630"))
-	var cyan_light_material := _make_material(Color("#18383b"), Color("#3dc7ce"))
-	var banner_material := _make_material(Color("#691a1e"), Color("#8b1e24"))
-	var medal_material := _make_material(Color("#8d6a24"), Color("#e1ae45"))
+	var floor_material := _make_material(Color("#2d3431"), Color.TRANSPARENT)
+	var route_material := _make_material(Color("#3a423d"), Color.TRANSPARENT)
+	var ceiling_material := _make_material(Color("#181d1c"), Color.TRANSPARENT)
+	var wall_material := _make_material(Color("#414943"), Color.TRANSPARENT)
+	var recess_material := _make_material(Color("#202827"), Color.TRANSPARENT)
+	var seam_material := _make_material(Color("#171d1c"), Color.TRANSPARENT)
+	var lane_material := _make_material(Color("#594923"), Color("#9c7d31"))
+	var red_light_material := _make_material(Color("#4e1115"), Color("#c9272f"))
+	var cyan_light_material := _make_material(Color("#243a3b"), Color("#78b6ba"))
+	var banner_material := _make_material(Color("#59161a"), Color("#781b20"))
+	var medal_material := _make_material(Color("#73571f"), Color("#c89b3c"))
+	var cover_material := _make_material(Color("#4a514b"), Color.TRANSPARENT)
+	var cover_trim_material := _make_material(Color("#697169"), Color.TRANSPARENT)
 
 	_add_box("ConcreteFloor", Vector3(12.0, 0.18, 66.0), Vector3(0, -0.10, 32.0), floor_material)
+	_add_box("CentralAdministrativeRoute", Vector3(5.9, 0.035, 64.0), Vector3(0, 0.005, 32.0), route_material)
+	_add_box("LeftRouteEdge", Vector3(0.065, 0.045, 64.0), Vector3(-3.0, 0.03, 32.0), lane_material)
+	_add_box("RightRouteEdge", Vector3(0.065, 0.045, 64.0), Vector3(3.0, 0.03, 32.0), lane_material)
 	_add_box("LowCeiling", Vector3(12.0, 0.18, 66.0), Vector3(0, 3.25, 32.0), ceiling_material)
+	_add_box("CeilingInset", Vector3(6.8, 0.055, 64.0), Vector3(0, 3.13, 32.0), recess_material)
 	_add_box("LeftWall", Vector3(0.45, 3.35, 66.0), Vector3(-5.9, 1.58, 32.0), wall_material)
 	_add_box("RightWall", Vector3(0.45, 3.35, 66.0), Vector3(5.9, 1.58, 32.0), wall_material)
 	_add_box("RearWall", Vector3(12.0, 3.35, 0.45), Vector3(0, 1.58, 0.0), wall_material)
+	_add_box("LeftWallBase", Vector3(0.08, 0.72, 64.0), Vector3(-5.63, 0.38, 32.0), recess_material)
+	_add_box("RightWallBase", Vector3(0.08, 0.72, 64.0), Vector3(5.63, 0.38, 32.0), recess_material)
 	_add_box("LeftPipe", Vector3(0.14, 0.14, 64.0), Vector3(-5.43, 2.66, 32.0), recess_material)
 	_add_box("RightPipe", Vector3(0.14, 0.14, 64.0), Vector3(5.43, 2.66, 32.0), recess_material)
 
-	for seam_index in range(1, 22):
-		var seam_z := float(seam_index * 3)
+	for seam_index in range(1, 17):
+		var seam_z := float(seam_index * 4)
 		_add_box("FloorSeam%d" % seam_index, Vector3(11.0, 0.025, 0.045), Vector3(0, 0.01, seam_z), seam_material)
 		if seam_index % 2 == 0:
-			_add_box("GuidanceMark%d" % seam_index, Vector3(0.10, 0.035, 1.15), Vector3(0, 0.035, seam_z), lane_material)
-		for side in [-1.0, 1.0]:
-			_add_box("WallRib%d_%d" % [seam_index, int(side)], Vector3(0.30, 3.08, 0.42), Vector3(side * 5.52, 1.55, seam_z), recess_material)
+			_add_box("GuidanceMark%d" % seam_index, Vector3(0.10, 0.04, 1.55), Vector3(0, 0.04, seam_z), lane_material)
+			for side in [-1.0, 1.0]:
+				_add_box("WallRib%d_%d" % [seam_index, int(side)], Vector3(0.26, 3.0, 0.34), Vector3(side * 5.51, 1.55, seam_z), recess_material)
 
 	for marker_index in range(1, 8):
 		var marker_z := float(marker_index * 8)
@@ -387,7 +418,7 @@ func _build_corridor() -> void:
 		corridor_light.name = "InspectionLight%d" % marker_index
 		corridor_light.position = Vector3(0, 2.8, marker_z)
 		corridor_light.light_color = Color("#d7e5d8") if marker_index % 3 else Color("#e0a9a0")
-		corridor_light.light_energy = 0.72
+		corridor_light.light_energy = 0.58
 		corridor_light.omni_range = 7.4
 		corridor_light.shadow_enabled = false
 		world_root.add_child(corridor_light)
@@ -410,10 +441,15 @@ func _build_corridor() -> void:
 				medal_material
 			)
 
-	# Ceremonial cover is finally useful: it blocks both the citizen and incoming forms.
-	var cover_material := _make_material(Color("#596056"), Color.TRANSPARENT)
-	for cover in COVER_POINTS:
-		_add_box("CeremonialCover", Vector3(1.25, 1.1, 0.8), cover, cover_material)
+	# Ceremonial cover is useful, visually legible, and no longer floats as a bare box.
+	for cover_index in range(COVER_POINTS.size()):
+		var cover_root := Node3D.new()
+		cover_root.name = "CeremonialCover%d" % (cover_index + 1)
+		cover_root.position = COVER_POINTS[cover_index]
+		world_root.add_child(cover_root)
+		_add_box_to(cover_root, "ConcreteBlock", Vector3(1.25, 1.1, 0.8), Vector3.ZERO, cover_material)
+		_add_box_to(cover_root, "TopCap", Vector3(1.34, 0.075, 0.87), Vector3(0, 0.55, 0), cover_trim_material)
+		_add_box_to(cover_root, "InspectionStripe", Vector3(0.72, 0.11, 0.035), Vector3(0, 0.11, -0.42), red_light_material)
 
 
 func _build_gates() -> void:
@@ -441,39 +477,67 @@ func _build_final_display() -> void:
 	final_display.name = "PotemkinDefense"
 	final_display.position = Vector3(0, 0, 59.55)
 	world_root.add_child(final_display)
-	var board_material := _make_material(Color("#3f4739"), Color.TRANSPARENT)
-	var trim_material := _make_material(Color("#6d241f"), Color.TRANSPARENT)
-	var red_seal_material := _make_material(Color("#8d1718"), Color("#ff3038"))
+	var board_material := _make_material(Color("#43483d"), Color.TRANSPARENT)
+	var board_shadow_material := _make_material(Color("#252b26"), Color.TRANSPARENT)
+	var trim_material := _make_material(Color("#70241f"), Color.TRANSPARENT)
+	var edge_material := _make_material(Color("#77735d"), Color.TRANSPARENT)
+	var target_material := _make_material(Color("#6d1115"), Color("#ff3a3f"))
+	seal_ready_material = _make_material(Color("#8d1718"), Color("#ff3038"))
+	seal_damaged_material = _make_material(Color("#9a5a12"), Color("#ffc43d"))
+	_add_box_to(final_display, "DefenseShadow", Vector3(8.2, 2.65, 0.12), Vector3(0, 1.32, 0.02), board_shadow_material)
 	_add_box_to(final_display, "TankCardboardBody", Vector3(7.6, 1.62, 0.18), Vector3(0, 1.0, -0.28), board_material)
 	_add_box_to(final_display, "TankCardboardTurret", Vector3(3.5, 0.9, 0.20), Vector3(0, 2.18, -0.3), board_material)
 	_add_box_to(final_display, "PaintedCannon", Vector3(0.34, 0.34, 3.0), Vector3(0, 2.22, -1.65), trim_material)
+	_add_box_to(final_display, "CardboardTopEdge", Vector3(7.75, 0.08, 0.08), Vector3(0, 1.83, -0.42), edge_material)
+	_add_box_to(final_display, "AuthorizationPanel", Vector3(6.3, 1.15, 0.09), Vector3(0, 1.45, -0.46), board_shadow_material)
 	for wheel_index in range(5):
 		_add_box_to(final_display, "PaintedWheel%d" % wheel_index, Vector3(0.95, 0.58, 0.12), Vector3(-2.4 + wheel_index * 1.2, 0.38, -0.42), trim_material)
 
 	for seal_index in range(3):
 		var seal_mesh := SphereMesh.new()
-		seal_mesh.radius = 0.31
-		seal_mesh.height = 0.62
+		seal_mesh.radius = 0.39
+		seal_mesh.height = 0.78
 		seal_mesh.radial_segments = 18
 		seal_mesh.rings = 8
 		var seal := MeshInstance3D.new()
 		seal.name = "AuthorizationSeal%d" % (seal_index + 1)
 		seal.mesh = seal_mesh
-		seal.material_override = red_seal_material
-		seal.position = Vector3(-2.15 + seal_index * 2.15, 1.55 + (0.42 if seal_index == 1 else 0.0), -0.65)
+		seal.material_override = seal_ready_material
+		seal.position = Vector3(-2.2 + seal_index * 2.2, 1.43 + (0.34 if seal_index == 1 else 0.0), -0.65)
 		final_display.add_child(seal)
 		seal_nodes.append(seal)
 
-	var label := Label3D.new()
-	label.name = "DisplayLabel"
-	label.text = "POTEMKIN DEFENSE"
-	label.font_size = 52
-	label.pixel_size = 0.009
-	label.modulate = Color("#e8d9b5")
-	label.outline_modulate = Color.BLACK
-	label.outline_size = 8
-	label.position = Vector3(0, 2.92, -0.5)
-	final_display.add_child(label)
+		var target_root := Node3D.new()
+		target_root.name = "SealTarget%d" % (seal_index + 1)
+		target_root.position = seal.position + Vector3(0, 0, -0.05)
+		target_root.visible = false
+		final_display.add_child(target_root)
+		_add_box_to(target_root, "TopBracket", Vector3(0.52, 0.075, 0.055), Vector3(0, 0.58, 0), target_material)
+		_add_box_to(target_root, "BottomBracket", Vector3(0.52, 0.075, 0.055), Vector3(0, -0.58, 0), target_material)
+		_add_box_to(target_root, "LeftBracket", Vector3(0.075, 0.52, 0.055), Vector3(-0.58, 0, 0), target_material)
+		_add_box_to(target_root, "RightBracket", Vector3(0.075, 0.52, 0.055), Vector3(0.58, 0, 0), target_material)
+		seal_target_nodes.append(target_root)
+
+	final_display_label = Label3D.new()
+	final_display_label.name = "DisplayLabel"
+	final_display_label.text = "POTEMKIN DEFENSE"
+	final_display_label.font_size = 52
+	final_display_label.pixel_size = 0.009
+	final_display_label.modulate = Color("#e8d9b5")
+	final_display_label.outline_modulate = Color.BLACK
+	final_display_label.outline_size = 8
+	final_display_label.position = Vector3(0, 2.92, -0.5)
+	final_display_label.rotation.y = PI
+	final_display.add_child(final_display_label)
+
+	var final_light := OmniLight3D.new()
+	final_light.name = "PotemkinInspectionLight"
+	final_light.position = Vector3(0, 2.45, -2.2)
+	final_light.light_color = Color("#d54a43")
+	final_light.light_energy = 0.72
+	final_light.omni_range = 7.5
+	final_light.shadow_enabled = false
+	final_display.add_child(final_light)
 
 
 func _create_hud() -> void:
@@ -750,6 +814,13 @@ func _create_hud() -> void:
 
 
 func _create_audio() -> void:
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "SpecialOperationMusic"
+	music_player.volume_db = -7.5
+	if ResourceLoader.exists(MUSIC_PATH):
+		music_player.stream = load(MUSIC_PATH)
+	music_player.finished.connect(_on_music_finished)
+	add_child(music_player)
 	shot_audio = AudioStreamPlayer.new()
 	shot_audio.stream = _make_tone(92.0, 0.13, 0.42)
 	shot_audio.volume_db = -5.0
@@ -793,6 +864,11 @@ func _reset_attempt(first_attempt: bool) -> void:
 	wave_spawned = [false, false, false]
 	gate_open = [false, false, false]
 	seal_health = [2, 2, 2]
+	seal_hit_flash = [0.0, 0.0, 0.0]
+	if hit_audio:
+		hit_audio.pitch_scale = 1.0
+	if music_player and music_player.stream:
+		music_player.play()
 	final_seals_active = false
 	_clear_enemies()
 	for gate_index in range(gate_nodes.size()):
@@ -802,6 +878,14 @@ func _reset_attempt(first_attempt: bool) -> void:
 	for seal in seal_nodes:
 		seal.visible = true
 		seal.scale = Vector3.ONE
+		seal.material_override = seal_ready_material
+	for target in seal_target_nodes:
+		target.visible = false
+		target.scale = Vector3.ONE
+		target.rotation = Vector3.ZERO
+	if final_display_label:
+		final_display_label.text = "POTEMKIN DEFENSE"
+		final_display_label.modulate = Color("#e8d9b5")
 	_spawn_wave(0)
 	status_label.text = "W/S ADVANCE  //  A/D TURN  //  Q/E EVADE  //  SPACE STAMP"
 	fire_label.text = ""
@@ -1408,9 +1492,18 @@ func _update_gate_progress() -> void:
 		if wave_index < 2:
 			_open_gate(wave_index)
 		elif not final_seals_active:
-			final_seals_active = true
-			_show_status("DEFENSE REQUIRES THREE SIGNATURES", 1.35)
-			gate_audio.play()
+			_activate_final_seals()
+
+
+func _activate_final_seals() -> void:
+	final_seals_active = true
+	for target in seal_target_nodes:
+		target.visible = true
+	if final_display_label:
+		final_display_label.text = "STAMP 3 FLASHING SEALS"
+		final_display_label.modulate = Color("#ffdf9b")
+	_show_status("STAMP THE THREE FLASHING AUTHORIZATION SEALS", 2.25)
+	gate_audio.play()
 
 
 func _open_gate(gate_index: int) -> void:
@@ -1447,12 +1540,16 @@ func _begin_cleared() -> void:
 	state_timer = 0.0
 	_clear_enemy_projectiles()
 	_clear_enemy_telegraphs()
+	if music_player:
+		music_player.stop()
 	status_label.text = "SPECIAL OPERATION COMPLETED"
 	fire_label.text = "EVERYTHING PROCEEDED ACCORDING TO PLAN"
 	success_audio.play()
 
 
 func _finish_success() -> void:
+	if music_player:
+		music_player.stop()
 	var accuracy := float(shots_hit) / float(maxi(shots_fired, 1))
 	result = {
 		"outcome": "access_granted",
@@ -1470,6 +1567,11 @@ func _finish_success() -> void:
 	state = State.INACTIVE
 	layer.visible = false
 	completed.emit(result.duplicate(true))
+
+
+func _on_music_finished() -> void:
+	if active and state != State.CLEARED and music_player and music_player.stream:
+		music_player.play()
 
 
 func _update_camera() -> void:
@@ -1501,14 +1603,18 @@ func _update_overlay_motion() -> void:
 		muzzle_flash.color.a = move_toward(muzzle_flash.color.a, 0.0, 0.18)
 	if damage_flash:
 		damage_flash.color.a = move_toward(damage_flash.color.a, 0.0, 0.035)
+	_update_seal_presentation()
 	var incoming_warning := false
 	for enemy in enemies:
 		if bool(enemy.get("alive", false)) and str(enemy.get("attack_state", "idle")) == "telegraph":
 			incoming_warning = true
 			break
+	var aiming_at_seal := _is_aiming_at_live_seal()
 	for line in crosshair_lines:
 		if crosshair_hit_timer > 0.0:
 			line.color = Color("#ffdc63")
+		elif aiming_at_seal:
+			line.color = Color("#ff4338") if int(elapsed * 14.0) % 2 == 0 else Color("#ffe08a")
 		elif incoming_warning:
 			line.color = Color("#ff3b32") if int(elapsed * 12.0) % 2 == 0 else Color("#f1e6c9")
 		else:
@@ -1537,6 +1643,31 @@ func _update_overlay_motion() -> void:
 		fire_label.add_theme_color_override("font_color", Color("#ff3941") if reload_remaining > 0.0 else Color("#f5ead0"))
 
 
+func _update_seal_presentation() -> void:
+	for seal_index in range(seal_nodes.size()):
+		var seal := seal_nodes[seal_index]
+		var target := seal_target_nodes[seal_index] if seal_index < seal_target_nodes.size() else null
+		if not final_seals_active:
+			if target:
+				target.visible = false
+			continue
+		if seal_health[seal_index] <= 0:
+			seal.scale = Vector3.ONE * 0.01
+			if target:
+				target.visible = false
+			continue
+		var wave := 0.5 + 0.5 * sin(elapsed * 7.5 + float(seal_index) * 1.8)
+		var hit_boost := 0.28 if float(seal_hit_flash[seal_index]) > 0.0 else 0.0
+		seal.scale = Vector3.ONE * (0.96 + wave * 0.16 + hit_boost)
+		if target:
+			target.visible = true
+			target.scale = Vector3.ONE * (0.92 + wave * 0.18 + hit_boost * 0.4)
+			target.rotation.z = sin(elapsed * 2.6 + float(seal_index)) * 0.055
+	if final_seals_active and final_display_label:
+		var label_wave := 0.72 + 0.28 * absf(sin(elapsed * 5.0))
+		final_display_label.modulate = Color(1.0, 0.45 + label_wave * 0.45, 0.28, 1.0)
+
+
 func _update_hud() -> void:
 	if not timer_label:
 		return
@@ -1550,8 +1681,11 @@ func _update_hud() -> void:
 	for index in range(seal_marks.size()):
 		if not final_seals_active:
 			seal_marks[index].color = Color("#32282a")
-		elif seal_health[index] > 0:
-			seal_marks[index].color = Color("#d42e32")
+		elif seal_health[index] > 1:
+			var mark_wave := 0.68 + 0.32 * absf(sin(elapsed * 7.5 + float(index) * 1.8))
+			seal_marks[index].color = Color(0.84 * mark_wave, 0.10, 0.12, 1.0)
+		elif seal_health[index] == 1:
+			seal_marks[index].color = Color("#e7a928")
 		else:
 			seal_marks[index].color = Color("#29372d")
 
@@ -1567,6 +1701,24 @@ func _remaining_seals() -> int:
 		if int(health) > 0:
 			remaining += 1
 	return remaining
+
+
+func _is_aiming_at_live_seal() -> bool:
+	if not final_seals_active:
+		return false
+	var forward := _forward_vector()
+	for seal_index in range(seal_nodes.size()):
+		if seal_health[seal_index] <= 0:
+			continue
+		var offset := seal_nodes[seal_index].global_position - player_position
+		var flat_offset := Vector3(offset.x, 0.0, offset.z)
+		var distance := flat_offset.length()
+		if distance <= 0.01 or distance > 18.0:
+			continue
+		var angle := acos(clampf(forward.dot(flat_offset / distance), -1.0, 1.0))
+		if angle <= 0.085:
+			return true
+	return false
 
 
 func _forward_vector() -> Vector3:

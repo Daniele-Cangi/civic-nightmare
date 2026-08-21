@@ -1225,6 +1225,10 @@ func _test_putin_special_operation() -> void:
 		"combat_enabled": false,
 	})
 	operation.process_frame(0.01)
+	var operation_music := operation.get("music_player") as AudioStreamPlayer
+	_check(str(operation.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_putin_special_operation.ogg", "the Special Operation exposes its approved runtime music path")
+	_check(operation_music != null and operation_music.stream != null and operation_music.stream.get_length() >= 165.0 and operation_music.stream.get_length() <= 167.0, "the delivered Three-Minute Special Operation track loads at its verified duration")
+	_check(operation_music != null and operation_music.playing, "the soundtrack starts with the Special Operation")
 	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
 	Input.action_press("ui_left")
 	operation.process_frame(0.1)
@@ -1264,9 +1268,19 @@ func _test_putin_special_operation() -> void:
 
 	_check(bool(operation.get("final_seals_active")), "the final wave exposes the three physical Potemkin seals")
 	_check(int(operation.get("matryoshka_splits")) == 3, "each mandatory armored matryoshka splits into smaller security units")
+	var seal_targets := operation.get("seal_target_nodes") as Array
+	var final_display_label := operation.get("final_display_label") as Label3D
+	_check(seal_targets.size() == 3 and bool((seal_targets[0] as Node3D).visible) and bool((seal_targets[1] as Node3D).visible) and bool((seal_targets[2] as Node3D).visible), "all three final seals gain visible target brackets")
+	_check(final_display_label != null and final_display_label.text == "STAMP 3 FLASHING SEALS", "the Potemkin display gives one concise physical instruction")
+	operation.set("player_position", Vector3(0.0, 1.55, 48.0))
+	operation.set("player_yaw", 0.0)
+	_check(bool(operation.call("_is_aiming_at_live_seal")), "the reticle can recognize a live authorization seal")
 	for seal_index in range(3):
 		_check(operation.register_seal_hit(seal_index), "seal %d accepts the first diplomatic note" % (seal_index + 1))
+		var seal_node := (operation.get("seal_nodes") as Array)[seal_index] as MeshInstance3D
+		_check(int((operation.get("seal_health") as Array)[seal_index]) == 1 and seal_node.material_override == operation.get("seal_damaged_material"), "seal %d visibly changes state after its first hit" % (seal_index + 1))
 		_check(operation.register_seal_hit(seal_index), "seal %d accepts the second diplomatic note" % (seal_index + 1))
+		_check(not bool((seal_targets[seal_index] as Node3D).visible), "destroyed seal %d stops flashing as a target" % (seal_index + 1))
 	_check(bool((operation.get("gate_open") as Array)[2]), "destroying all three seals collapses the Potemkin defense")
 	var exit_position := operation.get("player_position") as Vector3
 	exit_position.z = 61.4
@@ -1275,6 +1289,7 @@ func _test_putin_special_operation() -> void:
 	operation.process_frame(0.01)
 	var operation_result: Dictionary = operation.get_result()
 	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
+	_check(operation_music != null and not operation_music.playing, "the Special Operation music yields to the completion sting")
 	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
 	operation.queue_free()
 

@@ -48,16 +48,17 @@ The delivered runtime track is:
 
 `assets/audio/civic_nightmare_opening_drive.ogg`
 
-**Coastline Dash** is an original instrumental supplied by project owner
-Daniele Cangi. The runtime file is a 48 kHz stereo Ogg Vorbis conversion of the
-90.4-second WAV master. Audible content resolves at approximately 87.69 seconds
-and the remaining 2.71 seconds are silence, so `MUSIC_DURATION` can start the
-engine-death beat at 88 seconds without cutting the cadence. The sequence still
-falls back to its local engine and impact sounds if the runtime file is absent.
+**Coastline Dash** is an instrumental generated for Civic Nightmare using
+Google Flow Music and supplied by project owner Daniele Cangi. The runtime file
+is a 48 kHz stereo Ogg Vorbis conversion of the 90.4-second WAV master. Audible
+content resolves at approximately 87.69 seconds and the remaining 2.71 seconds
+are silence, so `MUSIC_DURATION` can start the engine-death beat at 88 seconds
+without cutting the cadence. The sequence still falls back to its local engine
+and impact sounds if the runtime file is absent.
 
 Delivery properties:
 
-- original instrumental with documented project ownership;
+- project-specific generated instrumental with documented delivery provenance;
 - 90.4 seconds including the intentionally silent arrival tail;
 - 48 kHz stereo Ogg Vorbis for the browser build;
 - confident clean cadence before the engine fails, not a runtime fade;
