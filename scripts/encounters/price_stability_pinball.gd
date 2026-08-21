@@ -94,6 +94,15 @@ var bumper_nodes: Dictionary = {}
 var left_flipper: Node2D
 var right_flipper: Node2D
 var balls: Array[Dictionary] = []
+var table_flash: ColorRect
+var impact_burst: Line2D
+var celebration_root: Node2D
+
+var bumper_audio: AudioStreamPlayer
+var flipper_audio: AudioStreamPlayer
+var event_audio: AudioStreamPlayer
+var bailout_audio: AudioStreamPlayer
+var success_audio: AudioStreamPlayer
 
 var active := false
 var state: State = State.INACTIVE
@@ -117,6 +126,8 @@ var rate_shock_active := false
 var statistical_adjustment := false
 var left_flipper_angle := 0.22
 var right_flipper_angle := -0.22
+var left_flipper_was_pressed := false
+var right_flipper_was_pressed := false
 var spawn_direction := 1.0
 var result: Dictionary = {}
 
@@ -124,6 +135,7 @@ var result: Dictionary = {}
 func setup(owner: Node) -> void:
 	host = owner
 	_create_overlay()
+	_create_audio()
 
 
 func start(options: Dictionary = {}) -> void:
@@ -146,6 +158,8 @@ func start(options: Dictionary = {}) -> void:
 	multiball_spawned = false
 	rate_shock_active = false
 	statistical_adjustment = false
+	left_flipper_was_pressed = false
+	right_flipper_was_pressed = false
 	spawn_direction = 1.0
 	result.clear()
 	_clear_balls()
@@ -153,6 +167,9 @@ func start(options: Dictionary = {}) -> void:
 	active = true
 	layer.visible = true
 	result_panel.visible = false
+	table_flash.modulate.a = 0.0
+	impact_burst.modulate.a = 0.0
+	_clear_celebration()
 	policy_message_label.text = ""
 	prompt_label.text = "←  LEFT FLIPPER                         RIGHT FLIPPER  →"
 	_layout_frame()
@@ -163,6 +180,9 @@ func start(options: Dictionary = {}) -> void:
 func stop() -> void:
 	active = false
 	state = State.INACTIVE
+	for player in [bumper_audio, flipper_audio, event_audio, bailout_audio, success_audio]:
+		if player:
+			player.stop()
 	if layer:
 		layer.visible = false
 
@@ -209,6 +229,7 @@ func register_bumper_hit(bumper_id: String) -> bool:
 	else:
 		household_hits += 1
 	_flash_bumper(bumper_id)
+	_play_bumper_feedback(bumper_id, data)
 	_refresh_inflation()
 	if hit_count == 5 and not multiball_spawned:
 		_trigger_liquidity_injection()
@@ -225,6 +246,7 @@ func force_statistical_adjustment() -> bool:
 	stable_time = STABILITY_HOLD
 	_refresh_inflation()
 	_show_policy_message("METHODOLOGY UPDATED")
+	_play_event_feedback(0.66, Color(0.86, 0.34, 0.64, 0.25), Vector2(640, 190))
 	_complete_stability()
 	return true
 
@@ -268,12 +290,17 @@ func _complete_stability() -> void:
 	result_subtitle.text = "PUBLISHED INDICATOR: 2.0%"
 	policy_message_label.text = ""
 	prompt_label.text = ""
+	success_audio.pitch_scale = 1.0 if not statistical_adjustment else 0.78
+	success_audio.play()
+	_show_table_impact(Color(0.32, 1.0, 0.62, 0.34), Vector2(640, 338), 1.65)
+	_spawn_euro_celebration()
 	_set_state(State.STABLE)
 
 
 func _show_aftermath() -> void:
 	result_title.text = "PURCHASING POWER NOT INCLUDED"
 	result_subtitle.text = "HOUSEHOLD EFFECTS OUTSIDE MEASUREMENT PERIMETER"
+	_play_event_feedback(0.54, Color(1.0, 0.30, 0.22, 0.24), Vector2(640, 360))
 	_set_state(State.AFTERMATH)
 
 
@@ -293,6 +320,8 @@ func _show_clearance() -> void:
 	}
 	result_title.text = "ACCESS GRANTED"
 	result_subtitle.text = "STABILITY CERTIFIED"
+	success_audio.pitch_scale = 1.32
+	success_audio.play()
 	_set_state(State.CLEARED)
 
 
@@ -306,11 +335,13 @@ func _trigger_liquidity_injection() -> void:
 	multiball_spawned = true
 	_show_policy_message("LIQUIDITY INJECTION")
 	_spawn_ball(Vector2(640, 475), Vector2(-205, -445))
+	_play_event_feedback(1.42, Color(0.22, 0.82, 1.0, 0.28), Vector2(640, 475))
 
 
 func _trigger_rate_shock() -> void:
 	rate_shock_active = true
 	_show_policy_message("RATE HIKE")
+	_play_event_feedback(0.58, Color(1.0, 0.22, 0.18, 0.30), Vector2(640, 252))
 	for ball in balls:
 		ball["velocity"] = (ball.get("velocity", Vector2.ZERO) as Vector2) * 1.18
 
@@ -376,6 +407,9 @@ func _restore_systemic_ball() -> void:
 	inflation = clampf(inflation + 0.32, 0.0, 9.9)
 	_refresh_inflation()
 	_show_policy_message("SYSTEMIC BALL RESTORED")
+	bailout_audio.pitch_scale = 0.94 + float(bailouts % 3) * 0.08
+	bailout_audio.play()
+	_show_table_impact(Color(1.0, 0.72, 0.20, 0.28), SYSTEMIC_SERVE_POSITION, 1.35)
 	spawn_direction *= -1.0
 	_spawn_ball(
 		SYSTEMIC_SERVE_POSITION,
@@ -503,8 +537,20 @@ func _collide_ball_with_segment(ball: Dictionary, start: Vector2, end: Vector2, 
 
 
 func _update_flippers(delta: float) -> void:
-	var left_target := -0.48 if Input.is_action_pressed("ui_left") else 0.22
-	var right_target := 0.48 if Input.is_action_pressed("ui_right") else -0.22
+	var left_pressed := Input.is_action_pressed("ui_left")
+	var right_pressed := Input.is_action_pressed("ui_right")
+	var left_target := -0.48 if left_pressed else 0.22
+	var right_target := 0.48 if right_pressed else -0.22
+	if left_pressed and not left_flipper_was_pressed:
+		flipper_audio.pitch_scale = 0.92
+		flipper_audio.play()
+		_show_table_impact(Color(0.35, 0.78, 1.0, 0.13), left_flipper.position + Vector2(72, -8), 0.58)
+	if right_pressed and not right_flipper_was_pressed:
+		flipper_audio.pitch_scale = 1.08
+		flipper_audio.play()
+		_show_table_impact(Color(0.35, 0.78, 1.0, 0.13), right_flipper.position + Vector2(-72, -8), 0.58)
+	left_flipper_was_pressed = left_pressed
+	right_flipper_was_pressed = right_pressed
 	var weight := clampf(delta * 15.0, 0.0, 1.0)
 	left_flipper_angle = lerp_angle(left_flipper_angle, left_target, weight)
 	right_flipper_angle = lerp_angle(right_flipper_angle, right_target, weight)
@@ -530,6 +576,103 @@ func _flash_bumper(bumper_id: String) -> void:
 	bumper.scale = Vector2.ONE * 1.12
 	var tween := create_tween()
 	tween.tween_property(bumper, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _play_bumper_feedback(bumper_id: String, data: Dictionary) -> void:
+	var delta_value := float(data.get("delta", 0.0))
+	bumper_audio.pitch_scale = (1.30 if delta_value < 0.0 else 0.82) + float(hit_count % 4) * 0.055
+	bumper_audio.play()
+	var color: Color = data.get("color", Color.WHITE)
+	var position: Vector2 = data.get("position", Vector2(640, 360))
+	_show_table_impact(Color(color.r, color.g, color.b, 0.16), position, 1.0)
+	var bumper := bumper_nodes.get(bumper_id) as Node2D
+	if bumper:
+		bumper.rotation = -0.05 if hit_count % 2 == 0 else 0.05
+		var rotation_tween := create_tween()
+		rotation_tween.tween_property(bumper, "rotation", 0.0, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _play_event_feedback(pitch: float, color: Color, position: Vector2) -> void:
+	event_audio.pitch_scale = pitch
+	event_audio.play()
+	_show_table_impact(color, position, 1.45)
+	if policy_message_label:
+		policy_message_label.pivot_offset = policy_message_label.size * 0.5
+		policy_message_label.scale = Vector2.ONE * 1.24
+		var message_tween := create_tween()
+		message_tween.tween_property(policy_message_label, "scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _show_table_impact(color: Color, position: Vector2, burst_scale: float) -> void:
+	if not table_flash or not impact_burst:
+		return
+	table_flash.color = color
+	table_flash.modulate.a = 1.0
+	var flash_tween := create_tween()
+	flash_tween.tween_property(table_flash, "modulate:a", 0.0, 0.22)
+	impact_burst.position = position
+	impact_burst.scale = Vector2.ONE * 0.32
+	impact_burst.default_color = Color(color.r, color.g, color.b, 0.96)
+	impact_burst.modulate.a = 1.0
+	var burst_tween := create_tween().set_parallel(true)
+	burst_tween.tween_property(impact_burst, "scale", Vector2.ONE * burst_scale, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	burst_tween.tween_property(impact_burst, "modulate:a", 0.0, 0.28)
+
+
+func _spawn_euro_celebration() -> void:
+	_clear_celebration()
+	for piece_index in range(18):
+		var piece := _make_label(Vector2(-16, -18), Vector2(32, 36), 22 if piece_index % 3 else 28, Color("#f4cf58"))
+		piece.text = "€" if piece_index % 4 != 0 else "◆"
+		piece.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		piece.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		piece.position += Vector2(640, 340)
+		piece.rotation = float(piece_index % 5 - 2) * 0.12
+		celebration_root.add_child(piece)
+		var angle := TAU * float(piece_index) / 18.0 - PI * 0.5
+		var distance := 130.0 + float(piece_index % 4) * 34.0
+		var target_position := piece.position + Vector2(cos(angle), sin(angle)) * distance
+		var piece_tween := create_tween().set_parallel(true)
+		piece_tween.tween_property(piece, "position", target_position, 0.72).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		piece_tween.tween_property(piece, "rotation", piece.rotation + (-1.2 if piece_index % 2 else 1.2), 0.72)
+		piece_tween.tween_property(piece, "modulate:a", 0.0, 0.32).set_delay(0.48)
+
+
+func _clear_celebration() -> void:
+	if not celebration_root:
+		return
+	for child in celebration_root.get_children():
+		child.queue_free()
+
+
+func _create_audio() -> void:
+	if bumper_audio:
+		return
+	bumper_audio = AudioStreamPlayer.new()
+	bumper_audio.name = "PolicyBumperAudio"
+	bumper_audio.stream = _make_tone(470.0, 0.085, 0.06)
+	bumper_audio.volume_db = -2.0
+	add_child(bumper_audio)
+	flipper_audio = AudioStreamPlayer.new()
+	flipper_audio.name = "MonetaryFlipperAudio"
+	flipper_audio.stream = _make_tone(128.0, 0.075, 0.28)
+	flipper_audio.volume_db = -1.5
+	add_child(flipper_audio)
+	event_audio = AudioStreamPlayer.new()
+	event_audio.name = "MonetaryEventAudio"
+	event_audio.stream = _make_tone(238.0, 0.34, 0.10)
+	event_audio.volume_db = -2.5
+	add_child(event_audio)
+	bailout_audio = AudioStreamPlayer.new()
+	bailout_audio.name = "SystemicBailoutAudio"
+	bailout_audio.stream = _make_tone(104.0, 0.42, 0.18)
+	bailout_audio.volume_db = -1.0
+	add_child(bailout_audio)
+	success_audio = AudioStreamPlayer.new()
+	success_audio.name = "PriceStabilityAudio"
+	success_audio.stream = _make_tone(660.0, 0.52, 0.02)
+	success_audio.volume_db = -2.0
+	add_child(success_audio)
 
 
 func _set_state(next_state: State) -> void:
@@ -585,6 +728,27 @@ func _create_overlay() -> void:
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	frame.add_child(prompt_label)
 	_create_result_panel()
+	table_flash = ColorRect.new()
+	table_flash.name = "MonetaryImpactFlash"
+	table_flash.size = VIEW_SIZE
+	table_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	table_flash.modulate.a = 0.0
+	table_flash.z_index = 38
+	frame.add_child(table_flash)
+	impact_burst = Line2D.new()
+	impact_burst.name = "MonetaryImpactBurst"
+	impact_burst.width = 7.0
+	impact_burst.closed = true
+	for point_index in range(32):
+		var angle := TAU * float(point_index) / 32.0
+		impact_burst.add_point(Vector2(cos(angle), sin(angle)) * 48.0)
+	impact_burst.modulate.a = 0.0
+	impact_burst.z_index = 40
+	frame.add_child(impact_burst)
+	celebration_root = Node2D.new()
+	celebration_root.name = "PriceStabilityCelebration"
+	celebration_root.z_index = 42
+	frame.add_child(celebration_root)
 
 
 func _create_header() -> void:
@@ -745,6 +909,28 @@ func _make_label(position_value: Vector2, size_value: Vector2, font_size: int, c
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+
+
+func _make_tone(frequency: float, duration: float, noise_amount: float) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var sample_count := maxi(1, int(duration * float(sample_rate)))
+	var data := PackedByteArray()
+	data.resize(sample_count)
+	for sample_index in range(sample_count):
+		var time := float(sample_index) / float(sample_rate)
+		var progress := float(sample_index) / float(sample_count)
+		var envelope := pow(1.0 - progress, 1.65)
+		var primary := sin(TAU * frequency * time)
+		var harmonic := sin(TAU * frequency * 2.01 * time) * 0.28
+		var grit := sin(TAU * frequency * 5.37 * time + float(sample_index % 11)) * noise_amount
+		var sample_value := clampf((primary + harmonic + grit) * envelope * 0.56, -1.0, 1.0)
+		data[sample_index] = int(round(sample_value * 127.0 + 128.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = data
+	return stream
 
 
 func _panel_style(border: Color, fill: Color, width: int) -> StyleBoxFlat:

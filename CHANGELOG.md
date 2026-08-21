@@ -54,6 +54,12 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Ursula's Consensus Engine now gives scanners, stamps, misroutes, phase changes,
+  derogation, and the 847-page printout distinct machine audio and physical UI
+  impacts.
+- Lagarde's 2% Miracle now reacts to flippers, policy bumpers, liquidity, rate
+  shocks, bailouts, and stabilization with distinct arcade audio, localized
+  flashes, and a brief euro celebration.
 - Putin's access operation now plays the delivered 2:46 **Three-Minute Special
   Operation** soundtrack, generated with Google Flow Music, converted to a
   browser-ready runtime Ogg, and documented outside the MIT code boundary.
