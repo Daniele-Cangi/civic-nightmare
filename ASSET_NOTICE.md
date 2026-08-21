@@ -60,13 +60,20 @@ OpenAI built-in image generation and promoted without third-party source art:
 The sequence adds its road motion, signs, hazards, privilege lane, toll logic,
 receipt, scanner, failed barrier, smoke, damage and display layers in code.
 
-The short Putin access operation uses four original isolated runtime assets
+The short Putin access operation uses five original isolated runtime assets
 generated with OpenAI built-in image generation without third-party source art.
-The three enemy billboards were locally alpha-cropped and downscaled:
+The three corridor-enemy billboards were locally alpha-cropped and downscaled:
 
 - `assets/encounters/putin_operation/matryoshka_security_unit_v1.png`;
 - `assets/encounters/putin_operation/mobilization_copier_v1.png`;
 - `assets/encounters/putin_operation/state_television_camera_v1.png`.
+
+`assets/encounters/putin_operation/strategic_bear_washer_boss_v1.png` is an
+original transparent full-body boss cutout generated specifically for this
+project with OpenAI built-in image generation. It depicts a fictional military
+bear using a worn front-loading washing machine as an absurd heavy weapon; the
+simple helmet, appliance silhouette and illuminated drum were explicitly art
+directed for the short final encounter. No third-party source image was used.
 
 `assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png`
 was created in built-in image-edit mode from the original launcher, preserving
@@ -77,10 +84,10 @@ or texture. The superseded diagonal source is retained outside the export
 closure at
 `asset_sources/legacy/putin_operation/diplomatic_note_launcher_diagonal_v1.png`.
 
-They were art-directed as original modern pixel-art billboards for Civic
-Nightmare's pseudo-3D bureaucratic corridor. The corridor, telegraphed
-projectiles, cover, splitting behaviour, final Potemkin defense, lighting and
-HUD are constructed at runtime.
+The isolated figures were art-directed as original high-detail arcade
+billboards for Civic Nightmare's pseudo-3D bureaucratic corridor. The corridor,
+telegraphed projectiles, cover, splitting behaviour, final Potemkin defense,
+Strategic Bear wash cycles, lighting and HUD are constructed at runtime.
 
 ## Project music
 

@@ -10,7 +10,8 @@ web deployment and tagged releases for major public milestones.
 - **The Three-Minute Special Operation**, an original short pseudo-3D Putin
   access game with a Diplomatic Note Launcher, splitting armoured matryoshkas,
   hostile mobilization copiers, optional State television cameras, continuity
-  gates, and a three-seal Potemkin defense.
+  gates, a three-seal Potemkin defense, and a Strategic Bear whose weaponized
+  washing machine exposes its drum only while reloading.
 - Sparse dossier consequences distinguish a corridor crossed under fire from
   one in which the player also chose to suppress the broadcast equipment.
 - A short skippable CRT news broadcast before the mandatory opening drive, with
@@ -60,6 +61,9 @@ web deployment and tagged releases for major public milestones.
   brackets them as targets, reacts after each hit, and presents one concise
   in-world instruction; the corridor uses a cleaner military-service palette,
   broader route hierarchy, quieter wall rhythm, and grounded cover detailing.
+- The final Strategic Bear uses three slow telegraphed appliance cycles, six
+  forgiving drum hits, and a non-violent `LOAD UNBALANCED` departure that
+  physically opens the route to Putin.
 - Putin's firefight now aligns the launcher with the reticle and replaces
   unavoidable hitscan damage with slow locked-position projectiles, generous
   warnings, one active threat at a time, and working ceremonial cover.

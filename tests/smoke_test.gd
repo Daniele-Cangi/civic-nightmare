@@ -31,6 +31,7 @@ const PUTIN_OPERATION_ASSET_PATHS := [
 	"res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png",
 	"res://assets/encounters/putin_operation/mobilization_copier_v1.png",
 	"res://assets/encounters/putin_operation/state_television_camera_v1.png",
+	"res://assets/encounters/putin_operation/strategic_bear_washer_boss_v1.png",
 	"res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png",
 ]
 const HISTORICAL_CONTAMINATION_SPRITE_PATH := "res://assets/sprites/npc_contamination_v2.png"
@@ -1281,7 +1282,36 @@ func _test_putin_special_operation() -> void:
 		_check(int((operation.get("seal_health") as Array)[seal_index]) == 1 and seal_node.material_override == operation.get("seal_damaged_material"), "seal %d visibly changes state after its first hit" % (seal_index + 1))
 		_check(operation.register_seal_hit(seal_index), "seal %d accepts the second diplomatic note" % (seal_index + 1))
 		_check(not bool((seal_targets[seal_index] as Node3D).visible), "destroyed seal %d stops flashing as a target" % (seal_index + 1))
-	_check(bool((operation.get("gate_open") as Array)[2]), "destroying all three seals collapses the Potemkin defense")
+	_check(not bool((operation.get("gate_open") as Array)[2]), "destroying all three seals exposes rather than skips the final defense")
+	var bear_state: Dictionary = operation.get_strategic_bear_state()
+	_check(bool(bear_state.get("active", false)) and int(bear_state.get("health", 0)) == 6, "the Strategic Bear arrives with one readable three-load health model")
+	_check(not bool((operation.get("strategic_bear_target") as Node3D).visible), "the washing-machine drum is not presented as vulnerable before its reload")
+	var bear_id := str(bear_state.get("id", ""))
+	for wash_cycle in range(3):
+		var bear_index := -1
+		var active_enemies := operation.get("enemies") as Array
+		for enemy_index in range(active_enemies.size()):
+			if str((active_enemies[enemy_index] as Dictionary).get("id", "")) == bear_id:
+				bear_index = enemy_index
+				break
+		_check(bear_index >= 0, "wash cycle %d retains the Strategic Bear" % (wash_cycle + 1))
+		if bear_index < 0:
+			continue
+		var bear_enemy: Dictionary = active_enemies[bear_index]
+		bear_enemy["alive"] = true
+		bear_enemy["attack_state"] = "idle"
+		bear_enemy["vulnerable"] = false
+		active_enemies[bear_index] = bear_enemy
+		_check(bool(operation.call("_begin_enemy_telegraph", bear_index)), "wash cycle %d clearly telegraphs before firing" % (wash_cycle + 1))
+		_check(bool(operation.call("_release_enemy_projectile", bear_index)), "wash cycle %d opens a physical reload window" % (wash_cycle + 1))
+		bear_state = operation.get_strategic_bear_state()
+		_check(bool(bear_state.get("vulnerable", false)) and bool((operation.get("strategic_bear_target") as Node3D).visible), "wash cycle %d exposes and brackets the open drum" % (wash_cycle + 1))
+		_check(operation.register_enemy_hit(bear_id), "wash cycle %d accepts its first drum hit" % (wash_cycle + 1))
+		_check(operation.register_enemy_hit(bear_id), "wash cycle %d accepts its second drum hit" % (wash_cycle + 1))
+		operation.call("_clear_enemy_projectiles")
+	_check(bool(operation.get("strategic_bear_defeated")) and bool(operation.get("strategic_bear_departure_active")), "six drum hits trigger the unbalanced-load departure instead of a violent death")
+	operation.call("_update_strategic_bear_departure", 2.0)
+	_check(bool((operation.get("gate_open") as Array)[2]), "the runaway appliance physically opens Kremlin access")
 	var exit_position := operation.get("player_position") as Vector3
 	exit_position.z = 61.4
 	operation.set("player_position", exit_position)
@@ -1291,6 +1321,7 @@ func _test_putin_special_operation() -> void:
 	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
 	_check(operation_music != null and not operation_music.playing, "the Special Operation music yields to the completion sting")
 	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
+	_check(bool(operation_result.get("strategic_bear_defeated", false)) and int(operation_result.get("strategic_bear_hits", 0)) == 6, "the result records the completed appliance-defense encounter")
 	operation.queue_free()
 
 	var fair_firefight := PUTIN_SPECIAL_OPERATION_SCRIPT.new()
