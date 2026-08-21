@@ -1264,9 +1264,19 @@ func _test_putin_special_operation() -> void:
 
 	_check(bool(operation.get("final_seals_active")), "the final wave exposes the three physical Potemkin seals")
 	_check(int(operation.get("matryoshka_splits")) == 3, "each mandatory armored matryoshka splits into smaller security units")
+	var seal_targets := operation.get("seal_target_nodes") as Array
+	var final_display_label := operation.get("final_display_label") as Label3D
+	_check(seal_targets.size() == 3 and bool((seal_targets[0] as Node3D).visible) and bool((seal_targets[1] as Node3D).visible) and bool((seal_targets[2] as Node3D).visible), "all three final seals gain visible target brackets")
+	_check(final_display_label != null and final_display_label.text == "STAMP 3 FLASHING SEALS", "the Potemkin display gives one concise physical instruction")
+	operation.set("player_position", Vector3(0.0, 1.55, 48.0))
+	operation.set("player_yaw", 0.0)
+	_check(bool(operation.call("_is_aiming_at_live_seal")), "the reticle can recognize a live authorization seal")
 	for seal_index in range(3):
 		_check(operation.register_seal_hit(seal_index), "seal %d accepts the first diplomatic note" % (seal_index + 1))
+		var seal_node := (operation.get("seal_nodes") as Array)[seal_index] as MeshInstance3D
+		_check(int((operation.get("seal_health") as Array)[seal_index]) == 1 and seal_node.material_override == operation.get("seal_damaged_material"), "seal %d visibly changes state after its first hit" % (seal_index + 1))
 		_check(operation.register_seal_hit(seal_index), "seal %d accepts the second diplomatic note" % (seal_index + 1))
+		_check(not bool((seal_targets[seal_index] as Node3D).visible), "destroyed seal %d stops flashing as a target" % (seal_index + 1))
 	_check(bool((operation.get("gate_open") as Array)[2]), "destroying all three seals collapses the Potemkin defense")
 	var exit_position := operation.get("player_position") as Vector3
 	exit_position.z = 61.4

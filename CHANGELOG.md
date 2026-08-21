@@ -52,6 +52,10 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Putin's final Potemkin defense now makes its three authorization seals pulse,
+  brackets them as targets, reacts after each hit, and presents one concise
+  in-world instruction; the corridor uses a cleaner military-service palette,
+  broader route hierarchy, quieter wall rhythm, and grounded cover detailing.
 - Putin's firefight now aligns the launcher with the reticle and replaces
   unavoidable hitscan damage with slow locked-position projectiles, generous
   warnings, one active threat at a time, and working ceremonial cover.
