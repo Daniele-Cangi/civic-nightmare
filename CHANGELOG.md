@@ -16,8 +16,9 @@ web deployment and tagged releases for major public milestones.
 - A short skippable CRT news broadcast before the mandatory opening drive, with
   three authored civic reports, live ticker, signal transitions, and broadcast
   hum generated at runtime.
-- **Coastline Dash**, the original 48 kHz stereo arcade-driving soundtrack for
-  the mandatory approach, with a clean cadence aligned to the engine-death beat.
+- **Coastline Dash**, the project-specific 48 kHz stereo arcade-driving
+  soundtrack generated with Google Flow Music for the mandatory approach, with
+  a clean cadence aligned to the engine-death beat.
 - New 5:4 itch.io key art presenting the battered car, passport citizen, and
   monumental administrative district as one readable arcade-poster composition.
 - Five unretouched 1280×720 itch.io gameplay screenshots covering the mandatory
@@ -52,6 +53,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Putin's access operation now plays the delivered 2:46 **Three-Minute Special
+  Operation** soundtrack, generated with Google Flow Music, converted to a
+  browser-ready runtime Ogg, and documented outside the MIT code boundary.
 - Putin's final Potemkin defense now makes its three authorization seals pulse,
   brackets them as targets, reacts after each hit, and presents one concise
   in-world instruction; the corridor uses a cleaner military-service palette,

@@ -82,14 +82,27 @@ Nightmare's pseudo-3D bureaucratic corridor. The corridor, telegraphed
 projectiles, cover, splitting behaviour, final Potemkin defense, lighting and
 HUD are constructed at runtime.
 
-## Original project music
+## Project music
+
+Unless a track-specific entry says otherwise, Civic Nightmare soundtracks are
+generated using **Google Flow Music** and delivered by project owner Daniele
+Cangi. Future soundtrack additions must preserve this tool disclosure, identify
+their runtime conversion, and remain outside the MIT source-code grant.
 
 `assets/audio/civic_nightmare_opening_drive.ogg` is **Coastline Dash**, an
-original instrumental created and delivered directly by project owner Daniele
-Cangi for Civic Nightmare. The runtime file is a 48 kHz stereo Ogg Vorbis
-conversion of the supplied WAV master; the editable/master file is not shipped.
-It remains project media under the licensing boundary described above rather
-than becoming MIT-licensed source code.
+instrumental generated specifically for Civic Nightmare using Google Flow
+Music. The runtime file is a 48 kHz stereo Ogg Vorbis conversion of the supplied
+WAV master; the editable/master file is not shipped. It remains project media
+under the licensing boundary described above rather than becoming MIT-licensed
+source code.
+
+`assets/audio/civic_nightmare_putin_special_operation.ogg` is **Three-Minute
+Special Operation**, generated specifically for Civic Nightmare using **Google
+Flow Music** and delivered by project owner Daniele Cangi. The runtime file is
+a lightly attenuated 48 kHz stereo Ogg Vorbis conversion of the supplied WAV
+master; the master is not shipped. This disclosure records the generation tool
+and delivery provenance without placing the output under the repository's MIT
+source-code license.
 
 ## Marketing artwork
 

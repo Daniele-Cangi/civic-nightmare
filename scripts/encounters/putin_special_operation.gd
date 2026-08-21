@@ -33,6 +33,7 @@ const MATRYOSHKA_PATH := "res://assets/encounters/putin_operation/matryoshka_sec
 const COPIER_PATH := "res://assets/encounters/putin_operation/mobilization_copier_v1.png"
 const CAMERA_PATH := "res://assets/encounters/putin_operation/state_television_camera_v1.png"
 const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png"
+const MUSIC_PATH := "res://assets/audio/civic_nightmare_putin_special_operation.ogg"
 const WEAPON_CUTOUT_SHADER := """
 shader_type canvas_item;
 
@@ -122,6 +123,7 @@ var hit_audio: AudioStreamPlayer
 var damage_audio: AudioStreamPlayer
 var gate_audio: AudioStreamPlayer
 var success_audio: AudioStreamPlayer
+var music_player: AudioStreamPlayer
 
 
 func setup(owner: Node) -> void:
@@ -152,6 +154,8 @@ func stop() -> void:
 	active = false
 	state = State.INACTIVE
 	_clear_enemies()
+	if music_player:
+		music_player.stop()
 	if layer:
 		layer.visible = false
 
@@ -193,6 +197,10 @@ func process_frame(delta: float) -> void:
 
 func get_result() -> Dictionary:
 	return result.duplicate(true)
+
+
+func get_music_asset_path() -> String:
+	return MUSIC_PATH
 
 
 func get_enemy_counts() -> Dictionary:
@@ -806,6 +814,13 @@ func _create_hud() -> void:
 
 
 func _create_audio() -> void:
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "SpecialOperationMusic"
+	music_player.volume_db = -7.5
+	if ResourceLoader.exists(MUSIC_PATH):
+		music_player.stream = load(MUSIC_PATH)
+	music_player.finished.connect(_on_music_finished)
+	add_child(music_player)
 	shot_audio = AudioStreamPlayer.new()
 	shot_audio.stream = _make_tone(92.0, 0.13, 0.42)
 	shot_audio.volume_db = -5.0
@@ -852,6 +867,8 @@ func _reset_attempt(first_attempt: bool) -> void:
 	seal_hit_flash = [0.0, 0.0, 0.0]
 	if hit_audio:
 		hit_audio.pitch_scale = 1.0
+	if music_player and music_player.stream:
+		music_player.play()
 	final_seals_active = false
 	_clear_enemies()
 	for gate_index in range(gate_nodes.size()):
@@ -1523,12 +1540,16 @@ func _begin_cleared() -> void:
 	state_timer = 0.0
 	_clear_enemy_projectiles()
 	_clear_enemy_telegraphs()
+	if music_player:
+		music_player.stop()
 	status_label.text = "SPECIAL OPERATION COMPLETED"
 	fire_label.text = "EVERYTHING PROCEEDED ACCORDING TO PLAN"
 	success_audio.play()
 
 
 func _finish_success() -> void:
+	if music_player:
+		music_player.stop()
 	var accuracy := float(shots_hit) / float(maxi(shots_fired, 1))
 	result = {
 		"outcome": "access_granted",
@@ -1546,6 +1567,11 @@ func _finish_success() -> void:
 	state = State.INACTIVE
 	layer.visible = false
 	completed.emit(result.duplicate(true))
+
+
+func _on_music_finished() -> void:
+	if active and state != State.CLEARED and music_player and music_player.stream:
+		music_player.play()
 
 
 func _update_camera() -> void:

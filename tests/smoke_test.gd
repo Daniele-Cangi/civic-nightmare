@@ -1225,6 +1225,10 @@ func _test_putin_special_operation() -> void:
 		"combat_enabled": false,
 	})
 	operation.process_frame(0.01)
+	var operation_music := operation.get("music_player") as AudioStreamPlayer
+	_check(str(operation.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_putin_special_operation.ogg", "the Special Operation exposes its approved runtime music path")
+	_check(operation_music != null and operation_music.stream != null and operation_music.stream.get_length() >= 165.0 and operation_music.stream.get_length() <= 167.0, "the delivered Three-Minute Special Operation track loads at its verified duration")
+	_check(operation_music != null and operation_music.playing, "the soundtrack starts with the Special Operation")
 	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
 	Input.action_press("ui_left")
 	operation.process_frame(0.1)
@@ -1285,6 +1289,7 @@ func _test_putin_special_operation() -> void:
 	operation.process_frame(0.01)
 	var operation_result: Dictionary = operation.get_result()
 	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
+	_check(operation_music != null and not operation_music.playing, "the Special Operation music yields to the completion sting")
 	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
 	operation.queue_free()
 

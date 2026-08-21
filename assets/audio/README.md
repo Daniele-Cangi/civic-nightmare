@@ -1,12 +1,17 @@
 # Runtime audio delivery
 
-The approved opening-drive browser master is:
+The approved browser-runtime tracks are:
 
-`civic_nightmare_opening_drive.ogg`
+- `civic_nightmare_opening_drive.ogg` — **Coastline Dash**, generated using
+  Google Flow Music for the opening drive.
+- `civic_nightmare_putin_special_operation.ogg` — **Three-Minute Special
+  Operation**, generated using Google Flow Music for Putin's access game.
 
-It is the 48 kHz stereo Ogg Vorbis runtime conversion of the project owner's
-original track **Coastline Dash**. The supplied WAV master is not required by
-the exported game and remains outside the runtime tree. See
+All current and future soundtrack deliveries use Google Flow Music unless a
+track-specific record explicitly says otherwise. Both current tracks are 48 kHz
+stereo Ogg Vorbis runtime conversions of WAV masters delivered by project owner
+Daniele Cangi. The source masters are not required by the exported game and
+remain outside the runtime tree. See
 `docs/OPENING_DRIVE_SEQUENCE.md` and `ASSET_NOTICE.md` for timing, mastering,
-separation, provenance and rights notes. Do not commit temporary renders or
+generation, provenance and rights notes. Do not commit temporary renders or
 unapproved source masters to this directory.
