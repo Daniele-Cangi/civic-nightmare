@@ -1265,11 +1265,13 @@ func _test_putin_special_operation() -> void:
 	Input.action_release("ui_left")
 	_check(float(operation.get("player_yaw")) > 0.0, "left input turns the operation toward the player's visible left")
 	operation.set("player_yaw", 0.0)
+	operation.call("_update_camera")
 	var lateral_origin := operation.get("player_position") as Vector3
 	var right_direction := operation.call("_right_vector") as Vector3
+	var visible_right := ((operation.get("camera_3d") as Camera3D).global_transform.basis.x as Vector3).normalized()
 	operation.call("_try_move", right_direction * 0.8)
 	var lateral_result := operation.get("player_position") as Vector3
-	_check(right_direction.x > 0.99 and lateral_result.x > lateral_origin.x, "right strafe moves physically right instead of rotating or reversing")
+	_check(right_direction.dot(visible_right) > 0.99 and (lateral_result - lateral_origin).dot(visible_right) > 0.0, "D strafe follows the camera-visible right instead of the mirrored world axis")
 	var first_wave_counts: Dictionary = operation.get_enemy_counts()
 	_check(int(first_wave_counts.get("required", 0)) == 2 and int(first_wave_counts.get("cameras", 0)) == 1, "the opening wave separates required defenses from the optional state camera")
 	_check((operation.get("note_marks") as Array).size() == 6 and int(operation.get("notes_loaded")) == 6, "the Diplomatic Note Launcher exposes its six physical notes")
@@ -1322,7 +1324,7 @@ func _test_putin_special_operation() -> void:
 	_check(bool(bear_state.get("active", false)) and int(bear_state.get("health", 0)) == 6, "the Strategic Bear arrives with one readable three-load health model")
 	_check(not bool((operation.get("strategic_bear_target") as Node3D).visible), "the washing-machine drum is not presented as vulnerable before its reload")
 	var bear_id := str(bear_state.get("id", ""))
-	for wash_cycle in range(3):
+	for wash_cycle in range(5):
 		var bear_index := -1
 		var active_enemies := operation.get("enemies") as Array
 		for enemy_index in range(active_enemies.size()):
@@ -1332,17 +1334,45 @@ func _test_putin_special_operation() -> void:
 		_check(bear_index >= 0, "wash cycle %d retains the Strategic Bear" % (wash_cycle + 1))
 		if bear_index < 0:
 			continue
+		var alarm_before_cycle := bool(operation.get("strategic_bear_alarm_phase"))
 		var bear_enemy: Dictionary = active_enemies[bear_index]
 		bear_enemy["alive"] = true
 		bear_enemy["attack_state"] = "idle"
 		bear_enemy["vulnerable"] = false
 		active_enemies[bear_index] = bear_enemy
 		_check(bool(operation.call("_begin_enemy_telegraph", bear_index)), "wash cycle %d clearly telegraphs before firing" % (wash_cycle + 1))
+		bear_enemy = (operation.get("enemies") as Array)[bear_index] as Dictionary
+		var is_double_cycle := bool(bear_enemy.get("double_attack", false))
+		if alarm_before_cycle and is_double_cycle:
+			_check(bear_enemy.get("telegraph_node_secondary") is MeshInstance3D, "alarm cycle %d paints both consecutive trajectories before firing" % (wash_cycle + 1))
 		_check(bool(operation.call("_release_enemy_projectile", bear_index)), "wash cycle %d opens a physical reload window" % (wash_cycle + 1))
 		bear_state = operation.get_strategic_bear_state()
 		_check(bool(bear_state.get("vulnerable", false)) and bool((operation.get("strategic_bear_target") as Node3D).visible), "wash cycle %d exposes and brackets the open drum" % (wash_cycle + 1))
-		_check(operation.register_enemy_hit(bear_id), "wash cycle %d accepts its first drum hit" % (wash_cycle + 1))
-		_check(operation.register_enemy_hit(bear_id), "wash cycle %d accepts its second drum hit" % (wash_cycle + 1))
+		if alarm_before_cycle:
+			bear_enemy = (operation.get("enemies") as Array)[bear_index] as Dictionary
+			_check(is_equal_approx(float(bear_enemy.get("reload_timer", 0.0)), 1.70), "alarm cycle %d shortens but preserves the readable reload window" % (wash_cycle + 1))
+			var expected_projectiles := 2 if is_double_cycle else 1
+			_check((operation.get("enemy_projectiles") as Array).size() == expected_projectiles, "alarm cycle %d launches only its visibly announced load" % (wash_cycle + 1))
+			if is_double_cycle:
+				var delayed_load := (operation.get("enemy_projectiles") as Array)[1] as Dictionary
+				_check(float(delayed_load.get("delay", 0.0)) > 0.0, "the second announced load follows rather than overlaps the first")
+		var allowed_hits := 2 if wash_cycle == 0 else 1
+		for hit_index in range(allowed_hits):
+			_check(operation.register_enemy_hit(bear_id), "wash cycle %d accepts authorized drum hit %d" % [wash_cycle + 1, hit_index + 1])
+		_check(not operation.register_enemy_hit(bear_id), "wash cycle %d rejects extra fire during the same appliance opening" % (wash_cycle + 1))
+		if wash_cycle == 1:
+			bear_state = operation.get_strategic_bear_state()
+			_check(bool(bear_state.get("alarm_phase", false)) and not bool(bear_state.get("vulnerable", true)), "the third hit ends the normal reload and starts the sanctions-proof phase")
+			var reserve_label := operation.get("domestic_reserve_label") as Label3D
+			var alarm_strips := operation.get("strategic_bear_alarm_strips") as Array
+			_check(reserve_label != null and reserve_label.text == "DOMESTIC PRODUCTION SUCCESSFUL", "the reserve hall reinterprets the emergency as domestic success")
+			_check(alarm_strips.size() == 4 and bool((alarm_strips[0] as MeshInstance3D).visible), "the Strategic Bear phase change activates physical warning strips")
+			operation.set("elapsed", 1.0)
+			operation.set("combat_enabled", true)
+			operation.call("_update_enemies", 0.01)
+			operation.set("combat_enabled", false)
+			bear_enemy = (operation.get("enemies") as Array)[bear_index] as Dictionary
+			_check(absf((bear_enemy.get("position") as Vector3).x) > 1.0, "the alarm phase makes lateral movement materially useful")
 		operation.call("_clear_enemy_projectiles")
 	_check(bool(operation.get("strategic_bear_defeated")) and bool(operation.get("strategic_bear_departure_active")), "six drum hits trigger the unbalanced-load departure instead of a violent death")
 	operation.call("_update_strategic_bear_departure", 2.0)
@@ -1356,7 +1386,7 @@ func _test_putin_special_operation() -> void:
 	_check(not bool(operation.get("active")) and str(operation_result.get("outcome", "")) == "access_granted", "the short operation grants semantic Kremlin access")
 	_check(operation_music != null and not operation_music.playing, "the Special Operation music yields to the completion sting")
 	_check(str(operation_result.get("route", "")) == "defensive_corridor" and int(operation_result.get("cameras_destroyed", -1)) == 0, "the result distinguishes bypassing propaganda from destroying it")
-	_check(bool(operation_result.get("strategic_bear_defeated", false)) and int(operation_result.get("strategic_bear_hits", 0)) == 6, "the result records the completed appliance-defense encounter")
+	_check(bool(operation_result.get("strategic_bear_defeated", false)) and int(operation_result.get("strategic_bear_hits", 0)) == 6 and bool(operation_result.get("strategic_bear_alarm_phase", false)), "the result records the completed two-phase appliance defense")
 	operation.queue_free()
 
 	var fair_firefight := PUTIN_SPECIAL_OPERATION_SCRIPT.new()
