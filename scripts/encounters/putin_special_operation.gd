@@ -37,6 +37,9 @@ const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_la
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_putin_special_operation.ogg"
 const STRATEGIC_BEAR_MAX_HEALTH := 6
 const STRATEGIC_BEAR_RELOAD_DURATION := 2.25
+const STRATEGIC_BEAR_ALARM_RELOAD_DURATION := 1.70
+const STRATEGIC_BEAR_ALARM_HIT_THRESHOLD := 3
+const STRATEGIC_BEAR_ALARM_STRAFE_DISTANCE := 2.15
 const STRATEGIC_BEAR_DEPARTURE_DURATION := 1.75
 const STRATEGIC_BEAR_POSITION := Vector3(0.0, 0.0, 64.0)
 const STRATEGIC_BEAR_TARGET_POSITION := Vector3(0.0, 2.12, 63.78)
@@ -131,6 +134,11 @@ var strategic_bear_departure_active := false
 var strategic_bear_departure_timer := 0.0
 var strategic_bear_departure_stage := 0
 var strategic_bear_hits := 0
+var strategic_bear_alarm_phase := false
+var domestic_reserve_label: Label3D
+var strategic_bear_alarm_lights: Array[OmniLight3D] = []
+var strategic_bear_alarm_strips: Array[MeshInstance3D] = []
+var recovered_appliance_roots: Array[Node3D] = []
 var result: Dictionary = {}
 
 var shot_audio: AudioStreamPlayer
@@ -254,6 +262,7 @@ func get_strategic_bear_state() -> Dictionary:
 		"active": strategic_bear_active,
 		"defeated": strategic_bear_defeated,
 		"departing": strategic_bear_departure_active,
+		"alarm_phase": strategic_bear_alarm_phase,
 		"health": health,
 		"vulnerable": vulnerable,
 	}
@@ -292,10 +301,24 @@ func _register_strategic_bear_hit(index: int, enemy: Dictionary) -> bool:
 		hit_audio.play()
 		_show_status("DAMAGE NOT RECOGNIZED OUTSIDE THE WASH CYCLE", 0.62)
 		return false
+	var allowed_reload_hits := 1 if strategic_bear_alarm_phase else 2
+	if int(enemy.get("reload_hits", 0)) >= allowed_reload_hits:
+		_show_status("ONE LOAD — ONE AUTHORIZED STAMP", 0.62)
+		return false
 	shots_hit += 1
 	strategic_bear_hits += 1
+	enemy["reload_hits"] = int(enemy.get("reload_hits", 0)) + 1
 	enemy["hp"] = int(enemy.get("hp", STRATEGIC_BEAR_MAX_HEALTH)) - 1
 	enemy["hit_flash"] = 0.18
+	if strategic_bear_hits == STRATEGIC_BEAR_ALARM_HIT_THRESHOLD:
+		strategic_bear_alarm_phase = true
+		enemy["vulnerable"] = false
+		enemy["reload_timer"] = 0.0
+		enemy["attack_state"] = "idle"
+		enemy["attack_timer"] = 0.72
+		if strategic_bear_target:
+			strategic_bear_target.visible = false
+		_activate_strategic_bear_alarm()
 	enemies[index] = enemy
 	if sprite:
 		sprite.modulate = Color("#ff9b7e")
@@ -303,6 +326,8 @@ func _register_strategic_bear_hit(index: int, enemy: Dictionary) -> bool:
 	hit_audio.play()
 	if int(enemy.get("hp", 0)) <= 0:
 		_defeat_strategic_bear(index)
+	elif strategic_bear_alarm_phase and strategic_bear_hits == STRATEGIC_BEAR_ALARM_HIT_THRESHOLD:
+		_show_status("SANCTIONS-PROOF WASH CYCLE", 1.45)
 	else:
 		_show_status("LOAD BECOMING ADMINISTRATIVELY UNBALANCED", 0.58)
 	return true
@@ -555,6 +580,7 @@ func _build_strategic_bear_chamber() -> void:
 		washer_root.name = "RecoveredAppliance%d" % (washer_index + 1)
 		washer_root.position = Vector3(side * 5.12, 1.22, washer_z)
 		world_root.add_child(washer_root)
+		recovered_appliance_roots.append(washer_root)
 		_add_box_to(washer_root, "Cabinet", Vector3(0.70, 1.38, 1.15), Vector3.ZERO, washer_material)
 		var drum_mesh := CylinderMesh.new()
 		drum_mesh.top_radius = 0.36
@@ -569,17 +595,17 @@ func _build_strategic_bear_chamber() -> void:
 		drum.position = Vector3(-side * 0.42, -0.08, 0)
 		washer_root.add_child(drum)
 
-	var reserve_label := Label3D.new()
-	reserve_label.name = "DomesticReserveLabel"
-	reserve_label.text = "DOMESTIC STRATEGIC RESERVE"
-	reserve_label.font_size = 58
-	reserve_label.pixel_size = 0.010
-	reserve_label.modulate = Color("#e4d3aa")
-	reserve_label.outline_modulate = Color("#250507")
-	reserve_label.outline_size = 10
-	reserve_label.position = Vector3(0, 5.72, 64.72)
-	reserve_label.rotation.y = PI
-	world_root.add_child(reserve_label)
+	domestic_reserve_label = Label3D.new()
+	domestic_reserve_label.name = "DomesticReserveLabel"
+	domestic_reserve_label.text = "DOMESTIC STRATEGIC RESERVE"
+	domestic_reserve_label.font_size = 58
+	domestic_reserve_label.pixel_size = 0.010
+	domestic_reserve_label.modulate = Color("#e4d3aa")
+	domestic_reserve_label.outline_modulate = Color("#250507")
+	domestic_reserve_label.outline_size = 10
+	domestic_reserve_label.position = Vector3(0, 5.72, 64.72)
+	domestic_reserve_label.rotation.y = PI
+	world_root.add_child(domestic_reserve_label)
 
 	for light_index in range(2):
 		var chamber_light := OmniLight3D.new()
@@ -590,6 +616,73 @@ func _build_strategic_bear_chamber() -> void:
 		chamber_light.omni_range = 8.0
 		chamber_light.shadow_enabled = false
 		world_root.add_child(chamber_light)
+
+	var alarm_material := _make_material(Color("#6e0e13"), Color("#ff1f27"))
+	for alarm_index in range(4):
+		var side := -1.0 if alarm_index % 2 == 0 else 1.0
+		var alarm_z := 59.2 + float(alarm_index / 2) * 3.8
+		var alarm_strip := _add_box(
+			"ReserveAlarmStrip%d" % (alarm_index + 1),
+			Vector3(0.16, 1.25, 0.22),
+			Vector3(side * 5.16, 4.18, alarm_z),
+			alarm_material
+		)
+		alarm_strip.visible = false
+		strategic_bear_alarm_strips.append(alarm_strip)
+
+		var alarm_light := OmniLight3D.new()
+		alarm_light.name = "ReserveAlarmLight%d" % (alarm_index + 1)
+		alarm_light.position = Vector3(side * 4.55, 4.45, alarm_z)
+		alarm_light.light_color = Color("#ff3138")
+		alarm_light.light_energy = 0.0
+		alarm_light.omni_range = 5.8
+		alarm_light.shadow_enabled = false
+		alarm_light.visible = false
+		world_root.add_child(alarm_light)
+		strategic_bear_alarm_lights.append(alarm_light)
+
+
+func _activate_strategic_bear_alarm() -> void:
+	if domestic_reserve_label:
+		domestic_reserve_label.text = "DOMESTIC PRODUCTION SUCCESSFUL"
+		domestic_reserve_label.modulate = Color("#ffb2a5")
+	for strip in strategic_bear_alarm_strips:
+		strip.visible = true
+	for alarm_light in strategic_bear_alarm_lights:
+		alarm_light.visible = true
+	gate_audio.pitch_scale = 0.54
+	gate_audio.play()
+
+
+func _update_strategic_bear_alarm_presentation() -> void:
+	if not strategic_bear_alarm_phase:
+		return
+	var pulse := 0.35 + 0.65 * absf(sin(elapsed * 6.4))
+	for alarm_index in range(strategic_bear_alarm_lights.size()):
+		var alarm_light := strategic_bear_alarm_lights[alarm_index]
+		alarm_light.light_energy = 0.45 + pulse * 1.15
+		alarm_light.visible = pulse > 0.48 or alarm_index % 2 == int(elapsed * 4.0) % 2
+	for appliance_index in range(recovered_appliance_roots.size()):
+		var appliance := recovered_appliance_roots[appliance_index]
+		appliance.position.y = 1.22 + sin(elapsed * 22.0 + float(appliance_index)) * 0.035
+		appliance.rotation.z = sin(elapsed * 18.0 + float(appliance_index) * 1.7) * 0.025
+	if domestic_reserve_label:
+		domestic_reserve_label.position.x = sin(elapsed * 12.0) * 0.045
+
+
+func _reset_strategic_bear_alarm_presentation() -> void:
+	if domestic_reserve_label:
+		domestic_reserve_label.text = "DOMESTIC STRATEGIC RESERVE"
+		domestic_reserve_label.modulate = Color("#e4d3aa")
+		domestic_reserve_label.position.x = 0.0
+	for strip in strategic_bear_alarm_strips:
+		strip.visible = false
+	for alarm_light in strategic_bear_alarm_lights:
+		alarm_light.visible = false
+		alarm_light.light_energy = 0.0
+	for appliance in recovered_appliance_roots:
+		appliance.position.y = 1.22
+		appliance.rotation = Vector3.ZERO
 
 
 func _build_gates() -> void:
@@ -1026,8 +1119,12 @@ func _reset_attempt(first_attempt: bool) -> void:
 	strategic_bear_departure_timer = 0.0
 	strategic_bear_departure_stage = 0
 	strategic_bear_hits = 0
+	strategic_bear_alarm_phase = false
+	_reset_strategic_bear_alarm_presentation()
 	if hit_audio:
 		hit_audio.pitch_scale = 1.0
+	if gate_audio:
+		gate_audio.pitch_scale = 1.0
 	if music_player and music_player.stream:
 		music_player.play()
 	final_seals_active = false
@@ -1075,6 +1172,7 @@ func _process_active_run(delta: float) -> void:
 	_update_wave_triggers()
 	_update_enemies(delta)
 	_update_enemy_projectiles(delta)
+	_update_strategic_bear_alarm_presentation()
 	_update_strategic_bear_departure(delta)
 	_update_gate_progress()
 	_update_camera()
@@ -1333,7 +1431,10 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 		"attack_state": "idle",
 		"telegraph_timer": 0.0,
 		"locked_target": START_POSITION,
+		"secondary_locked_target": START_POSITION,
 		"telegraph_node": null,
+		"telegraph_node_secondary": null,
+		"double_attack": false,
 		"target_radius": target_radius,
 		"wave": wave_index,
 		"blocks_gate": blocks_gate,
@@ -1341,6 +1442,7 @@ func _spawn_enemy(enemy_type: String, position: Vector3, wave_index: int, blocks
 		"hit_flash": 0.0,
 		"vulnerable": false,
 		"reload_timer": 0.0,
+		"reload_hits": 0,
 		"cycle_index": 0,
 	})
 	return enemy_id
@@ -1363,12 +1465,19 @@ func _update_enemies(delta: float) -> void:
 		var sprite := enemy.get("node") as Sprite3D
 		if not sprite:
 			continue
-		if str(enemy.get("type", "")) == "strategic_bear" and str(enemy.get("attack_state", "idle")) == "reload":
+		var enemy_type := str(enemy.get("type", ""))
+		var attack_state := str(enemy.get("attack_state", "idle"))
+		if enemy_type == "strategic_bear" and strategic_bear_alarm_phase and attack_state in ["idle", "reload"]:
+			var alarm_position := enemy.get("position", STRATEGIC_BEAR_POSITION) as Vector3
+			alarm_position.x = sin(elapsed * 1.45) * STRATEGIC_BEAR_ALARM_STRAFE_DISTANCE
+			enemy["position"] = alarm_position
+		if enemy_type == "strategic_bear" and attack_state == "reload":
 			enemy["reload_timer"] = maxf(0.0, float(enemy.get("reload_timer", 0.0)) - delta)
 			enemy["hit_flash"] = maxf(0.0, float(enemy.get("hit_flash", 0.0)) - delta)
 			var reload_pulse := 0.92 + 0.08 * absf(sin(elapsed * 14.0))
 			sprite.scale = Vector3.ONE * reload_pulse
-			sprite.position.x = sin(elapsed * 5.0) * 0.08
+			var reload_position := enemy.get("position", STRATEGIC_BEAR_POSITION) as Vector3
+			sprite.position.x = reload_position.x + sin(elapsed * 5.0) * 0.08
 			if float(enemy.get("hit_flash", 0.0)) <= 0.0:
 				sprite.modulate = Color.WHITE
 			if strategic_bear_target:
@@ -1389,6 +1498,9 @@ func _update_enemies(delta: float) -> void:
 			if telegraph and is_instance_valid(telegraph):
 				var pulse := 0.78 + 0.22 * absf(sin(elapsed * 16.0))
 				telegraph.scale.x = pulse
+				var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+				if secondary_telegraph and is_instance_valid(secondary_telegraph):
+					secondary_telegraph.scale.x = pulse
 			sprite.modulate = Color("#ffb0a1") if int(elapsed * 12.0) % 2 == 0 else Color.WHITE
 			enemies[index] = enemy
 			if float(enemy.get("telegraph_timer", 0.0)) <= 0.0:
@@ -1429,6 +1541,7 @@ func _begin_enemy_telegraph(index: int) -> bool:
 	var enemy: Dictionary = enemies[index]
 	if not bool(enemy.get("alive", false)) or str(enemy.get("attack_state", "idle")) != "idle":
 		return false
+	enemy["double_attack"] = false
 	if str(enemy.get("type", "")) == "strategic_bear":
 		var cycle := int(enemy.get("cycle_index", 0)) % 3
 		enemy["cycle_index"] = cycle + 1
@@ -1448,13 +1561,33 @@ func _begin_enemy_telegraph(index: int) -> bool:
 				enemy["projectile_speed"] = 4.45
 				enemy["projectile_radius"] = 0.52
 				_show_status("HEAVY LOAD — MOVE", 1.18)
+		if strategic_bear_alarm_phase:
+			enemy["attack_windup"] = maxf(0.78, float(enemy.get("attack_windup", 1.0)) * 0.84)
+			enemy["projectile_speed"] = float(enemy.get("projectile_speed", 4.0)) + 0.35
+			enemy["double_attack"] = cycle != 1
+			_show_status(
+				"ALARM — DOUBLE SPIN — MOVE" if bool(enemy["double_attack"]) else "ALARM — FAST CYCLE — MOVE",
+				float(enemy["attack_windup"])
+			)
 	var locked_target := Vector3(player_position.x, 1.1, player_position.z)
 	var position := enemy.get("position", Vector3.ZERO) as Vector3
 	var telegraph := _create_warning_lane(position, locked_target, str(enemy.get("type", "")))
+	var secondary_target := locked_target
+	var secondary_telegraph: MeshInstance3D
+	if bool(enemy.get("double_attack", false)):
+		var offset_direction := -1.0 if player_position.x >= 0.0 else 1.0
+		secondary_target.x = clampf(
+			locked_target.x + offset_direction * 2.15,
+			-CORRIDOR_HALF_WIDTH + PLAYER_RADIUS,
+			CORRIDOR_HALF_WIDTH - PLAYER_RADIUS
+		)
+		secondary_telegraph = _create_warning_lane(position, secondary_target, "strategic_bear")
 	enemy["attack_state"] = "telegraph"
 	enemy["telegraph_timer"] = float(enemy.get("attack_windup", 0.9))
 	enemy["locked_target"] = locked_target
+	enemy["secondary_locked_target"] = secondary_target
 	enemy["telegraph_node"] = telegraph
+	enemy["telegraph_node_secondary"] = secondary_telegraph
 	enemies[index] = enemy
 	return true
 
@@ -1493,42 +1626,73 @@ func _release_enemy_projectile(index: int) -> bool:
 	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
 	if telegraph and is_instance_valid(telegraph):
 		telegraph.queue_free()
+	var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+	if secondary_telegraph and is_instance_valid(secondary_telegraph):
+		secondary_telegraph.queue_free()
 	enemy["telegraph_node"] = null
-	if str(enemy.get("type", "")) == "strategic_bear":
+	enemy["telegraph_node_secondary"] = null
+	var enemy_type := str(enemy.get("type", ""))
+	if enemy_type == "strategic_bear":
 		enemy["attack_state"] = "reload"
-		enemy["reload_timer"] = STRATEGIC_BEAR_RELOAD_DURATION
+		enemy["reload_timer"] = STRATEGIC_BEAR_ALARM_RELOAD_DURATION if strategic_bear_alarm_phase else STRATEGIC_BEAR_RELOAD_DURATION
+		enemy["reload_hits"] = 0
 		enemy["vulnerable"] = true
 		if strategic_bear_target:
 			strategic_bear_target.visible = true
-		_show_status("RELOAD — STAMP THE OPEN DRUM", 1.8)
+		_show_status(
+			"ALARM RELOAD — ONE STAMP" if strategic_bear_alarm_phase else "RELOAD — STAMP THE OPEN DRUM",
+			1.35 if strategic_bear_alarm_phase else 1.8
+		)
 	else:
 		enemy["attack_state"] = "idle"
 		enemy["attack_timer"] = float(enemy.get("attack_interval", 3.0))
 	var start_source := enemy.get("position", Vector3.ZERO) as Vector3
 	var start := Vector3(start_source.x, 1.12, start_source.z)
-	var target := enemy.get("locked_target", player_position) as Vector3
+	var speed := float(enemy.get("projectile_speed", 4.2))
+	var radius := float(enemy.get("projectile_radius", 0.4))
+	_append_enemy_projectile(enemy_type, start, enemy.get("locked_target", player_position) as Vector3, speed, radius)
+	if bool(enemy.get("double_attack", false)):
+		_append_enemy_projectile(
+			enemy_type,
+			start,
+			enemy.get("secondary_locked_target", player_position) as Vector3,
+			speed,
+			radius * 0.88,
+			0.42
+		)
+	var sprite := enemy.get("node") as Sprite3D
+	if sprite:
+		sprite.modulate = Color.WHITE
+	enemies[index] = enemy
+	return true
+
+
+func _append_enemy_projectile(
+	enemy_type: String,
+	start: Vector3,
+	target: Vector3,
+	speed: float,
+	radius: float,
+	delay: float = 0.0
+) -> void:
 	var flat_direction := Vector3(target.x - start.x, 0.0, target.z - start.z)
 	if flat_direction.length_squared() <= 0.001:
 		flat_direction = Vector3(0.0, 0.0, -1.0)
 	flat_direction = flat_direction.normalized()
-	var enemy_type := str(enemy.get("type", ""))
 	var visual := _create_enemy_projectile_visual(enemy_type)
 	visual.position = start
+	visual.visible = delay <= 0.0
 	projectile_sequence += 1
 	enemy_projectiles.append({
 		"id": "incoming_form_%02d" % projectile_sequence,
 		"type": enemy_type,
 		"node": visual,
 		"position": start,
-		"velocity": flat_direction * float(enemy.get("projectile_speed", 4.2)),
-		"radius": float(enemy.get("projectile_radius", 0.4)),
+		"velocity": flat_direction * speed,
+		"radius": radius,
+		"delay": delay,
 		"lifetime": PROJECTILE_LIFETIME,
 	})
-	var sprite := enemy.get("node") as Sprite3D
-	if sprite:
-		sprite.modulate = Color.WHITE
-	enemies[index] = enemy
-	return true
 
 
 func _create_enemy_projectile_visual(enemy_type: String) -> Node3D:
@@ -1578,12 +1742,21 @@ func _update_enemy_projectiles(delta: float) -> void:
 		return
 	for index in range(enemy_projectiles.size() - 1, -1, -1):
 		var projectile: Dictionary = enemy_projectiles[index]
+		var visual := projectile.get("node") as Node3D
+		var launch_delay := maxf(0.0, float(projectile.get("delay", 0.0)) - delta)
+		projectile["delay"] = launch_delay
+		if launch_delay > 0.0:
+			if visual and is_instance_valid(visual):
+				visual.visible = false
+			enemy_projectiles[index] = projectile
+			continue
+		if visual and is_instance_valid(visual):
+			visual.visible = true
 		var previous := projectile.get("position", Vector3.ZERO) as Vector3
 		var velocity := projectile.get("velocity", Vector3.ZERO) as Vector3
 		var next_position := previous + velocity * delta
 		projectile["position"] = next_position
 		projectile["lifetime"] = float(projectile.get("lifetime", 0.0)) - delta
-		var visual := projectile.get("node") as Node3D
 		if visual and is_instance_valid(visual):
 			visual.position = next_position
 			if str(projectile.get("type", "")) != "state_camera":
@@ -1709,6 +1882,10 @@ func _destroy_enemy(index: int) -> void:
 	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
 	if telegraph and is_instance_valid(telegraph):
 		telegraph.queue_free()
+	var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+	if secondary_telegraph and is_instance_valid(secondary_telegraph):
+		secondary_telegraph.queue_free()
+	enemy["telegraph_node_secondary"] = null
 	enemy["telegraph_node"] = null
 	enemy["attack_state"] = "idle"
 	enemy["alive"] = false
@@ -1776,6 +1953,10 @@ func _defeat_strategic_bear(index: int) -> void:
 	var telegraph := enemy.get("telegraph_node") as MeshInstance3D
 	if telegraph and is_instance_valid(telegraph):
 		telegraph.queue_free()
+	var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+	if secondary_telegraph and is_instance_valid(secondary_telegraph):
+		secondary_telegraph.queue_free()
+	enemy["telegraph_node_secondary"] = null
 	enemy["telegraph_node"] = null
 	enemies[index] = enemy
 	strategic_bear_active = false
@@ -1906,6 +2087,7 @@ func _finish_success() -> void:
 		"matryoshka_splits": matryoshka_splits,
 		"strategic_bear_defeated": strategic_bear_defeated,
 		"strategic_bear_hits": strategic_bear_hits,
+		"strategic_bear_alarm_phase": strategic_bear_alarm_phase,
 		"elapsed_seconds": snappedf(elapsed, 0.1),
 	}
 	active = false
@@ -2100,7 +2282,7 @@ func _forward_vector() -> Vector3:
 
 func _right_vector() -> Vector3:
 	var forward := _forward_vector()
-	return Vector3(forward.z, 0.0, -forward.x).normalized()
+	return Vector3(-forward.z, 0.0, forward.x).normalized()
 
 
 func _clear_enemies() -> void:
@@ -2108,6 +2290,9 @@ func _clear_enemies() -> void:
 		var telegraph := enemy.get("telegraph_node") as MeshInstance3D
 		if telegraph and is_instance_valid(telegraph):
 			telegraph.queue_free()
+		var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+		if secondary_telegraph and is_instance_valid(secondary_telegraph):
+			secondary_telegraph.queue_free()
 		var sprite := enemy.get("node") as Sprite3D
 		if sprite and is_instance_valid(sprite):
 			sprite.queue_free()
@@ -2122,6 +2307,10 @@ func _clear_enemy_telegraphs() -> void:
 		var telegraph := enemy.get("telegraph_node") as MeshInstance3D
 		if telegraph and is_instance_valid(telegraph):
 			telegraph.queue_free()
+		var secondary_telegraph := enemy.get("telegraph_node_secondary") as MeshInstance3D
+		if secondary_telegraph and is_instance_valid(secondary_telegraph):
+			secondary_telegraph.queue_free()
+		enemy["telegraph_node_secondary"] = null
 		enemy["telegraph_node"] = null
 		enemy["attack_state"] = "idle"
 		enemies[index] = enemy

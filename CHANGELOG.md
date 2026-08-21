@@ -61,15 +61,16 @@ web deployment and tagged releases for major public milestones.
   brackets them as targets, reacts after each hit, and presents one concise
   in-world instruction; the corridor uses a cleaner military-service palette,
   broader route hierarchy, quieter wall rhythm, and grounded cover detailing.
-- The final Strategic Bear uses three slow telegraphed appliance cycles, six
-  forgiving drum hits, and a non-violent `LOAD UNBALANCED` departure that
-  physically opens the route to Putin.
+- The final Strategic Bear teaches three forgiving drum hits before activating
+  a sanctions-proof alarm phase with lateral patrol, shorter one-stamp reloads,
+  and alternating single/double attacks whose trajectories remain visible
+  before launch; `LOAD UNBALANCED` still opens the route non-violently.
 - The Strategic Bear now occupies a tall authored domestic-reserve hall with
   full headroom, recovered-appliance galleries, high trusses, distinct floor
   treatment, and dedicated warm/cold arena lighting.
 - Putin-operation music is 3.5 dB more present while every weapon, impact,
   reload, damage, gate, and success effect remains louder in the local mix.
-- `A/D` now provides direct, correctly oriented strafing (`Q/E` remains an
+- `A/D` now follows the camera-visible left and right (`Q/E` remains an
   alias), while the arrow keys retain deliberate reticle turning.
 - Putin's firefight now aligns the launcher with the reticle and replaces
   unavoidable hitscan damage with slow locked-position projectiles, generous
