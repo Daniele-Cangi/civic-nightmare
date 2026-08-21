@@ -1230,11 +1230,27 @@ func _test_putin_special_operation() -> void:
 	_check(str(operation.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_putin_special_operation.ogg", "the Special Operation exposes its approved runtime music path")
 	_check(operation_music != null and operation_music.stream != null and operation_music.stream.get_length() >= 165.0 and operation_music.stream.get_length() <= 167.0, "the delivered Three-Minute Special Operation track loads at its verified duration")
 	_check(operation_music != null and operation_music.playing, "the soundtrack starts with the Special Operation")
+	_check(operation_music != null and is_equal_approx(operation_music.volume_db, -4.0), "the Special Operation soundtrack uses its raised arena mix")
+	for effect_name in ["shot_audio", "reload_audio", "hit_audio", "damage_audio", "gate_audio", "success_audio"]:
+		var effect_player := operation.get(effect_name) as AudioStreamPlayer
+		_check(effect_player != null and effect_player.volume_db > operation_music.volume_db, "%s remains louder than the soundtrack" % effect_name)
 	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
+	var operation_world := operation.get("world_root") as Node3D
+	var reserve_ceiling := operation_world.get_node_or_null("StrategicReserveCeiling") as MeshInstance3D
+	var low_ceiling := operation_world.get_node_or_null("LowCeiling") as MeshInstance3D
+	_check(reserve_ceiling != null and reserve_ceiling.position.y >= 7.0, "the Strategic Bear arena has full authored headroom")
+	_check(low_ceiling != null and (low_ceiling.mesh as BoxMesh).size.z <= 58.0, "the service ceiling ends before the tall boss arena")
+	_check(operation_world.get_node_or_null("DomesticReserveLabel") != null and operation_world.get_node_or_null("RecoveredAppliance4") != null, "the final arena owns its reserve signage and appliance gallery")
 	Input.action_press("ui_left")
 	operation.process_frame(0.1)
 	Input.action_release("ui_left")
 	_check(float(operation.get("player_yaw")) > 0.0, "left input turns the operation toward the player's visible left")
+	operation.set("player_yaw", 0.0)
+	var lateral_origin := operation.get("player_position") as Vector3
+	var right_direction := operation.call("_right_vector") as Vector3
+	operation.call("_try_move", right_direction * 0.8)
+	var lateral_result := operation.get("player_position") as Vector3
+	_check(right_direction.x > 0.99 and lateral_result.x > lateral_origin.x, "right strafe moves physically right instead of rotating or reversing")
 	var first_wave_counts: Dictionary = operation.get_enemy_counts()
 	_check(int(first_wave_counts.get("required", 0)) == 2 and int(first_wave_counts.get("cameras", 0)) == 1, "the opening wave separates required defenses from the optional state camera")
 	_check((operation.get("note_marks") as Array).size() == 6 and int(operation.get("notes_loaded")) == 6, "the Diplomatic Note Launcher exposes its six physical notes")

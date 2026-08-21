@@ -417,6 +417,7 @@ func _create_world() -> void:
 	world_root.add_child(camera_3d)
 
 	_build_corridor()
+	_build_strategic_bear_chamber()
 	_build_gates()
 	_build_final_display()
 	_build_strategic_bear_target()
@@ -441,8 +442,10 @@ func _build_corridor() -> void:
 	_add_box("CentralAdministrativeRoute", Vector3(5.9, 0.035, 64.0), Vector3(0, 0.005, 32.0), route_material)
 	_add_box("LeftRouteEdge", Vector3(0.065, 0.045, 64.0), Vector3(-3.0, 0.03, 32.0), lane_material)
 	_add_box("RightRouteEdge", Vector3(0.065, 0.045, 64.0), Vector3(3.0, 0.03, 32.0), lane_material)
-	_add_box("LowCeiling", Vector3(12.0, 0.18, 66.0), Vector3(0, 3.25, 32.0), ceiling_material)
-	_add_box("CeilingInset", Vector3(6.8, 0.055, 64.0), Vector3(0, 3.13, 32.0), recess_material)
+	# The service ceiling ends before the final defense; the bear receives a
+	# deliberately oversized requisition hall instead of being cropped by it.
+	_add_box("LowCeiling", Vector3(12.0, 0.18, 58.0), Vector3(0, 3.25, 28.5), ceiling_material)
+	_add_box("CeilingInset", Vector3(6.8, 0.055, 56.5), Vector3(0, 3.13, 28.25), recess_material)
 	_add_box("LeftWall", Vector3(0.45, 3.35, 66.0), Vector3(-5.9, 1.58, 32.0), wall_material)
 	_add_box("RightWall", Vector3(0.45, 3.35, 66.0), Vector3(5.9, 1.58, 32.0), wall_material)
 	_add_box("RearWall", Vector3(12.0, 3.35, 0.45), Vector3(0, 1.58, 0.0), wall_material)
@@ -517,6 +520,76 @@ func _build_corridor() -> void:
 		_add_box_to(cover_root, "ConcreteBlock", Vector3(1.25, 1.1, 0.8), Vector3.ZERO, cover_material)
 		_add_box_to(cover_root, "TopCap", Vector3(1.34, 0.075, 0.87), Vector3(0, 0.55, 0), cover_trim_material)
 		_add_box_to(cover_root, "InspectionStripe", Vector3(0.72, 0.11, 0.035), Vector3(0, 0.11, -0.42), red_light_material)
+
+
+func _build_strategic_bear_chamber() -> void:
+	var wall_material := _make_material(Color("#303834"), Color.TRANSPARENT)
+	var wall_recess_material := _make_material(Color("#171d1c"), Color.TRANSPARENT)
+	var ceiling_material := _make_material(Color("#151a19"), Color.TRANSPARENT)
+	var floor_material := _make_material(Color("#242b28"), Color.TRANSPARENT)
+	var red_material := _make_material(Color("#591419"), Color("#a51d24"))
+	var brass_material := _make_material(Color("#6d5727"), Color("#c79a3e"))
+	var washer_material := _make_material(Color("#a7a18d"), Color.TRANSPARENT)
+	var washer_drum_material := _make_material(Color("#172326"), Color("#387781"))
+
+	_add_box("StrategicReserveFloor", Vector3(11.2, 0.055, 7.4), Vector3(0, 0.025, 61.25), floor_material)
+	_add_box("StrategicReserveRoute", Vector3(4.8, 0.035, 7.2), Vector3(0, 0.06, 61.25), red_material)
+	_add_box("StrategicReserveCeiling", Vector3(12.0, 0.22, 7.8), Vector3(0, 7.05, 61.25), ceiling_material)
+	_add_box("StrategicReserveLeftUpperWall", Vector3(0.45, 3.9, 7.8), Vector3(-5.9, 5.05, 61.25), wall_material)
+	_add_box("StrategicReserveRightUpperWall", Vector3(0.45, 3.9, 7.8), Vector3(5.9, 5.05, 61.25), wall_material)
+	_add_box("StrategicReserveRearWall", Vector3(12.0, 7.15, 0.32), Vector3(0, 3.5, 65.15), wall_material)
+	_add_box("StrategicReserveRearRecess", Vector3(7.8, 3.9, 0.08), Vector3(0, 4.15, 64.96), wall_recess_material)
+
+	for truss_index in range(3):
+		var truss_z := 58.2 + float(truss_index) * 3.1
+		_add_box("ReserveTruss%d" % truss_index, Vector3(11.4, 0.18, 0.22), Vector3(0, 6.52, truss_z), brass_material)
+		_add_box("ReserveLeftColumn%d" % truss_index, Vector3(0.20, 3.3, 0.28), Vector3(-5.28, 4.88, truss_z), brass_material)
+		_add_box("ReserveRightColumn%d" % truss_index, Vector3(0.20, 3.3, 0.28), Vector3(5.28, 4.88, truss_z), brass_material)
+
+	# Confiscated domestic appliances form the ceremonial side gallery. Their
+	# cold drums contrast with the warm parade lighting around the boss.
+	for washer_index in range(4):
+		var side := -1.0 if washer_index % 2 == 0 else 1.0
+		var washer_z := 59.0 + float(washer_index / 2) * 3.7
+		var washer_root := Node3D.new()
+		washer_root.name = "RecoveredAppliance%d" % (washer_index + 1)
+		washer_root.position = Vector3(side * 5.12, 1.22, washer_z)
+		world_root.add_child(washer_root)
+		_add_box_to(washer_root, "Cabinet", Vector3(0.70, 1.38, 1.15), Vector3.ZERO, washer_material)
+		var drum_mesh := CylinderMesh.new()
+		drum_mesh.top_radius = 0.36
+		drum_mesh.bottom_radius = 0.36
+		drum_mesh.height = 0.16
+		drum_mesh.radial_segments = 18
+		var drum := MeshInstance3D.new()
+		drum.name = "InspectionDrum"
+		drum.mesh = drum_mesh
+		drum.material_override = washer_drum_material
+		drum.rotation.z = PI * 0.5
+		drum.position = Vector3(-side * 0.42, -0.08, 0)
+		washer_root.add_child(drum)
+
+	var reserve_label := Label3D.new()
+	reserve_label.name = "DomesticReserveLabel"
+	reserve_label.text = "DOMESTIC STRATEGIC RESERVE"
+	reserve_label.font_size = 58
+	reserve_label.pixel_size = 0.010
+	reserve_label.modulate = Color("#e4d3aa")
+	reserve_label.outline_modulate = Color("#250507")
+	reserve_label.outline_size = 10
+	reserve_label.position = Vector3(0, 5.72, 64.72)
+	reserve_label.rotation.y = PI
+	world_root.add_child(reserve_label)
+
+	for light_index in range(2):
+		var chamber_light := OmniLight3D.new()
+		chamber_light.name = "StrategicReserveLight%d" % (light_index + 1)
+		chamber_light.position = Vector3(-2.8 + light_index * 5.6, 5.45, 61.2)
+		chamber_light.light_color = Color("#e5b27f") if light_index == 0 else Color("#76b9bf")
+		chamber_light.light_energy = 1.05
+		chamber_light.omni_range = 8.0
+		chamber_light.shadow_enabled = false
+		world_root.add_child(chamber_light)
 
 
 func _build_gates() -> void:
@@ -896,34 +969,34 @@ func _create_hud() -> void:
 func _create_audio() -> void:
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "SpecialOperationMusic"
-	music_player.volume_db = -7.5
+	music_player.volume_db = -4.0
 	if ResourceLoader.exists(MUSIC_PATH):
 		music_player.stream = load(MUSIC_PATH)
 	music_player.finished.connect(_on_music_finished)
 	add_child(music_player)
 	shot_audio = AudioStreamPlayer.new()
 	shot_audio.stream = _make_tone(92.0, 0.13, 0.42)
-	shot_audio.volume_db = -5.0
+	shot_audio.volume_db = -1.0
 	add_child(shot_audio)
 	reload_audio = AudioStreamPlayer.new()
 	reload_audio.stream = _make_tone(146.0, 0.24, 0.26)
-	reload_audio.volume_db = -7.0
+	reload_audio.volume_db = -2.5
 	add_child(reload_audio)
 	hit_audio = AudioStreamPlayer.new()
 	hit_audio.stream = _make_tone(310.0, 0.11, 0.22)
-	hit_audio.volume_db = -8.0
+	hit_audio.volume_db = -2.0
 	add_child(hit_audio)
 	damage_audio = AudioStreamPlayer.new()
 	damage_audio.stream = _make_tone(58.0, 0.22, 0.58)
-	damage_audio.volume_db = -5.0
+	damage_audio.volume_db = -1.0
 	add_child(damage_audio)
 	gate_audio = AudioStreamPlayer.new()
 	gate_audio.stream = _make_tone(178.0, 0.38, 0.18)
-	gate_audio.volume_db = -8.0
+	gate_audio.volume_db = -2.5
 	add_child(gate_audio)
 	success_audio = AudioStreamPlayer.new()
 	success_audio.stream = _make_tone(660.0, 0.48, 0.02)
-	success_audio.volume_db = -7.0
+	success_audio.volume_db = -2.0
 	add_child(success_audio)
 
 
@@ -982,7 +1055,7 @@ func _reset_attempt(first_attempt: bool) -> void:
 		final_display_label.text = "POTEMKIN DEFENSE"
 		final_display_label.modulate = Color("#e8d9b5")
 	_spawn_wave(0)
-	status_label.text = "W/S ADVANCE  //  A/D TURN  //  Q/E EVADE  //  SPACE STAMP"
+	status_label.text = "W/S ADVANCE  //  A/D STRAFE  //  ARROWS AIM  //  SPACE STAMP"
 	fire_label.text = ""
 	if not first_attempt:
 		intro_duration = minf(intro_duration, 0.85)
@@ -1011,9 +1084,9 @@ func _process_active_run(delta: float) -> void:
 
 func _process_player_input(delta: float) -> void:
 	var turn_input := 0.0
-	if Input.is_action_pressed("ui_left") or Input.is_physical_key_pressed(Key.KEY_A):
+	if Input.is_action_pressed("ui_left"):
 		turn_input += 1.0
-	if Input.is_action_pressed("ui_right") or Input.is_physical_key_pressed(Key.KEY_D):
+	if Input.is_action_pressed("ui_right"):
 		turn_input -= 1.0
 	player_yaw += turn_input * TURN_SPEED * delta
 
@@ -1022,9 +1095,13 @@ func _process_player_input(delta: float) -> void:
 		forward_input += 1.0
 	if Input.is_action_pressed("ui_down") or Input.is_physical_key_pressed(Key.KEY_S):
 		forward_input -= 1.0
-	var strafe_input := float(Input.is_physical_key_pressed(Key.KEY_E)) - float(Input.is_physical_key_pressed(Key.KEY_Q))
+	var strafe_input := 0.0
+	if Input.is_physical_key_pressed(Key.KEY_D) or Input.is_physical_key_pressed(Key.KEY_E):
+		strafe_input += 1.0
+	if Input.is_physical_key_pressed(Key.KEY_A) or Input.is_physical_key_pressed(Key.KEY_Q):
+		strafe_input -= 1.0
 	var forward := _forward_vector()
-	var right := Vector3(-forward.z, 0.0, forward.x)
+	var right := _right_vector()
 	var motion := forward * forward_input * MOVE_SPEED + right * strafe_input * STRAFE_SPEED
 	if motion.length_squared() > MOVE_SPEED * MOVE_SPEED:
 		motion = motion.normalized() * MOVE_SPEED
@@ -2019,6 +2096,11 @@ func _strategic_bear_health() -> int:
 
 func _forward_vector() -> Vector3:
 	return Vector3(sin(player_yaw), 0.0, cos(player_yaw)).normalized()
+
+
+func _right_vector() -> Vector3:
+	var forward := _forward_vector()
+	return Vector3(forward.z, 0.0, -forward.x).normalized()
 
 
 func _clear_enemies() -> void:
