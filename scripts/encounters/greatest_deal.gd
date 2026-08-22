@@ -4,9 +4,12 @@ signal completed(result: Dictionary)
 signal cancelled
 
 const BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
+const MUSIC_PATH := "res://assets/audio/civic_nightmare_greatest_deal_snake_eyes.ogg"
 const VIEW_SIZE := Vector2(1280, 720)
 const TARGET := 21
 const STARTING_CHALLENGES := 3
+const MUSIC_VOLUME_DB := -8.5
+const MUSIC_LOOP_OFFSET := 10.0
 const DEFAULT_INTRO_DURATION := 1.45
 const DEFAULT_BEAT_DURATION := 1.4
 const DEFAULT_OUTRO_DURATION := 1.7
@@ -111,6 +114,11 @@ var interference_title: Label
 var interference_line: Label
 var trump_card_nodes: Array[PanelContainer] = []
 var citizen_card_nodes: Array[PanelContainer] = []
+var music_player: AudioStreamPlayer
+var card_slide_audio: AudioStreamPlayer
+var card_land_audio: AudioStreamPlayer
+var action_audio: AudioStreamPlayer
+var ruling_audio: AudioStreamPlayer
 
 var active := false
 var state: State = State.INACTIVE
@@ -143,6 +151,7 @@ var result: Dictionary = {}
 func setup(owner: Node) -> void:
 	host = owner
 	_create_overlay()
+	_create_audio()
 
 
 func start(options: Dictionary = {}) -> void:
@@ -168,6 +177,7 @@ func start(options: Dictionary = {}) -> void:
 	active = true
 	layer.visible = true
 	_layout_frame()
+	_start_audio()
 	_reset_round()
 	_set_state(State.INTRO)
 
@@ -175,6 +185,7 @@ func start(options: Dictionary = {}) -> void:
 func stop() -> void:
 	active = false
 	state = State.INACTIVE
+	_stop_audio()
 	if layer:
 		layer.visible = false
 
@@ -229,7 +240,7 @@ func hit() -> bool:
 	draw_index += 1
 	hit_count += 1
 	citizen_hand.append(next_card)
-	_refresh_hands()
+	_refresh_hands(false, true)
 	_refresh_totals()
 	if citizen_total >= TARGET:
 		_resolve_true_result()
@@ -240,6 +251,7 @@ func stand() -> bool:
 	if not active or state != State.PLAYER_TURN:
 		return false
 	stand_count += 1
+	_play_action_audio(0.86)
 	_resolve_true_result()
 	return true
 
@@ -247,6 +259,7 @@ func stand() -> bool:
 func choose_claim(challenge: bool) -> void:
 	if not active or state != State.CLAIM:
 		return
+	_play_action_audio(1.28 if challenge else 0.78)
 	if challenge and challenges_remaining > 0:
 		challenges_remaining -= 1
 		if true_player_won:
@@ -270,6 +283,7 @@ func _process_player_input() -> void:
 	if Input.is_action_just_pressed("ui_left") or Input.is_action_just_pressed("ui_right"):
 		action_selection = 1 - action_selection
 		_refresh_actions()
+		_play_action_audio(1.08 + float(action_selection) * 0.12)
 	if Input.is_action_just_pressed("ui_accept"):
 		if action_selection == 0:
 			hit()
@@ -281,6 +295,7 @@ func _process_claim_input() -> void:
 	if Input.is_action_just_pressed("ui_left") or Input.is_action_just_pressed("ui_right"):
 		claim_selection = 1 - claim_selection
 		_refresh_claim_options()
+		_play_action_audio(0.96 + float(claim_selection) * 0.22)
 	if Input.is_action_just_pressed("ui_accept"):
 		choose_claim(claim_selection == 1)
 
@@ -303,6 +318,7 @@ func _resolve_true_result() -> void:
 	true_result_label.visible = true
 	prompt_label.text = "REAL RESULT"
 	_set_action_visibility(false)
+	_play_ruling_audio(1.16 if true_player_won else 0.76)
 	_set_state(State.TRUE_RESULT)
 
 
@@ -319,6 +335,7 @@ func _after_true_result() -> void:
 	interference_line.text = str(event.get("line", "RESULT ALTERED"))
 	interference_panel.visible = true
 	prompt_label.text = "RESULT UNDER REVIEW"
+	_play_ruling_audio(0.58)
 	_set_state(State.INTERFERENCE)
 
 
@@ -328,6 +345,7 @@ func _open_claim() -> void:
 	claim_label.text = str(event.get("claim", "TRUMP CLAIMS VICTORY"))
 	claim_panel.visible = true
 	_refresh_claim_options()
+	_play_ruling_audio(0.88)
 	_set_state(State.CLAIM)
 
 
@@ -373,7 +391,7 @@ func _reset_round() -> void:
 	prompt_label.text = "←  →  SELECT     SPACE  ·  PLAY"
 	_set_action_visibility(true)
 	_refresh_header()
-	_refresh_hands()
+	_refresh_hands(true, false)
 	_refresh_totals()
 	_refresh_actions()
 
@@ -414,11 +432,19 @@ func _refresh_totals() -> void:
 	citizen_total_label.text = "CITIZEN\n%d" % citizen_total
 
 
-func _refresh_hands() -> void:
+func _refresh_hands(animate_all: bool = false, animate_citizen_last: bool = false) -> void:
 	_clear_hand(trump_hand_root, trump_card_nodes)
 	_clear_hand(citizen_hand_root, citizen_card_nodes)
-	_build_hand(trump_hand_root, trump_hand, trump_card_nodes, true)
-	_build_hand(citizen_hand_root, citizen_hand, citizen_card_nodes, false)
+	_build_hand(trump_hand_root, trump_hand, trump_card_nodes, true, animate_all, false, 0)
+	_build_hand(
+		citizen_hand_root,
+		citizen_hand,
+		citizen_card_nodes,
+		false,
+		animate_all,
+		animate_citizen_last,
+		trump_hand.size() if animate_all else 0
+	)
 
 
 func _clear_hand(hand_root: Control, nodes: Array[PanelContainer]) -> void:
@@ -428,17 +454,47 @@ func _clear_hand(hand_root: Control, nodes: Array[PanelContainer]) -> void:
 	nodes.clear()
 
 
-func _build_hand(hand_root: Control, cards: Array[Dictionary], nodes: Array[PanelContainer], dealer: bool) -> void:
+func _build_hand(
+	hand_root: Control,
+	cards: Array[Dictionary],
+	nodes: Array[PanelContainer],
+	dealer: bool,
+	animate_all: bool,
+	animate_last: bool,
+	sequence_offset: int
+) -> void:
 	var spread := 76.0
 	var card_width := 116.0
 	var total_width := card_width + maxf(0.0, float(cards.size() - 1) * spread)
 	var start_x := 640.0 - total_width * 0.5
 	for i in range(cards.size()):
 		var card := _create_physical_card(cards[i], dealer)
-		card.position = Vector2(start_x + i * spread, 0)
+		var target_position := Vector2(start_x + i * spread, 0)
+		card.position = target_position
 		card.z_index = i
 		hand_root.add_child(card)
 		nodes.append(card)
+		if animate_all or (animate_last and i == cards.size() - 1):
+			_animate_card_deal(card, target_position, dealer, sequence_offset + i if animate_all else 0)
+
+
+func _animate_card_deal(card: PanelContainer, target_position: Vector2, dealer: bool, sequence_index: int) -> void:
+	card.pivot_offset = card.size * 0.5
+	card.position = Vector2(582.0, 222.0 if dealer else -182.0)
+	card.rotation = (-0.16 if dealer else 0.16) + float(sequence_index % 2) * 0.07
+	card.scale = Vector2.ONE * 0.72
+	card.modulate = Color(1.0, 1.0, 1.0, 0.68)
+	var delay := float(sequence_index) * 0.075
+	var slide_pitch := 0.92 + float(sequence_index % 4) * 0.055 + (0.08 if not dealer else 0.0)
+	var tween := create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_callback(Callable(self, "_play_card_slide").bind(slide_pitch))
+	tween.tween_property(card, "position", target_position, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(card, "rotation", 0.0, 0.18)
+	tween.parallel().tween_property(card, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(card, "modulate", Color.WHITE, 0.16)
+	tween.tween_callback(Callable(self, "_play_card_land").bind(0.94 + float(sequence_index % 3) * 0.08))
 
 
 func _create_physical_card(card_data: Dictionary, dealer: bool) -> PanelContainer:
@@ -504,6 +560,149 @@ func _finish_success() -> void:
 func _set_state(next_state: State) -> void:
 	state = next_state
 	state_timer = 0.0
+
+
+func get_music_asset_path() -> String:
+	return MUSIC_PATH
+
+
+func _create_audio() -> void:
+	if music_player:
+		return
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "SnakeEyesMusic"
+	music_player.volume_db = MUSIC_VOLUME_DB
+	if ResourceLoader.exists(MUSIC_PATH):
+		var delivered_stream := load(MUSIC_PATH) as AudioStreamOggVorbis
+		if delivered_stream:
+			delivered_stream.loop = true
+			delivered_stream.loop_offset = MUSIC_LOOP_OFFSET
+			music_player.stream = delivered_stream
+	add_child(music_player)
+
+	card_slide_audio = _make_audio_player(
+		"CardSlideAudio",
+		_make_card_foley(0.14, true),
+		-1.5,
+		6
+	)
+	card_land_audio = _make_audio_player(
+		"CardLandAudio",
+		_make_card_foley(0.085, false),
+		-0.5,
+		6
+	)
+	action_audio = _make_audio_player(
+		"DealActionAudio",
+		_make_tone(520.0, 0.065, 0.08),
+		-4.0,
+		3
+	)
+	ruling_audio = _make_audio_player(
+		"ResultReviewAudio",
+		_make_tone(138.0, 0.26, 0.24),
+		-2.0,
+		2
+	)
+
+
+func _make_audio_player(
+	player_name: String,
+	stream: AudioStream,
+	volume: float,
+	polyphony: int
+) -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	player.volume_db = volume
+	player.max_polyphony = polyphony
+	add_child(player)
+	return player
+
+
+func _start_audio() -> void:
+	if music_player and music_player.stream:
+		music_player.play(0.0)
+
+
+func _stop_audio() -> void:
+	for player in [music_player, card_slide_audio, card_land_audio, action_audio, ruling_audio]:
+		if player:
+			player.stop()
+
+
+func _play_card_slide(pitch: float = 1.0) -> void:
+	if not active or not card_slide_audio:
+		return
+	card_slide_audio.pitch_scale = pitch
+	card_slide_audio.play()
+
+
+func _play_card_land(pitch: float = 1.0) -> void:
+	if not active or not card_land_audio:
+		return
+	card_land_audio.pitch_scale = pitch
+	card_land_audio.play()
+
+
+func _play_action_audio(pitch: float = 1.0) -> void:
+	if not active or not action_audio:
+		return
+	action_audio.pitch_scale = pitch
+	action_audio.play()
+
+
+func _play_ruling_audio(pitch: float = 1.0) -> void:
+	if not active or not ruling_audio:
+		return
+	ruling_audio.pitch_scale = pitch
+	ruling_audio.play()
+
+
+func _make_card_foley(duration: float, sliding: bool) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var sample_count := maxi(1, int(duration * sample_rate))
+	var bytes := PackedByteArray()
+	bytes.resize(sample_count)
+	for i in range(sample_count):
+		var time := float(i) / float(sample_rate)
+		var progress := float(i) / float(sample_count)
+		var envelope := sin(PI * progress) if sliding else pow(1.0 - progress, 3.4)
+		var paper_noise := sin(float((i * 7919 + 31) % 997) * 0.071)
+		var paper_grain := sin(TAU * (1220.0 + 180.0 * progress) * time)
+		var table_thump := sin(TAU * 92.0 * time) * exp(-time * 31.0)
+		var wave := (paper_noise * 0.68 + paper_grain * 0.22) * envelope
+		if not sliding:
+			wave = table_thump * 0.82 + paper_noise * envelope * 0.34
+		bytes[i] = clampi(int(128.0 + wave * 82.0), 0, 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = bytes
+	return stream
+
+
+func _make_tone(frequency: float, duration: float, noise_amount: float) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var sample_count := maxi(1, int(duration * sample_rate))
+	var bytes := PackedByteArray()
+	bytes.resize(sample_count)
+	for i in range(sample_count):
+		var time := float(i) / float(sample_rate)
+		var envelope := pow(1.0 - float(i) / float(sample_count), 1.8)
+		var primary := sin(TAU * frequency * time)
+		var harmonic := sin(TAU * frequency * 2.0 * time) * 0.24
+		var noise := sin(float((i * 3571 + 17) % 991) * 0.019) * noise_amount
+		var wave := (primary + harmonic) * (1.0 - noise_amount) + noise
+		bytes[i] = clampi(int(128.0 + wave * envelope * 86.0), 0, 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = bytes
+	return stream
 
 
 func _create_overlay() -> void:

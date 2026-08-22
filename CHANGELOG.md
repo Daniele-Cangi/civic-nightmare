@@ -7,6 +7,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- **Snake Eyes**, a Google Flow Music-generated soundtrack for The Greatest
+  Deal, with an entrance-preserving browser loop and synchronized generated
+  card-slide, table-impact, selection, and result-review feedback.
 - **Dead Man's Hand**, a Google Flow Music-generated overworld theme with an
   intro-preserving browser loop, persistent exterior playback, dialogue/hold
   ducking, and fades around interiors and full-screen encounters.

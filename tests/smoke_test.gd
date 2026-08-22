@@ -25,6 +25,7 @@ const WESTERN_AID_BARRIER_PATH := "res://assets/landmarks/western_aid_gate_barri
 const SOUTHERN_ANNEX_BACKGROUND_PATH := "res://assets/backgrounds/southern_administrative_annex_v1.png"
 const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corridor_v1.png"
 const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
+const GREATEST_DEAL_MUSIC_PATH := "res://assets/audio/civic_nightmare_greatest_deal_snake_eyes.ogg"
 const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
 const PRICE_STABILITY_PINBALL_BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
 const OVERWORLD_MUSIC_PATH := "res://assets/audio/civic_nightmare_overworld_dead_mans_hand.ogg"
@@ -1026,6 +1027,7 @@ func _test_bunker_access_gauntlet() -> void:
 
 func _test_greatest_deal() -> void:
 	_check(ResourceLoader.exists(GREATEST_DEAL_BACKGROUND_PATH), "Greatest Deal stage background exists")
+	_check(ResourceLoader.exists(GREATEST_DEAL_MUSIC_PATH), "Snake Eyes Greatest Deal soundtrack exists")
 	if ResourceLoader.exists(GREATEST_DEAL_BACKGROUND_PATH):
 		var stage_texture := load(GREATEST_DEAL_BACKGROUND_PATH) as Texture2D
 		_check(stage_texture != null and stage_texture.get_size() == Vector2(1280, 720), "Greatest Deal stage is authored for the gameplay viewport")
@@ -1034,6 +1036,17 @@ func _test_greatest_deal() -> void:
 	deal.setup(root)
 	deal.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0})
 	deal.process_frame(0.01)
+	var deal_music := deal.get("music_player") as AudioStreamPlayer
+	var deal_music_stream := deal_music.stream as AudioStreamOggVorbis if deal_music else null
+	_check(str(deal.call("get_music_asset_path")) == GREATEST_DEAL_MUSIC_PATH, "Greatest Deal exposes the approved Snake Eyes delivery")
+	_check(deal_music_stream != null and deal_music_stream.get_length() >= 159.4 and deal_music_stream.get_length() <= 159.7, "Snake Eyes loads as the browser-ready table edit")
+	_check(deal_music_stream != null and deal_music_stream.loop and is_equal_approx(deal_music_stream.loop_offset, 10.0), "Snake Eyes preserves its entrance before looping the casino body")
+	_check(deal_music != null and deal_music.playing and is_equal_approx(deal_music.volume_db, -8.5), "Snake Eyes starts only with the Greatest Deal table")
+	for audio_name in ["card_slide_audio", "card_land_audio", "action_audio", "ruling_audio"]:
+		var table_audio := deal.get(audio_name) as AudioStreamPlayer
+		_check(table_audio != null and table_audio.stream != null and table_audio.volume_db > deal_music.volume_db, "Greatest Deal owns audible %s feedback above its soundtrack" % audio_name)
+	deal.call("_play_card_slide", 1.0)
+	_check(bool((deal.get("card_slide_audio") as AudioStreamPlayer).playing), "physical card movement triggers dedicated table foley")
 	_check(str(deal.get("target_label").text) == "TARGET: 21", "Greatest Deal states the blackjack target immediately")
 	_check(int(deal.get("trump_total")) == 18 and int(deal.get("citizen_total")) == 20, "both blackjack totals are visible before the first action")
 	_check(str((deal.get("action_labels") as Array)[0].text).contains("HIT") and str((deal.get("action_labels") as Array)[1].text).contains("STAND"), "HIT and STAND are the only primary actions")
@@ -1067,6 +1080,7 @@ func _test_greatest_deal() -> void:
 	deal.process_frame(0.01)
 	deal.process_frame(0.01)
 	_check(not bool(deal.get("active")), "three real blackjack wins and three challenges close the casino procedure")
+	_check(not bool(deal_music.playing), "the table soundtrack stops before Trump dialogue resumes")
 	var deal_result: Dictionary = deal.get_result()
 	_check(str(deal_result.get("outcome", "")) == "access_granted", "Greatest Deal emits semantic access clearance")
 	_check(int(deal_result.get("successful_challenges", 0)) == 3 and int(deal_result.get("challenges_remaining", -1)) == 0, "Greatest Deal exposes and spends the three challenges deterministically")
