@@ -61,7 +61,7 @@ Trump, Ursula, Lagarde, and Putin now defend their doors with playable procedure
 - **Intercepted Channels**: Meet **Xi Jinping** at the Great Wall, or overhear **Kim Jong-un** using the Red Phone to negotiate grocery deliveries with **Russia**, **Iran (Mojtaba)**, and **Sweden**.
 - **The Quantum UFO**: Get abducted into an observation deck where **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg** debate the monetization of the universe—and where the case clock stops making sense.
 - **The Hidden Bunker**: Ignore a direct protocol warning, survive a one-minute transfer corridor where bombs arrive and funding departs, then find **Zelensky** making a final plea while **Death** waits to void the paperwork.
-- **The Drone Escalation**: Follow an unsolicited delivery system into the Fulfillment Cathedral, contest a cybernetic Bezos with paperwork and objections, then discover whether a physical victory is contractually recognizable.
+- **The Drone Escalation**: Follow an unsolicited delivery system into the Fulfillment Cathedral, contest a cybernetic Bezos in a first-to-two arcade match with paperwork, objections, impact foley, and the dedicated **Goofy Arcade Steel Strike** soundtrack, then discover whether a physical victory is contractually recognizable.
 
 ### 🤖 C.L.A.U.D.I.A. Assistant
 Your central hub is a satirical 90s digital mascot—a parody of modern AI assistants—housed in a CRT terminal. She provides helpful (and highly cynical) guidance on your path to bureaucratic salvation.

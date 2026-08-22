@@ -15,7 +15,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 8 | 11.69 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/centered weapon |
 | `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
-| `assets/audio/` | 5 | 10.68 MiB | Four runtime soundtracks plus their delivery note |
+| `assets/audio/` | 6 | 13.34 MiB | Five runtime soundtracks plus their delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -38,7 +38,7 @@ A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
 35.29 MiB because it is engine code, not project media.
 
-The conservative literal runtime closure is now 118 files / about 82.41 MiB.
+The conservative literal runtime closure is now 119 files / about 85.07 MiB.
 The gap is
 not deleted automatically: it contains fallbacks, README media, vendor sources,
 and older art whose provenance should be retained before removal. The three

@@ -916,17 +916,26 @@ func _test_bezos_battle_stage() -> void:
 	var arena_path := "res://assets/mockups/bezos_fulfillment_cathedral.png"
 	var bezos_poses_path := "res://assets/mockups/bezos_battle_poses.png"
 	var citizen_poses_path := "res://assets/mockups/citizen_battle_poses.png"
+	var music_path := "res://assets/audio/civic_nightmare_bezos_goofy_arcade_steel_strike.ogg"
 	for asset_path in [arena_path, bezos_poses_path, citizen_poses_path]:
 		_check(ResourceLoader.exists(asset_path), "%s battle asset exists" % asset_path)
 		if ResourceLoader.exists(asset_path):
 			_check(load(asset_path) is Texture2D, "%s battle asset can be loaded" % asset_path)
 	var arena := load(arena_path) as Texture2D
 	_check(arena != null and arena.get_size() == Vector2(1280, 720), "Fulfillment Cathedral matches the battle viewport")
+	_check(ResourceLoader.exists(music_path), "Bezos battle soundtrack exists")
+	if ResourceLoader.exists(music_path):
+		_check(load(music_path) is AudioStreamOggVorbis, "Bezos battle soundtrack can be loaded")
 
 	var stage := BEZOS_BATTLE_STAGE_SCRIPT.new()
 	root.add_child(stage)
 	stage.setup()
 	stage.start()
+	_check(stage.get("music_player").playing, "Bezos battle starts its dedicated soundtrack")
+	_check(stage.get("shield_hit_audio").stream != null, "legal shield has dedicated impact audio")
+	_check(stage.get("body_hit_audio").stream != null, "Bezos body has dedicated impact audio")
+	_check(float(stage.get("body_hit_audio").volume_db) > float(stage.get("music_player").volume_db), "combat impact audio remains louder than music")
+	_check(int(stage.get("round_number")) == 1, "Bezos battle starts on round one")
 	_check(stage.get("tutorial_panel").visible, "Bezos battle starts with a visible action prompt")
 	_check(str(stage.get("tutorial_title").text) == "Z", "combat prompt contains only the required key")
 	var tap_prompt_stack := stage.get("tutorial_panel").get_child(0) as VBoxContainer
@@ -952,7 +961,21 @@ func _test_bezos_battle_stage() -> void:
 	stage.set("bezos_hp", 1.0)
 	stage.perform_contest()
 	stage.process_frame(0.01)
-	_check(str(stage.get_result().get("outcome", "")) == "citizen_victory", "a mechanical citizen victory is possible before administrative review")
+	_check(stage.get_result().is_empty(), "winning one round does not prematurely resolve a best-of-three match")
+	_check(int(stage.get("citizen_round_wins")) == 1, "first citizen KO records one round")
+	_check(bool(stage.get("round_transition_active")), "first round victory opens a short arcade transition")
+	stage.process_frame(1.7)
+	_check(int(stage.get("round_number")) == 2, "round transition advances to round two")
+	stage.set("contest_cooldown", 0.0)
+	stage.set("legal_shield", 0.0)
+	stage.set("bezos_hp", 1.0)
+	stage.perform_contest()
+	stage.process_frame(0.01)
+	var victory_result: Dictionary = stage.get_result()
+	_check(str(victory_result.get("outcome", "")) == "citizen_victory", "two won rounds produce a mechanical citizen victory before administrative review")
+	_check(int(victory_result.get("citizen_round_wins", 0)) == 2, "citizen must claim two rounds")
+	_check(int(victory_result.get("rounds_played", 0)) == 2, "a straight victory ends after two rounds")
+	_check(not stage.get("music_player").playing, "Bezos battle music stops when the match resolves")
 	stage.queue_free()
 
 	var wrong_stage := BEZOS_BATTLE_STAGE_SCRIPT.new()
@@ -966,7 +989,14 @@ func _test_bezos_battle_stage() -> void:
 	_check(int(wrong_stage.get("mistake_count")) == 1, "wrong input is recorded once")
 	for penalty_index in range(4):
 		wrong_stage.call("_penalize_current_prompt")
-	_check(str(wrong_stage.get_result().get("outcome", "")) == "administrative_defeat", "repeated errors eventually produce a KO")
+	_check(wrong_stage.get_result().is_empty(), "one lost round does not end the best-of-three match")
+	_check(int(wrong_stage.get("bezos_round_wins")) == 1, "five errors award Bezos one round")
+	wrong_stage.process_frame(1.7)
+	for penalty_index in range(5):
+		wrong_stage.call("_penalize_current_prompt")
+	var defeat_result: Dictionary = wrong_stage.get_result()
+	_check(str(defeat_result.get("outcome", "")) == "administrative_defeat", "two lost rounds produce an administrative defeat")
+	_check(int(defeat_result.get("bezos_round_wins", 0)) == 2, "Bezos must claim two rounds")
 	wrong_stage.queue_free()
 
 	var timeout_stage := BEZOS_BATTLE_STAGE_SCRIPT.new()

@@ -6,6 +6,13 @@ signal resolved(result: Dictionary)
 const VIEW_SIZE := Vector2(1280, 720)
 const POSE_CELL := Vector2(627, 627)
 const ROUND_SECONDS := 32.0
+const CITIZEN_ROUND_HP := 100.0
+const BEZOS_ROUND_HP := 32.0
+const LEGAL_SHIELD_ROUND_HP := 16.0
+const WINS_TO_CLAIM := 2
+const ROUND_BREAK_SECONDS := 1.65
+const MUSIC_PATH := "res://assets/audio/civic_nightmare_bezos_goofy_arcade_steel_strike.ogg"
+const MUSIC_LOOP_OFFSET := 14.0
 const ATTACK_WARNING_SECONDS := 1.35
 const ATTACK_RECOVERY_SECONDS := 0.42
 const CONTEST_COOLDOWN_SECONDS := 0.18
@@ -15,9 +22,16 @@ const ATTACK_SEQUENCE := ["prime_delivery", "terms_sweep", "one_click_charge"]
 
 var active: bool = false
 var elapsed: float = 0.0
-var citizen_hp: float = 100.0
-var bezos_hp: float = 72.0
-var legal_shield: float = 48.0
+var round_elapsed: float = 0.0
+var citizen_hp: float = CITIZEN_ROUND_HP
+var bezos_hp: float = BEZOS_ROUND_HP
+var legal_shield: float = LEGAL_SHIELD_ROUND_HP
+var round_number: int = 1
+var citizen_round_wins: int = 0
+var bezos_round_wins: int = 0
+var round_transition_active: bool = false
+var round_transition_elapsed: float = 0.0
+var round_results: Array[String] = []
 var attack_wait: float = 2.8
 var prompt_limit: float = 2.8
 var guided_contest_step: int = 0
@@ -53,6 +67,12 @@ var warning_panel: PanelContainer
 var warning_title: Label
 var warning_subtitle: Label
 var warning_progress: ProgressBar
+var round_score_label: Label
+var round_banner: Label
+var music_player: AudioStreamPlayer
+var shield_hit_audio: AudioStreamPlayer
+var body_hit_audio: AudioStreamPlayer
+var round_audio: AudioStreamPlayer
 
 
 func setup() -> void:
@@ -60,6 +80,7 @@ func setup() -> void:
 	size = VIEW_SIZE
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_stage()
+	_create_audio()
 	visible = false
 
 
@@ -67,21 +88,14 @@ func start() -> void:
 	active = true
 	visible = true
 	elapsed = 0.0
-	citizen_hp = 100.0
-	bezos_hp = 72.0
-	legal_shield = 48.0
-	attack_wait = 3.2
-	prompt_limit = 3.2
-	guided_contest_step = 0
-	guided_round = 0
-	active_attack = ""
-	active_attack_elapsed = 0.0
-	active_attack_resolved = false
-	objection_filed = false
-	objection_hold_progress = 0.0
+	round_elapsed = 0.0
+	round_number = 1
+	citizen_round_wins = 0
+	bezos_round_wins = 0
+	round_transition_active = false
+	round_transition_elapsed = 0.0
+	round_results.clear()
 	next_attack_index = 0
-	contest_cooldown = 0.0
-	pose_until = -1.0
 	contest_count = 0
 	objection_count = 0
 	intercepted_attacks = 0
@@ -95,11 +109,10 @@ func start() -> void:
 	_set_pose(citizen_sprite, Vector2i(0, 0))
 	bezos_sprite.modulate = Color.WHITE
 	citizen_sprite.modulate = Color.WHITE
-	legal_shield_ring.visible = true
-	legal_shield_ring.scale = Vector2.ONE
 	damage_flash.color.a = 0.0
-	_start_guided_round(true)
-	_clear_attack_fx()
+	round_banner.visible = false
+	_reset_round_state(true)
+	_start_music()
 	_emit_telemetry()
 
 
@@ -107,12 +120,20 @@ func stop() -> void:
 	active = false
 	visible = false
 	_clear_attack_fx()
+	_stop_audio()
 
 
 func process_frame(delta: float) -> void:
 	if not active:
 		return
 	elapsed += delta
+	if round_transition_active:
+		_update_ambient_motion(delta)
+		_update_fighter_motion()
+		_update_round_transition(delta)
+		_emit_telemetry()
+		return
+	round_elapsed += delta
 	contest_cooldown = maxf(contest_cooldown - delta, 0.0)
 	_read_actions(delta)
 	if not active:
@@ -125,9 +146,9 @@ func process_frame(delta: float) -> void:
 	_emit_telemetry()
 
 	if citizen_hp <= 0.0:
-		_finish_battle("administrative_defeat")
+		_resolve_round("administrative_defeat")
 	elif bezos_hp <= 0.0:
-		_finish_battle("citizen_victory")
+		_resolve_round("citizen_victory")
 
 
 func perform_contest() -> bool:
@@ -145,14 +166,16 @@ func perform_contest() -> bool:
 	var damage := 8.0
 	if legal_shield > 0.0:
 		legal_shield = maxf(legal_shield - damage, 0.0)
+		shield_hit_audio.play()
 		_flash(legal_shield_ring, Color(1.6, 0.45, 0.18), 0.16)
-		_punch_scale(legal_shield_ring, Vector2.ONE * (0.72 + 0.28 * legal_shield / 48.0))
+		_punch_scale(legal_shield_ring, Vector2.ONE * (0.72 + 0.28 * legal_shield / LEGAL_SHIELD_ROUND_HP))
 		if legal_shield <= 0.0:
 			var shield_tween := create_tween()
 			shield_tween.tween_interval(0.16)
 			shield_tween.tween_callback(func(): legal_shield_ring.visible = false)
 	else:
 		bezos_hp = maxf(bezos_hp - damage, 0.0)
+		body_hit_audio.play()
 		_set_pose(bezos_sprite, Vector2i(0, 1))
 		_flash(bezos_sprite, Color(1.7, 0.35, 0.22), 0.16)
 		_punch_scale(bezos_sprite, Vector2(0.77, 0.77))
@@ -198,6 +221,105 @@ func advance_objection_hold(delta: float) -> bool:
 
 func get_result() -> Dictionary:
 	return battle_result.duplicate(true)
+
+
+func get_round_maxima() -> Dictionary:
+	return {
+		"citizen_hp": CITIZEN_ROUND_HP,
+		"bezos_hp": BEZOS_ROUND_HP,
+		"legal_shield": LEGAL_SHIELD_ROUND_HP,
+	}
+
+
+func get_music_asset_path() -> String:
+	return MUSIC_PATH
+
+
+func _reset_round_state(first_match_round: bool) -> void:
+	round_elapsed = 0.0
+	citizen_hp = CITIZEN_ROUND_HP
+	bezos_hp = BEZOS_ROUND_HP
+	legal_shield = LEGAL_SHIELD_ROUND_HP
+	attack_wait = 3.2 if first_match_round else 2.65
+	prompt_limit = attack_wait
+	guided_contest_step = 0
+	guided_round = 0
+	active_attack = ""
+	active_attack_elapsed = 0.0
+	active_attack_resolved = false
+	objection_filed = false
+	objection_hold_progress = 0.0
+	contest_cooldown = 0.0
+	pose_until = -1.0
+	contest_latched = Input.is_physical_key_pressed(KEY_Z)
+	objection_latched = Input.is_physical_key_pressed(KEY_X)
+	legal_shield_ring.visible = true
+	legal_shield_ring.scale = Vector2.ONE
+	legal_shield_ring.modulate = Color.WHITE
+	bezos_sprite.modulate = Color.WHITE
+	citizen_sprite.modulate = Color.WHITE
+	_set_pose(bezos_sprite, Vector2i(0, 0))
+	_set_pose(citizen_sprite, Vector2i(0, 0))
+	_clear_attack_fx()
+	_start_guided_round(first_match_round)
+	_update_round_score()
+
+
+func _resolve_round(outcome: String) -> void:
+	if not active or round_transition_active:
+		return
+	tutorial_panel.visible = false
+	warning_panel.visible = false
+	_clear_attack_fx()
+	round_results.append(outcome)
+	if outcome == "citizen_victory":
+		citizen_round_wins += 1
+		_set_pose(bezos_sprite, Vector2i(1, 1))
+		_set_pose(citizen_sprite, Vector2i(0, 0))
+		round_banner.text = "ROUND %d\nCITIZEN" % round_number
+	else:
+		bezos_round_wins += 1
+		_set_pose(citizen_sprite, Vector2i(1, 1))
+		_set_pose(bezos_sprite, Vector2i(0, 0))
+		round_banner.text = "ROUND %d\nFULFILLED BY BEZOS" % round_number
+	_update_round_score()
+	round_audio.play()
+	if citizen_round_wins >= WINS_TO_CLAIM or bezos_round_wins >= WINS_TO_CLAIM:
+		_finish_battle(outcome)
+		return
+	round_transition_active = true
+	round_transition_elapsed = 0.0
+	round_banner.visible = true
+
+
+func _update_round_transition(delta: float) -> void:
+	round_transition_elapsed += delta
+	if round_transition_elapsed >= ROUND_BREAK_SECONDS * 0.54:
+		round_banner.text = "ROUND %d" % (round_number + 1)
+	if round_transition_elapsed < ROUND_BREAK_SECONDS:
+		return
+	round_transition_active = false
+	round_transition_elapsed = 0.0
+	round_number += 1
+	round_banner.visible = false
+	_reset_round_state(false)
+
+
+func _update_round_score() -> void:
+	if not round_score_label:
+		return
+	round_score_label.text = "BEZOS  %s     ROUND %d     %s  CITIZEN" % [
+		_round_marks(bezos_round_wins),
+		round_number,
+		_round_marks(citizen_round_wins),
+	]
+
+
+func _round_marks(wins: int) -> String:
+	var marks := ""
+	for index in range(WINS_TO_CLAIM):
+		marks += "●" if index < wins else "○"
+	return marks
 
 
 func _build_stage() -> void:
@@ -293,6 +415,35 @@ func _build_stage() -> void:
 	warning_progress = _create_prompt_progress(Color(0.2, 0.78, 1.0))
 	warning_stack.add_child(warning_progress)
 	warning_panel.visible = false
+
+	round_score_label = Label.new()
+	round_score_label.name = "RoundScore"
+	round_score_label.position = Vector2(390, 26)
+	round_score_label.size = Vector2(500, 42)
+	round_score_label.z_index = 9
+	round_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	round_score_label.add_theme_font_size_override("font_size", 22)
+	round_score_label.add_theme_color_override("font_color", Color(1.0, 0.83, 0.3))
+	round_score_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.02, 0.03, 0.95))
+	round_score_label.add_theme_constant_override("shadow_offset_x", 2)
+	round_score_label.add_theme_constant_override("shadow_offset_y", 2)
+	round_score_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(round_score_label)
+
+	round_banner = Label.new()
+	round_banner.name = "RoundBanner"
+	round_banner.position = Vector2(270, 248)
+	round_banner.size = Vector2(740, 150)
+	round_banner.z_index = 12
+	round_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	round_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	round_banner.add_theme_font_size_override("font_size", 44)
+	round_banner.add_theme_color_override("font_color", Color(1.0, 0.78, 0.16))
+	round_banner.add_theme_color_override("font_outline_color", Color(0.03, 0.025, 0.02, 0.98))
+	round_banner.add_theme_constant_override("outline_size", 9)
+	round_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	round_banner.visible = false
+	add_child(round_banner)
 
 
 func _create_fighter(path: String, fighter_position: Vector2, fighter_scale: Vector2, flip_h: bool) -> Sprite2D:
@@ -517,7 +668,7 @@ func _update_fighter_motion() -> void:
 	bezos_sprite.position = bezos_base + Vector2(0, sin(elapsed * 2.2) * 2.0)
 	var damage_shake := sin(elapsed * 92.0) * 9.0 if elapsed < damage_shake_until else 0.0
 	citizen_sprite.position = citizen_base + Vector2(sin(elapsed * 4.1) * 1.4 + damage_shake, absf(sin(elapsed * 3.3)) * 2.4)
-	if elapsed >= pose_until and active_attack == "":
+	if elapsed >= pose_until and active_attack == "" and not round_transition_active:
 		_set_pose(bezos_sprite, Vector2i(0, 0))
 		_set_pose(citizen_sprite, Vector2i(0, 0))
 
@@ -527,7 +678,7 @@ func _emit_telemetry() -> void:
 		citizen_hp,
 		bezos_hp,
 		legal_shield,
-		maxi(int(ceil(ROUND_SECONDS - elapsed)), 0)
+		maxi(int(ceil(ROUND_SECONDS - round_elapsed)), 0)
 	)
 
 
@@ -535,9 +686,13 @@ func _finish_battle(outcome: String) -> void:
 	if not active:
 		return
 	active = false
+	round_transition_active = false
 	tutorial_panel.visible = false
 	warning_panel.visible = false
+	round_banner.visible = false
 	_clear_attack_fx()
+	if music_player:
+		music_player.stop()
 	if outcome == "citizen_victory":
 		_set_pose(bezos_sprite, Vector2i(1, 1))
 		_set_pose(citizen_sprite, Vector2i(0, 0))
@@ -551,6 +706,10 @@ func _finish_battle(outcome: String) -> void:
 		"intercepted_attacks": intercepted_attacks,
 		"suffered_charges": suffered_charges,
 		"mistake_count": mistake_count,
+		"citizen_round_wins": citizen_round_wins,
+		"bezos_round_wins": bezos_round_wins,
+		"rounds_played": round_results.size(),
+		"round_results": round_results.duplicate(),
 		"elapsed_seconds": snappedf(elapsed, 0.1),
 		"profile_was_known": false,
 	}
@@ -570,7 +729,7 @@ func _penalize_current_prompt() -> void:
 	var damage_tween := create_tween()
 	damage_tween.tween_property(damage_flash, "color:a", 0.0, 0.28)
 	if citizen_hp <= 0.0:
-		_finish_battle("administrative_defeat")
+		_resolve_round("administrative_defeat")
 		return
 	if active_attack == "":
 		_advance_guided_contest()
@@ -583,6 +742,65 @@ func _penalize_current_prompt() -> void:
 	warning_progress.value = 0.0
 	warning_panel.visible = false
 	_clear_attack_fx()
+
+
+func _create_audio() -> void:
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "GoofyArcadeSteelStrikeMusic"
+	music_player.volume_db = -9.0
+	if ResourceLoader.exists(MUSIC_PATH):
+		var delivered_stream := load(MUSIC_PATH) as AudioStreamOggVorbis
+		if delivered_stream:
+			delivered_stream.loop = true
+			delivered_stream.loop_offset = MUSIC_LOOP_OFFSET
+			music_player.stream = delivered_stream
+	add_child(music_player)
+	shield_hit_audio = _make_audio_player("LegalShieldImpact", _make_impact_sound(132.0, 0.13, 0.6), -2.5, 5)
+	body_hit_audio = _make_audio_player("BezosBodyImpact", _make_impact_sound(74.0, 0.19, 0.24), -0.5, 5)
+	round_audio = _make_audio_player("RoundDecision", _make_impact_sound(246.0, 0.28, 0.08), -2.0, 2)
+
+
+func _make_audio_player(player_name: String, stream: AudioStream, volume: float, polyphony: int) -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.stream = stream
+	player.volume_db = volume
+	player.max_polyphony = polyphony
+	add_child(player)
+	return player
+
+
+func _start_music() -> void:
+	if music_player and music_player.stream:
+		music_player.play(0.0)
+
+
+func _stop_audio() -> void:
+	for player in [music_player, shield_hit_audio, body_hit_audio, round_audio]:
+		if player:
+			player.stop()
+
+
+func _make_impact_sound(frequency: float, duration: float, noise_amount: float) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var sample_count := maxi(1, int(duration * sample_rate))
+	var bytes := PackedByteArray()
+	bytes.resize(sample_count)
+	for index in range(sample_count):
+		var time := float(index) / float(sample_rate)
+		var progress := float(index) / float(sample_count)
+		var envelope := pow(1.0 - progress, 2.8)
+		var body := sin(TAU * frequency * time) + sin(TAU * frequency * 1.91 * time) * 0.38
+		var metal := sin(TAU * frequency * 5.7 * time) * 0.24
+		var noise := sin(float((index * 7919 + 31) % 997) * 0.071) * noise_amount
+		var wave := (body + metal + noise) * envelope
+		bytes[index] = clampi(int(128.0 + wave * 70.0), 0, 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = bytes
+	return stream
 
 
 func _flash(canvas_item: CanvasItem, flash_color: Color, duration: float) -> void:

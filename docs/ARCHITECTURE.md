@@ -127,7 +127,7 @@ Three optional-content grammars are connected at existing orchestration boundari
 - the hidden bunker is a protocol deviation because its direct warning is part of the evidence; reaching it now also retains the result of crossing the ordnance/funding transfer corridor;
 - the UFO is an anomaly whose location and time records cannot be reconciled.
 
-The Bezos/drone sequence now supplies a fourth optional grammar: a playable commercial contest. `BezosEncounter` coordinates the pre-fight presentation and administrative verdict, while `BezosBattleStage` owns its two-action combat model and emits a semantic result. `DossierManager` retains the method and recognition outcome rather than combat statistics. Xi, Sam Altman, and historical contamination retain their current behaviour until a follow-up pass decides what lasting evidence each genuinely creates. Do not classify every optional scene merely because it exists.
+The Bezos/drone sequence now supplies a fourth optional grammar: a playable commercial contest. `BezosEncounter` coordinates the pre-fight presentation and administrative verdict, while `BezosBattleStage` owns its two-action combat model, first-to-two round state, round HUD, delivered music, procedural impacts, and semantic result. `DossierManager` retains the method and recognition outcome rather than combat statistics. Xi, Sam Altman, and historical contamination retain their current behaviour until a follow-up pass decides what lasting evidence each genuinely creates. Do not classify every optional scene merely because it exists.
 
 ## Deliberately retained debt
 
