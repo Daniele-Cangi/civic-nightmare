@@ -5,6 +5,12 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+### Changed
+
+- Rebalanced each Bezos round from six to sixteen successful contest actions
+  and expanded the visible round clock, bringing a straight best-of-three win
+  close to the intended two-and-a-half-minute encounter length.
+
 ## [2.1.1] - 2026-08-22
 
 ### Release title
