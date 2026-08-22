@@ -5,6 +5,12 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+## [2.1.0] - 2026-08-22
+
+### Release title
+
+**Civic Nightmare 2.1 — The Administrative Arcade Update**
+
 ### Added
 
 - **Snake Eyes**, a Google Flow Music-generated soundtrack for The Greatest
