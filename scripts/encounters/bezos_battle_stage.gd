@@ -5,10 +5,10 @@ signal resolved(result: Dictionary)
 
 const VIEW_SIZE := Vector2(1280, 720)
 const POSE_CELL := Vector2(627, 627)
-const ROUND_SECONDS := 32.0
+const ROUND_SECONDS := 72.0
 const CITIZEN_ROUND_HP := 100.0
-const BEZOS_ROUND_HP := 32.0
-const LEGAL_SHIELD_ROUND_HP := 16.0
+const BEZOS_ROUND_HP := 80.0
+const LEGAL_SHIELD_ROUND_HP := 48.0
 const WINS_TO_CLAIM := 2
 const ROUND_BREAK_SECONDS := 1.65
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_bezos_goofy_arcade_steel_strike.ogg"
