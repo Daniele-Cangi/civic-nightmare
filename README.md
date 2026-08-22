@@ -41,6 +41,8 @@
 ### 🚗 The Administrative Approach
 New Game first tunes into a short, skippable CRT news bulletin: war is good for quarterly earnings, automation remains human-centered, and the passport district advises citizens to arrive in a roadworthy vehicle. The signal then cuts directly to an approximately 90-second playable sunset drive toward the district. The citizen must drive but cannot fail: officials inaugurate an unrepaired pothole, a motorcade requisitions a private gold lane, a mobile toll corrects which lane was open, and a checkpoint grants access only after its barrier collapses. All the while the battered economy car sheds parts and the presentation insists this is the greatest journey ever undertaken, now scored by the arcade-driving track **Coastline Dash**. Only the bulletin can be skipped; the drive is mandatory gameplay.
 
+Free-roam begins with **Dead Man's Hand**, a persistent overworld theme that keeps its place across exterior travel, ducks beneath dialogue and Administrative Hold, and yields to interiors and encounter-specific music.
+
 ### 🏛️ The Great Signature Quest
 Navigate an authored overworld and confront six different machines of authority. To get your document signed, you must deal with:
 

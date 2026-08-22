@@ -14,7 +14,7 @@ scenes/main.tscn
     │                               dialogue UI, choices, portraits, typewriter
     ├── managers/room_manager.gd    interiors, doors, transitions, reparenting
     ├── managers/environment_effects.gd
-    │                               lighting, CRT, ambient audio, particles
+    │                               lighting, CRT, persistent world music, particles
     ├── managers/world_landmark_builder.gd
     │                               static landmark nodes and entry triggers
     ├── managers/authority_world_patch_builder.gd
@@ -63,7 +63,7 @@ scenes/main.tscn
 | Character colors, portraits, sprite paths, and authority facades | `CharacterVisualCatalog` | Read-only presentation metadata shared by world, dialogue, and encounters. |
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the full-width northern Great Wall, its physical gate/collision contract, the nuclear plant, hidden bunker, and Pyongyang entrances. |
 | Main-authority exterior composition | `AuthorityWorldPatchBuilder` | Creates each facade, soft terrain contact, optional physical motif, and visible-mass collision footprint as one unit. |
-| Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, and atmospheric particles. |
+| Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, atmospheric particles, and persistent exterior music with fades/ducking. |
 | Overworld and global story orchestration | `main.gd` | Coordinates systems that need world nodes or multiple narrative states. |
 | Room-local actors and geometry | `scripts/oval_office_room.gd`, `scenes/interiors/` | Separate from global travel. |
 
@@ -88,6 +88,10 @@ scenes/main.tscn
 - `assets/interiors/` contains all eleven authored room backgrounds: six main authorities, three optional investigations, one classified deviation, and one anomaly. `oval_office_room.gd` suppresses its generic visual tile/prop pass when one is present, but retains the shared NPC/sequence actors, exit, lighting, boundary, dialogue, and room-state behavior. Named code-owned barriers follow baked furniture. See [authority interior art direction](AUTHORITY_INTERIOR_ART_DIRECTION.md).
 - `NewsBroadcastSequence` owns a short fixed-frame CRT bulletin, its three authored reports, broadcast hum, shutdown, and explicit skip boundary. It emits only `finished`; `main.gd` then mounts `IntroSequence`. See [News Broadcast Sequence](NEWS_BROADCAST_SEQUENCE.md).
 - `IntroSequence` owns the mandatory no-fail playable approach: a fixed 1280×720 frame, steering, procedural perspective markers, civic signs, potholes, vehicle deterioration, local engine/clunk audio, the delivered original drive music, and the arrival beat. `main.gd` retains the handoff and existing autosave boundary. See [Opening Drive Sequence](OPENING_DRIVE_SEQUENCE.md).
+- `EnvironmentEffects` owns **Dead Man's Hand** after that handoff. `main.gd`
+  supplies only exterior, full-screen-sequence, dialogue, and Administrative
+  Hold context; the manager owns playback position, fades, ducking, and the
+  intro-preserving loop.
 - `assets/` and `shaders/` remain presentation resources rather than behavior owners.
 - `assets/landmarks/authority_*_v2.png` contains the six runtime-sized satirical authority facades. Their architecture is narrative: spectacle masks neglect for Trump, permanent-beta industry for Musk, inaccessible transparency for Ursula, wartime paranoia for Putin, stratified stability for Lagarde, and theatrical grandeur for Macron. `AuthorityWorldPatchBuilder` owns each physical entrance/collision root and applies a small presentation-only offset that centers the raster composition on the authored plaza without moving navigation. Putin's facade and siege raster share a stronger correction because they read as one wider visual unit. See [World Patch Visual System](WORLD_PATCH_VISUAL_SYSTEM.md).
 - `assets/backgrounds/world_district_plate_v3.png` is a single opaque, collision-neutral HD ground plate matching the 2176×2048 overworld bounds. `main.gd` mounts it below the TileMap at `z=-10` with linear filtering; path reservations, structures, triggers, and collision remain generated runtime layers. The plate supplies broad contemporary civic materials and authored landscaping without the repeated 32 px visual grammar of the fallback atlas. Legacy nature and border tiles are suppressed while the plate is active, but the invisible world-edge collision remains. If the plate cannot load, the generator still falls back to the original ground, path, decoration, and border rendering.

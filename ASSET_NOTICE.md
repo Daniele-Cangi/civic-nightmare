@@ -111,6 +111,16 @@ master; the master is not shipped. This disclosure records the generation tool
 and delivery provenance without placing the output under the repository's MIT
 source-code license.
 
+`assets/audio/civic_nightmare_overworld_dead_mans_hand.ogg` is **Dead Man's
+Hand**, generated for Civic Nightmare using **Google Flow Music** and delivered
+by project owner Daniele Cangi. The supplied 48 kHz stereo WAV master was
+attenuated by 1 dB and converted to Ogg Vorbis for the browser runtime. Its
+first play preserves the original introduction; the runtime edit crossfades
+the final two seconds with source time 23.75–25.75 and then loops from 25.75,
+avoiding both a repeated intro and the master's long silent tail. The WAV master
+is not shipped, and the runtime track remains project media outside the MIT
+source-code grant.
+
 ## Marketing artwork
 
 `asset_sources/marketing/civic_nightmare_itch_cover_v1.png` is an original

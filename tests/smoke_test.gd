@@ -27,6 +27,7 @@ const BUNKER_ACCESS_BACKGROUND_PATH := "res://assets/encounters/bunker_aid_corri
 const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
 const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
 const PRICE_STABILITY_PINBALL_BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
+const OVERWORLD_MUSIC_PATH := "res://assets/audio/civic_nightmare_overworld_dead_mans_hand.ogg"
 const PUTIN_OPERATION_ASSET_PATHS := [
 	"res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png",
 	"res://assets/encounters/putin_operation/mobilization_copier_v1.png",
@@ -148,6 +149,34 @@ func _run() -> void:
 	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(ending_sequence != null, "ending sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
+	_check(ResourceLoader.exists(OVERWORLD_MUSIC_PATH), "Dead Man's Hand overworld delivery exists")
+	var world_music := environment_effects.get("world_music_player") as AudioStreamPlayer
+	var world_music_stream := world_music.stream as AudioStreamOggVorbis if world_music else null
+	_check(str(environment_effects.call("get_world_music_asset_path")) == OVERWORLD_MUSIC_PATH, "environment effects exposes the approved overworld music path")
+	_check(world_music_stream != null and world_music_stream.get_length() >= 168.8 and world_music_stream.get_length() <= 169.2, "the browser-ready overworld edit loads at its verified duration")
+	_check(world_music_stream != null and world_music_stream.loop and is_equal_approx(world_music_stream.loop_offset, 25.75), "the first play keeps its intro while later loops resume after the baked crossfade")
+	_check(world_music != null and not world_music.playing and environment_effects.process_mode == Node.PROCESS_MODE_ALWAYS, "the title keeps overworld music silent while its fade owner remains pause-safe")
+	environment_effects.call("set_world_music_context", true, false)
+	environment_effects.call("_update_world_music_mix", 2.0)
+	_check(world_music != null and world_music.playing and is_equal_approx(world_music.volume_db, -12.5), "free roam starts Dead Man's Hand at the restrained world mix")
+	if world_music:
+		world_music.seek(42.0)
+	environment_effects.call("set_world_music_context", true, true)
+	environment_effects.call("_update_world_music_mix", 1.0)
+	_check(world_music != null and is_equal_approx(world_music.volume_db, -20.0), "dialogue context ducks rather than restarts the overworld theme")
+	environment_effects.call("set_world_music_context", false, false)
+	environment_effects.call("_update_world_music_mix", 2.0)
+	_check(world_music != null and not world_music.playing and float(environment_effects.get("world_music_resume_position")) > 30.0, "interior context fades out and retains the overworld playback position")
+	start_menu.set("active", false)
+	game.set("active_room_id", "southern_annex")
+	game.call("_update_world_music_context")
+	_check(bool(environment_effects.get("world_music_requested")), "the non-indoor Southern Annex continues the world theme")
+	game.set("active_room_id", "oval_office")
+	game.call("_update_world_music_context")
+	_check(not bool(environment_effects.get("world_music_requested")), "an authored interior requests a music fade without resetting the track")
+	game.set("active_room_id", "")
+	start_menu.set("active", true)
+	game.call("_update_world_music_context")
 	_check(world_landmark_builder != null, "world landmark builder is initialized")
 	var overworld_camera := game.get_node_or_null("Entities/Player/Camera2D") as Camera2D
 	_check(overworld_camera != null and overworld_camera.zoom.is_equal_approx(Vector2(1.35, 1.35)), "the overworld camera reveals slightly more of each district")

@@ -6,9 +6,11 @@ The approved browser-runtime tracks are:
   Google Flow Music for the opening drive.
 - `civic_nightmare_putin_special_operation.ogg` — **Three-Minute Special
   Operation**, generated using Google Flow Music for Putin's access game.
+- `civic_nightmare_overworld_dead_mans_hand.ogg` — **Dead Man's Hand**,
+  generated using Google Flow Music for exterior free-roam.
 
 All current and future soundtrack deliveries use Google Flow Music unless a
-track-specific record explicitly says otherwise. Both current tracks are 48 kHz
+track-specific record explicitly says otherwise. All three current tracks are 48 kHz
 stereo Ogg Vorbis runtime conversions of WAV masters delivered by project owner
 Daniele Cangi. The source masters are not required by the exported game and
 remain outside the runtime tree. See

@@ -43,6 +43,7 @@ func open() -> void:
 	opened = true
 	hold_layer.visible = true
 	_refresh()
+	state_changed.emit()
 	get_tree().paused = true
 
 
@@ -53,6 +54,7 @@ func close() -> void:
 	if hold_layer:
 		hold_layer.visible = false
 	get_tree().paused = false
+	state_changed.emit()
 
 
 func _create_ui() -> void:
