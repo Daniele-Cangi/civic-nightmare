@@ -7,9 +7,10 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
-- Rebalanced each Bezos round from six to sixteen successful contest actions
-  and expanded the visible round clock, bringing a straight best-of-three win
-  close to the intended two-and-a-half-minute encounter length.
+- Rebalanced each Bezos round from six to nineteen successful contest actions,
+  expanded the visible round clock, and moved the soundtrack entrance to the
+  pre-fight presentation without restarting it at `FIGHT!`; a straight win now
+  targets the intended two-to-two-and-a-half-minute encounter length.
 
 ## [2.1.1] - 2026-08-22
 
