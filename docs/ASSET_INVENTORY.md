@@ -15,7 +15,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 8 | 11.69 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/centered weapon |
 | `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
-| `assets/audio/` | 6 | 13.34 MiB | Five runtime soundtracks plus their delivery note |
+| `assets/audio/` | 7 | 15.96 MiB | Six runtime soundtracks plus their delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -71,6 +71,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Putin-operation music | `putin_special_operation.gd` | **Three-Minute Special Operation**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Overworld music | `environment_effects.gd` | **Dead Man's Hand**, generated with Google Flow Music and delivered by project owner Daniele Cangi; intro-preserving loop conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Greatest Deal music | `greatest_deal.gd` | **Snake Eyes**, generated with Google Flow Music and delivered by project owner Daniele Cangi; silent-tail removal, entrance-preserving loop conversion, and generation disclosure recorded in `ASSET_NOTICE.md` |
+| Price Stability music | `price_stability_pinball.gd` | **Jackpot Jive**, generated with Google Flow Music and delivered by project owner Daniele Cangi; browser conversion, silent-tail removal, and generation disclosure recorded in `ASSET_NOTICE.md` |
 | itch.io marketing set | no runtime owner | Original generated cover plus five direct Godot framebuffer captures; prompt, capture states, and upload order recorded under `asset_sources/marketing/` |
 | Six promoted civic props | `oval_office_room.gd` | Pixel-boy/LimeZu subset; retained source and licenses in `docs/ASSET_PACKS.md` |
 | Civic Asset Lab previews | no runtime owner | Deterministic local generator; disposable output under `tmp/` |

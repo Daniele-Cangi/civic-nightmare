@@ -89,6 +89,9 @@ scenes/main.tscn
 - `NewsBroadcastSequence` owns a short fixed-frame CRT bulletin, its three authored reports, broadcast hum, shutdown, and explicit skip boundary. It emits only `finished`; `main.gd` then mounts `IntroSequence`. See [News Broadcast Sequence](NEWS_BROADCAST_SEQUENCE.md).
 - `IntroSequence` owns the mandatory no-fail playable approach: a fixed 1280×720 frame, steering, procedural perspective markers, civic signs, potholes, vehicle deterioration, local engine/clunk audio, the delivered original drive music, and the arrival beat. `main.gd` retains the handoff and existing autosave boundary. See [Opening Drive Sequence](OPENING_DRIVE_SEQUENCE.md).
 - `GreatestDeal` owns its complete casino soundscape: the delivered **Snake Eyes** loop, generated card movement/table foley, action cues, and result-review sting. `main.gd` only activates or ends the procedure and keeps the overworld theme out of the encounter.
+- `PriceStabilityPinball` owns the delivered **Jackpot Jive** track and its
+  generated flipper, bumper, policy-event, bailout, and success feedback. It
+  starts and stops that mix with the table, before the existing Lagarde dialogue.
 - `EnvironmentEffects` owns **Dead Man's Hand** after that handoff. `main.gd`
   supplies only exterior, full-screen-sequence, dialogue, and Administrative
   Hold context; the manager owns playback position, fades, ducking, and the

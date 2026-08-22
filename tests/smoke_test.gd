@@ -28,6 +28,7 @@ const GREATEST_DEAL_BACKGROUND_PATH := "res://assets/encounters/greatest_deal_st
 const GREATEST_DEAL_MUSIC_PATH := "res://assets/audio/civic_nightmare_greatest_deal_snake_eyes.ogg"
 const CONSENSUS_ENGINE_BACKGROUND_PATH := "res://assets/encounters/consensus_engine_stage_v1.png"
 const PRICE_STABILITY_PINBALL_BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
+const PRICE_STABILITY_PINBALL_MUSIC_PATH := "res://assets/audio/civic_nightmare_price_stability_jackpot_jive.ogg"
 const OVERWORLD_MUSIC_PATH := "res://assets/audio/civic_nightmare_overworld_dead_mans_hand.ogg"
 const PUTIN_OPERATION_ASSET_PATHS := [
 	"res://assets/encounters/putin_operation/matryoshka_security_unit_v1.png",
@@ -1186,6 +1187,7 @@ func _test_consensus_engine() -> void:
 
 func _test_price_stability_pinball() -> void:
 	_check(ResourceLoader.exists(PRICE_STABILITY_PINBALL_BACKGROUND_PATH), "Price Stability pinball background exists")
+	_check(ResourceLoader.exists(PRICE_STABILITY_PINBALL_MUSIC_PATH), "Jackpot Jive Price Stability soundtrack exists")
 	if ResourceLoader.exists(PRICE_STABILITY_PINBALL_BACKGROUND_PATH):
 		var stage_texture := load(PRICE_STABILITY_PINBALL_BACKGROUND_PATH) as Texture2D
 		_check(stage_texture != null and stage_texture.get_size() == Vector2(1280, 720), "Price Stability stage is authored for the gameplay viewport")
@@ -1200,9 +1202,14 @@ func _test_price_stability_pinball() -> void:
 		"timers_enabled": false,
 	})
 	pinball.process_frame(0.01)
+	var pinball_music := pinball.get("music_player") as AudioStreamPlayer
+	var pinball_music_stream := pinball_music.stream as AudioStreamOggVorbis if pinball_music else null
+	_check(str(pinball.call("get_music_asset_path")) == PRICE_STABILITY_PINBALL_MUSIC_PATH, "Price Stability exposes the approved Jackpot Jive delivery")
+	_check(pinball_music_stream != null and pinball_music_stream.get_length() >= 171.0 and pinball_music_stream.get_length() <= 171.2, "Jackpot Jive loads as the browser-ready pinball edit")
+	_check(pinball_music != null and pinball_music.playing and is_equal_approx(pinball_music.volume_db, -8.5), "Jackpot Jive starts only with the monetary table")
 	for audio_name in ["bumper_audio", "flipper_audio", "event_audio", "bailout_audio", "success_audio"]:
 		var monetary_audio := pinball.get(audio_name) as AudioStreamPlayer
-		_check(monetary_audio != null and monetary_audio.stream != null, "Price Stability owns generated %s feedback" % audio_name)
+		_check(monetary_audio != null and monetary_audio.stream != null and monetary_audio.volume_db > pinball_music.volume_db, "Price Stability owns audible %s feedback above its soundtrack" % audio_name)
 	_check(pinball.get("table_flash") != null and pinball.get("impact_burst") != null and pinball.get("celebration_root") != null, "Price Stability owns a dedicated monetary-impact layer")
 	_check(str(pinball.get("title_label").text) == "THE 2% MIRACLE", "Lagarde's procedure names its impossible target immediately")
 	_check(is_equal_approx(float(pinball.get("inflation")), 4.8) and str(pinball.get("target_label").text).contains("2.00%"), "the inflation reading and target are visible before play")
@@ -1225,6 +1232,7 @@ func _test_price_stability_pinball() -> void:
 	pinball.process_frame(0.01)
 	pinball.process_frame(0.01)
 	_check(not bool(pinball.get("active")), "the published indicator closes the monetary procedure")
+	_check(not bool(pinball_music.playing), "the pinball soundtrack stops before Lagarde dialogue resumes")
 	var adjusted_result: Dictionary = pinball.get_result()
 	_check(str(adjusted_result.get("outcome", "")) == "access_granted" and str(adjusted_result.get("route", "")) == "statistical_adjustment", "the adjustment route grants access without pretending it was player mastery")
 	_check(bool(adjusted_result.get("multiball_used", false)) and bool(adjusted_result.get("rate_shock", false)) and int(adjusted_result.get("bailouts", 0)) == 1, "the result preserves monetary interventions for the dossier")

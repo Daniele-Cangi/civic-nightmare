@@ -4,6 +4,8 @@ signal completed(result: Dictionary)
 signal cancelled
 
 const BACKGROUND_PATH := "res://assets/encounters/price_stability_pinball_stage_v1.png"
+const MUSIC_PATH := "res://assets/audio/civic_nightmare_price_stability_jackpot_jive.ogg"
+const MUSIC_VOLUME_DB := -8.5
 const VIEW_SIZE := Vector2(1280, 720)
 const TARGET_INFLATION := 2.0
 const STARTING_INFLATION := 4.8
@@ -103,6 +105,7 @@ var flipper_audio: AudioStreamPlayer
 var event_audio: AudioStreamPlayer
 var bailout_audio: AudioStreamPlayer
 var success_audio: AudioStreamPlayer
+var music_player: AudioStreamPlayer
 
 var active := false
 var state: State = State.INACTIVE
@@ -175,12 +178,14 @@ func start(options: Dictionary = {}) -> void:
 	_layout_frame()
 	_refresh_inflation()
 	_set_state(State.INTRO)
+	if music_player and music_player.stream:
+		music_player.play(0.0)
 
 
 func stop() -> void:
 	active = false
 	state = State.INACTIVE
-	for player in [bumper_audio, flipper_audio, event_audio, bailout_audio, success_audio]:
+	for player in [music_player, bumper_audio, flipper_audio, event_audio, bailout_audio, success_audio]:
 		if player:
 			player.stop()
 	if layer:
@@ -215,6 +220,10 @@ func process_frame(delta: float) -> void:
 
 func get_result() -> Dictionary:
 	return result.duplicate(true)
+
+
+func get_music_asset_path() -> String:
+	return MUSIC_PATH
 
 
 func register_bumper_hit(bumper_id: String) -> bool:
@@ -648,6 +657,12 @@ func _clear_celebration() -> void:
 func _create_audio() -> void:
 	if bumper_audio:
 		return
+	music_player = AudioStreamPlayer.new()
+	music_player.name = "JackpotJiveMusic"
+	music_player.volume_db = MUSIC_VOLUME_DB
+	if ResourceLoader.exists(MUSIC_PATH):
+		music_player.stream = load(MUSIC_PATH)
+	add_child(music_player)
 	bumper_audio = AudioStreamPlayer.new()
 	bumper_audio.name = "PolicyBumperAudio"
 	bumper_audio.stream = _make_tone(470.0, 0.085, 0.06)

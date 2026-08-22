@@ -5,6 +5,12 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+### Added
+
+- **Jackpot Jive**, a Google Flow Music-generated soundtrack for Lagarde's
+  monetary pinball, with a browser-ready runtime edit and table effects mixed
+  clearly above the music.
+
 ### Changed
 
 - Rebalanced each Bezos round from six to nineteen successful contest actions,
