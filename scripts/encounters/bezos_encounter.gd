@@ -669,6 +669,8 @@ func _begin_bezos_cinematic_state(state: int) -> void:
 	match state:
 		BezosCinematicState.STAGE:
 			_bezos_hide_all_ui()
+			if battle_stage:
+				battle_stage.call("start_music_preview")
 			bezos_cinematic_stage.visible = true
 			bezos_cinematic_stage.modulate.a = 0.0
 			# Big centered stage name
