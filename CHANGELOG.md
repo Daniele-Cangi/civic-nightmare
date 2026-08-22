@@ -5,6 +5,12 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+## [2.1.1] - 2026-08-22
+
+### Release title
+
+**Civic Nightmare 2.1.1 — The Fulfillment Fight Update**
+
 ### Added
 
 - The Bezos Fulfillment Cathedral confrontation is now a compact best-of-three
