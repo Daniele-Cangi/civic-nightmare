@@ -1,17 +1,34 @@
 extends Node
 
+const WORLD_MUSIC_PATH := "res://assets/audio/civic_nightmare_overworld_dead_mans_hand.ogg"
+const WORLD_MUSIC_BASE_VOLUME_DB := -12.5
+const WORLD_MUSIC_DUCKED_VOLUME_DB := -20.0
+const WORLD_MUSIC_SILENT_VOLUME_DB := -60.0
+const WORLD_MUSIC_FADE_DB_PER_SECOND := 36.0
+const WORLD_MUSIC_LOOP_OFFSET := 25.75
+
 var host: Node
 var entities_layer: Node2D
 var ui_layer: CanvasLayer
 
 var world_canvas_modulate: CanvasModulate
 var screen_fx_material: ShaderMaterial
+var world_music_player: AudioStreamPlayer
+var world_music_requested := false
+var world_music_ducked := false
+var world_music_resume_position := 0.0
+var world_music_started := false
 
 
 func setup(owner: Node, world_entities: Node2D, world_ui: CanvasLayer) -> void:
 	host = owner
 	entities_layer = world_entities
 	ui_layer = world_ui
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
+func _process(delta: float) -> void:
+	_update_world_music_mix(delta)
 
 
 func setup_world_lighting(building_specs: Array) -> void:
@@ -46,7 +63,7 @@ func _add_point_light(tile_pos: Vector2i, color: Color) -> void:
 	entities_layer.add_child(light)
 
 func setup_ambient_audio() -> void:
-	# Door entry sound effect only (soft thud, no ambient noise)
+	# Door entry sound effect (soft thud).
 	var door_sfx = AudioStreamPlayer.new()
 	door_sfx.name = "DoorSFX"
 	door_sfx.volume_db = -16.0
@@ -67,6 +84,62 @@ func setup_ambient_audio() -> void:
 	door_stream.data = door_data
 	door_sfx.stream = door_stream
 	host.add_child(door_sfx)
+	_setup_world_music()
+
+
+func get_world_music_asset_path() -> String:
+	return WORLD_MUSIC_PATH
+
+
+func set_world_music_context(should_play: bool, should_duck: bool) -> void:
+	world_music_requested = should_play
+	world_music_ducked = should_duck
+	if not should_play or not world_music_player or not world_music_player.stream:
+		return
+	if world_music_player.playing:
+		return
+	var restart_position := world_music_resume_position
+	if world_music_started and restart_position <= 0.05:
+		restart_position = WORLD_MUSIC_LOOP_OFFSET
+	world_music_player.play(restart_position)
+	world_music_started = true
+
+
+func _setup_world_music() -> void:
+	if world_music_player:
+		return
+	world_music_player = AudioStreamPlayer.new()
+	world_music_player.name = "OverworldMusic"
+	world_music_player.volume_db = WORLD_MUSIC_SILENT_VOLUME_DB
+	if ResourceLoader.exists(WORLD_MUSIC_PATH):
+		var delivered_stream := load(WORLD_MUSIC_PATH) as AudioStreamOggVorbis
+		if delivered_stream:
+			delivered_stream.loop = true
+			delivered_stream.loop_offset = WORLD_MUSIC_LOOP_OFFSET
+			world_music_player.stream = delivered_stream
+	add_child(world_music_player)
+
+
+func _update_world_music_mix(delta: float) -> void:
+	if not world_music_player or not world_music_player.stream:
+		return
+	var target_volume := WORLD_MUSIC_SILENT_VOLUME_DB
+	if world_music_requested:
+		target_volume = WORLD_MUSIC_DUCKED_VOLUME_DB if world_music_ducked else WORLD_MUSIC_BASE_VOLUME_DB
+	world_music_player.volume_db = move_toward(
+		world_music_player.volume_db,
+		target_volume,
+		WORLD_MUSIC_FADE_DB_PER_SECOND * maxf(delta, 0.0)
+	)
+	if world_music_requested or not world_music_player.playing:
+		return
+	if world_music_player.volume_db > WORLD_MUSIC_SILENT_VOLUME_DB + 0.5:
+		return
+	var playback_position := world_music_player.get_playback_position()
+	var stream_length := world_music_player.stream.get_length()
+	if playback_position > 0.05 and playback_position < stream_length - 0.05:
+		world_music_resume_position = playback_position
+	world_music_player.stop()
 
 func create_atmosphere_particles() -> void:
 	var player_node = host.get_node_or_null("Player")

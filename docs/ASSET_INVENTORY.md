@@ -15,7 +15,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 8 | 11.69 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/centered weapon |
 | `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
-| `assets/audio/` | 3 | 4.90 MiB | Runtime opening-drive and Putin-operation music plus their delivery note |
+| `assets/audio/` | 4 | 7.79 MiB | Three runtime soundtracks plus their delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
 | `asset_sources/vendor/` | 164 | 1.12 MiB | Licensed vendor/source pack, retained but not imported or exported |
@@ -38,7 +38,7 @@ A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
 35.29 MiB because it is engine code, not project media.
 
-The conservative literal runtime closure is now 116 files / about 76.62 MiB.
+The conservative literal runtime closure is now 117 files / about 79.51 MiB.
 The gap is
 not deleted automatically: it contains fallbacks, README media, vendor sources,
 and older art whose provenance should be retained before removal. The three
@@ -69,6 +69,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Opening-drive art | `intro_sequence.gd` | Project-specific OpenAI-generated art; prompts and delivery contract recorded in `ASSET_NOTICE.md` and `docs/OPENING_DRIVE_SEQUENCE.md` |
 | Opening-drive music | `intro_sequence.gd` | **Coastline Dash**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Putin-operation music | `putin_special_operation.gd` | **Three-Minute Special Operation**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
+| Overworld music | `environment_effects.gd` | **Dead Man's Hand**, generated with Google Flow Music and delivered by project owner Daniele Cangi; intro-preserving loop conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | itch.io marketing set | no runtime owner | Original generated cover plus five direct Godot framebuffer captures; prompt, capture states, and upload order recorded under `asset_sources/marketing/` |
 | Six promoted civic props | `oval_office_room.gd` | Pixel-boy/LimeZu subset; retained source and licenses in `docs/ASSET_PACKS.md` |
 | Civic Asset Lab previews | no runtime owner | Deterministic local generator; disposable output under `tmp/` |

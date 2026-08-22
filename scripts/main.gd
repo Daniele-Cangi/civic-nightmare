@@ -894,6 +894,7 @@ func _character_display_name(character_id: String) -> String:
 	return result
 
 func _process(delta: float) -> void:
+	_update_world_music_context()
 	if start_menu_active:
 		return
 	_update_northern_wall_camera(delta)
@@ -939,6 +940,32 @@ func _process(delta: float) -> void:
 		dialogue_manager.process_frame(delta)
 	_track_safe_world_checkpoint()
 	_flush_autosave()
+
+
+func _update_world_music_context() -> void:
+	if not environment_effects or not environment_effects.has_method("set_world_music_context"):
+		return
+	var exterior_active := active_room_id == ""
+	if active_room_id != "" and room_manager:
+		exterior_active = not room_manager.is_room_indoor(active_room_id)
+	var full_screen_sequence_active := (
+		opening_active
+		or ending_active
+		or is_room_transition
+		or ufo_abduction_active
+		or hidden_bunker_scene_active
+		or bezos_cinematic_active
+		or bunker_access_active
+		or greatest_deal_active
+		or consensus_engine_active
+		or price_stability_pinball_active
+		or putin_special_operation_active
+		or (mk_sequence and bool(mk_sequence.get("mk_sequence_active")))
+	)
+	var hold_opened := administrative_hold and bool(administrative_hold.get("opened"))
+	var should_play := exterior_active and not start_menu_active and not full_screen_sequence_active
+	var should_duck := is_dialogue_open or contamination_active or hold_opened or final_mission_awaiting_input
+	environment_effects.set_world_music_context(should_play, should_duck)
 
 
 func _update_northern_wall_camera(delta: float) -> void:
@@ -2662,6 +2689,7 @@ func _can_open_administrative_hold() -> bool:
 
 
 func _on_administrative_hold_state_changed() -> void:
+	_update_world_music_context()
 	_refresh_behavioral_world_state()
 	_request_autosave()
 

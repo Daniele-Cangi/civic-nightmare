@@ -7,6 +7,9 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- **Dead Man's Hand**, a Google Flow Music-generated overworld theme with an
+  intro-preserving browser loop, persistent exterior playback, dialogue/hold
+  ducking, and fades around interiors and full-screen encounters.
 - **The Three-Minute Special Operation**, an original short pseudo-3D Putin
   access game with a Diplomatic Note Launcher, splitting armoured matryoshkas,
   hostile mobilization copiers, optional State television cameras, continuity
