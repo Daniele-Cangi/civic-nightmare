@@ -877,17 +877,25 @@ func process_frame(delta: float) -> void:
 
 
 func _on_battle_telemetry_changed(citizen_hp: float, bezos_hp: float, legal_shield: float, seconds_left: int) -> void:
+	var citizen_max := 100.0
+	var bezos_max := 32.0
+	var shield_max := 16.0
+	if battle_stage:
+		var maxima: Dictionary = battle_stage.call("get_round_maxima")
+		citizen_max = float(maxima.get("citizen_hp", citizen_max))
+		bezos_max = float(maxima.get("bezos_hp", bezos_max))
+		shield_max = float(maxima.get("legal_shield", shield_max))
 	if bezos_cinematic_left_hp:
-		bezos_cinematic_left_hp.size.x = 476.0 * clampf(bezos_hp / 72.0, 0.0, 1.0)
+		bezos_cinematic_left_hp.size.x = 476.0 * clampf(bezos_hp / bezos_max, 0.0, 1.0)
 	if bezos_cinematic_right_hp:
-		var citizen_width := 476.0 * clampf(citizen_hp / 100.0, 0.0, 1.0)
+		var citizen_width := 476.0 * clampf(citizen_hp / citizen_max, 0.0, 1.0)
 		bezos_cinematic_right_hp.size.x = citizen_width
 		bezos_cinematic_right_hp.position.x = 1158.0 - citizen_width
 	if bezos_cinematic_timer_label:
 		bezos_cinematic_timer_label.text = "%02d" % seconds_left
 	var bottom_hp := bezos_cinematic_frame.get_node_or_null("BottomBarHP") if bezos_cinematic_frame else null
 	if bottom_hp:
-		bottom_hp.size.x = 476.0 * clampf(legal_shield / 48.0, 0.0, 1.0)
+		bottom_hp.size.x = 476.0 * clampf(legal_shield / shield_max, 0.0, 1.0)
 
 
 func _on_battle_resolved(result: Dictionary) -> void:

@@ -130,6 +130,15 @@ final two seconds with source time 8–10, and loops from 10 seconds so the
 opening is heard once rather than on every deal. The WAV master is not shipped,
 and the runtime track remains project media outside the MIT source-code grant.
 
+`assets/audio/civic_nightmare_bezos_goofy_arcade_steel_strike.ogg` is **Goofy
+Arcade Steel Strike**, generated for Civic Nightmare using **Google Flow Music**
+and delivered by project owner Daniele Cangi for the Bezos battle. The supplied
+48 kHz stereo WAV master was attenuated by 2 dB and converted to Ogg Vorbis for
+browser delivery. The runtime edit removes the final sting and silent tail,
+crossfades its final two seconds with source time 12–14, and loops from 14
+seconds so its opening is heard once. The WAV master is not shipped, and the
+runtime track remains project media outside the MIT source-code grant.
+
 ## Marketing artwork
 
 `asset_sources/marketing/civic_nightmare_itch_cover_v1.png` is an original

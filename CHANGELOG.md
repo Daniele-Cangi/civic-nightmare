@@ -5,6 +5,15 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+### Added
+
+- The Bezos Fulfillment Cathedral confrontation is now a compact best-of-three
+  arcade match: first to two rounds, visible round marks, short between-round
+  decisions, and separately voiced impacts for the legal shield and Bezos.
+- **Goofy Arcade Steel Strike**, a Google Flow Music-generated soundtrack for
+  the Bezos battle, with an introduction-preserving browser loop and effects
+  mixed above the music.
+
 ## [2.1.0] - 2026-08-22
 
 ### Release title
