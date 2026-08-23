@@ -217,28 +217,28 @@ func _run() -> void:
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "greatest_deal", "Trump's entrance opens the card before the table")
 	_check(not bool(greatest_deal.get("active")) and str(dialogue_manager.get("current_character_id")) == "donald_trump", "Trump's game waits behind his portrait card")
 	game.call("_finish_dialogue")
-	await create_timer(0.3).timeout
+	await _wait_for_authority_launch(game, greatest_deal)
 	_check(bool(greatest_deal.get("active")), "closing Trump's card launches the existing game")
 	greatest_deal.stop()
 	game.call("_start_consensus_engine")
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "consensus_engine", "Ursula's entrance opens the card before the machine")
 	_check(not bool(consensus_engine.get("active")) and str(dialogue_manager.get("current_character_id")) == "ursula_von_der_leyen", "Ursula's game waits behind her portrait card")
 	game.call("_finish_dialogue")
-	await create_timer(0.3).timeout
+	await _wait_for_authority_launch(game, consensus_engine)
 	_check(bool(consensus_engine.get("active")), "closing Ursula's card launches the existing game")
 	consensus_engine.stop()
 	game.call("_start_price_stability_pinball")
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "price_stability_pinball", "Lagarde's entrance opens the card before the monetary table")
 	_check(not bool(price_stability_pinball.get("active")) and str(dialogue_manager.get("current_character_id")) == "christine_lagarde", "Lagarde's game waits behind her portrait card")
 	game.call("_finish_dialogue")
-	await create_timer(0.3).timeout
+	await _wait_for_authority_launch(game, price_stability_pinball)
 	_check(bool(price_stability_pinball.get("active")), "closing Lagarde's card launches the monetary pinball")
 	price_stability_pinball.stop()
 	game.call("_start_putin_special_operation")
 	_check(bool(game.get("is_dialogue_open")) and str(game.get("authority_access_intro_pending")) == "putin_special_operation", "Putin's entrance opens the card before the defensive corridor")
 	_check(not bool(putin_special_operation.get("active")) and str(dialogue_manager.get("current_character_id")) == "vladimir_putin", "Putin's operation waits behind his portrait card")
 	game.call("_finish_dialogue")
-	await create_timer(0.3).timeout
+	await _wait_for_authority_launch(game, putin_special_operation)
 	_check(bool(putin_special_operation.get("active")), "closing Putin's card launches the pseudo-3D operation")
 	putin_special_operation.stop()
 	var authored_obstacles := {
@@ -1171,28 +1171,45 @@ func _test_greatest_deal() -> void:
 	_check(bool(deal.get("claim_panel").visible), "Accept and Challenge appear only after the special-move beat")
 	deal.choose_claim(true)
 	deal.process_frame(0.01)
-	_check(int(deal.get("round_index")) == 1 and int(deal.get("challenges_remaining")) == 2, "a correct challenge restores the result and advances the deal")
+	_check(int(deal.get("round_index")) == 1 and int(deal.get("challenges_remaining")) == 3 and int(deal.get("citizen_deals")) == 1, "a correct challenge restores the result, certifies the Citizen point, and advances")
 	_check(int(deal.get("citizen_total")) == 13 and int(deal.get("trump_total")) == 19, "round two clearly exposes the need to HIT")
 	_check(deal.hit() and int(deal.get("citizen_total")) == 20, "round two HIT produces a readable total of 20")
 	deal.stand()
 	deal.process_frame(0.01)
 	deal.process_frame(0.01)
+	deal.choose_claim(false)
+	deal.process_frame(0.01)
+	_check(int(deal.get("round_index")) == 2 and int(deal.get("trump_deals")) == 1 and int(deal.get("accepted_false_claims")) == 1, "accepting a false claim awards Trump the point but advances to a different hand")
+	_check(int(deal.get("citizen_total")) == 18 and int(deal.get("trump_total")) == 21, "round three visibly gives Trump one legitimate blackjack win")
+	deal.stand()
+	deal.process_frame(0.01)
+	deal.process_frame(0.01)
 	deal.choose_claim(true)
 	deal.process_frame(0.01)
-	_check(int(deal.get("round_index")) == 2 and int(deal.get("citizen_total")) == 12, "round three starts as a fresh blackjack hand")
+	_check(int(deal.get("round_index")) == 3 and int(deal.get("failed_challenges")) == 1 and int(deal.get("trump_deals")) == 2, "challenging a legitimate Trump win spends the objection and certifies his point")
+	_check(int(deal.get("citizen_total")) == 12 and int(deal.get("trump_total")) == 20, "round four starts as the two-HIT hand")
 	_check(deal.hit() and int(deal.get("citizen_total")) == 16, "the first final-round HIT updates the citizen total")
 	_check(deal.hit() and int(deal.get("citizen_total")) == 21, "the second final-round HIT reaches the target and resolves automatically")
 	deal.process_frame(0.01)
 	deal.process_frame(0.01)
 	deal.choose_claim(true)
 	deal.process_frame(0.01)
+	_check(int(deal.get("round_index")) == 4 and int(deal.get("citizen_deals")) == 2 and int(deal.get("citizen_total")) == 15, "round five begins with a distinct majority-deciding hand")
+	_check(deal.hit() and int(deal.get("citizen_total")) == 19, "the fifth deal rewards one controlled HIT")
+	deal.stand()
 	deal.process_frame(0.01)
-	_check(not bool(deal.get("active")), "three real blackjack wins and three challenges close the casino procedure")
+	deal.process_frame(0.01)
+	deal.choose_claim(true)
+	deal.process_frame(0.01)
+	deal.process_frame(0.01)
+	_check(not bool(deal.get("active")), "all five distinct deals close the certified-majority procedure")
 	_check(not bool(deal_music.playing), "the table soundtrack stops before Trump dialogue resumes")
 	var deal_result: Dictionary = deal.get_result()
 	_check(str(deal_result.get("outcome", "")) == "access_granted", "Greatest Deal emits semantic access clearance")
-	_check(int(deal_result.get("successful_challenges", 0)) == 3 and int(deal_result.get("challenges_remaining", -1)) == 0, "Greatest Deal exposes and spends the three challenges deterministically")
-	_check(int(deal_result.get("hits", 0)) == 3 and int(deal_result.get("stands", 0)) == 2 and int(deal_result.get("actual_wins", 0)) == 3, "Greatest Deal preserves blackjack behaviour separately from political interference")
+	_check(str(deal_result.get("certified_winner", "")) == "citizen" and int(deal_result.get("citizen_deals", 0)) == 3 and int(deal_result.get("trump_deals", 0)) == 2, "three certified points create a Citizen majority without hiding Trump's points")
+	_check(int(deal_result.get("successful_challenges", 0)) == 3 and int(deal_result.get("failed_challenges", 0)) == 1 and int(deal_result.get("challenges_remaining", -1)) == 0, "four challenges support correct and incorrect verdicts")
+	_check(int(deal_result.get("accepted_false_claims", 0)) == 1 and int(deal_result.get("hands_played", 0)) == 5, "acceptance remains a semantic choice while every deal advances")
+	_check(int(deal_result.get("hits", 0)) == 4 and int(deal_result.get("stands", 0)) == 4 and int(deal_result.get("actual_wins", 0)) == 4, "Greatest Deal preserves blackjack behaviour separately from certified outcomes")
 	deal.queue_free()
 
 	var bust_deal := GREATEST_DEAL_SCRIPT.new()
@@ -1203,8 +1220,35 @@ func _test_greatest_deal() -> void:
 	bust_deal.hit()
 	bust_deal.hit()
 	_check(int(bust_deal.get("citizen_total")) == 25 and str(bust_deal.get("true_result_label").text).contains("BUSTS"), "an unnecessary HIT produces a normal blackjack bust")
-	_check(not bool(bust_deal.get("interference_panel").visible), "Trump does not need a special move when the citizen loses legitimately")
+	_check(not bool(bust_deal.get("interference_panel").visible), "certification cannot obscure the immediate blackjack result")
+	bust_deal.process_frame(0.01)
+	bust_deal.process_frame(0.01)
+	bust_deal.choose_claim(false)
+	bust_deal.process_frame(0.01)
+	_check(int(bust_deal.get("round_index")) == 1 and int(bust_deal.get("citizen_total")) == 13 and int(bust_deal.get("accepted_valid_claims")) == 1, "a lost hand is certified once and advances instead of repeating identical cards")
 	bust_deal.queue_free()
+
+	var accommodated_deal := GREATEST_DEAL_SCRIPT.new()
+	root.add_child(accommodated_deal)
+	accommodated_deal.setup(root)
+	accommodated_deal.start({"intro_duration": 0.0, "beat_duration": 0.0, "outro_duration": 0.0})
+	accommodated_deal.process_frame(0.01)
+	Input.action_press("ui_cancel")
+	accommodated_deal.process_frame(0.01)
+	Input.action_release("ui_cancel")
+	_check(bool(accommodated_deal.get("active")), "the mandatory five-deal procedure cannot be skipped with Administrative Hold")
+	for deal_index in range(5):
+		_check(accommodated_deal.stand(), "certified deal %d can be resolved with standard blackjack actions" % (deal_index + 1))
+		accommodated_deal.process_frame(0.01)
+		accommodated_deal.process_frame(0.01)
+		accommodated_deal.choose_claim(false)
+		accommodated_deal.process_frame(0.01)
+	accommodated_deal.process_frame(0.01)
+	var accommodated_result: Dictionary = accommodated_deal.get_result()
+	_check(not bool(accommodated_deal.get("active")), "an accommodated five-deal match also reaches a terminal access verdict")
+	_check(str(accommodated_result.get("outcome", "")) == "access_granted" and str(accommodated_result.get("certified_winner", "")) == "trump", "a Trump certified majority changes the verdict without blocking the existing dialogue")
+	_check(int(accommodated_result.get("trump_deals", 0)) == 5 and int(accommodated_result.get("hands_played", 0)) == 5, "Accept certifies one point and advances through every distinct hand")
+	accommodated_deal.queue_free()
 
 
 func _test_consensus_engine() -> void:
@@ -1893,6 +1937,13 @@ func _has_pattern(patterns: Array, pattern_id: String) -> bool:
 		if pattern is Dictionary and str(pattern.get("id", "")) == pattern_id:
 			return true
 	return false
+
+
+func _wait_for_authority_launch(game: Node, procedure: Node, timeout := 1.0) -> void:
+	var elapsed := 0.0
+	while elapsed < timeout and (bool(game.get("is_dialogue_open")) or not bool(procedure.get("active"))):
+		await create_timer(0.05).timeout
+		elapsed += 0.05
 
 
 func _finish() -> void:

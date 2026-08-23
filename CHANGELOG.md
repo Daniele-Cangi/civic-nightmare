@@ -19,6 +19,11 @@ web deployment and tagged releases for major public milestones.
 
 ### Changed
 
+- Rebuilt **The Greatest Deal** as five distinct, always-advancing blackjack
+  hands with a visible certified score and a three-of-five majority. Accept now
+  awards Trump the official point instead of replaying identical cards; correct
+  and incorrect challenges produce different verdicts, and one legitimate
+  Trump win makes the four-objection budget meaningful.
 - Rebalanced each Bezos round from six to nineteen successful contest actions,
   expanded the visible round clock, and moved the soundtrack entrance to the
   pre-fight presentation without restarting it at `FIGHT!`; a straight win now

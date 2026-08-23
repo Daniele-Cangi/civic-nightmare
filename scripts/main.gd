@@ -3448,7 +3448,6 @@ func _setup_authority_access_procedures() -> void:
 	greatest_deal.name = "GreatestDeal"
 	add_child(greatest_deal)
 	greatest_deal.completed.connect(_on_greatest_deal_completed)
-	greatest_deal.cancelled.connect(_on_authority_access_cancelled)
 	greatest_deal.setup(self)
 
 	consensus_engine = CONSENSUS_ENGINE_SCRIPT.new()
@@ -3554,7 +3553,7 @@ func _on_authority_access_cancelled() -> void:
 
 func _on_greatest_deal_completed(result: Dictionary) -> void:
 	trump_deal_complete = true
-	var tag := "rule-contested" if int(result.get("successful_challenges", 0)) > 0 else "claim-accommodated"
+	var tag := "rule-contested" if str(result.get("certified_winner", "trump")) == "citizen" else "claim-accommodated"
 	dossier_manager.record_contest(
 		"contest:greatest_deal",
 		"oval_office_access",
