@@ -47,6 +47,43 @@ jobs:
           mkdir -pv build/web
           ./Godot_v4.6-stable_linux.x86_64 --headless --export-release "Web" build/web/index.html
 
+      - name: "Add social preview metadata"
+        run: |
+          cp assets/sequences/opening_drive_sunset_v2.png build/web/og-preview.png
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index_path = Path("build/web/index.html")
+          html = index_path.read_text(encoding="utf-8")
+          metadata = """  <meta property="og:title" content="Civic Nightmare">
+            <meta property="og:description" content="A 16-bit political satire RPG where power becomes bureaucracy.">
+            <meta property="og:type" content="website">
+            <meta property="og:url" content="https://daniele-cangi.github.io/civic-nightmare/">
+            <meta property="og:image" content="https://daniele-cangi.github.io/civic-nightmare/og-preview.png">
+
+            <meta name="twitter:card" content="summary_large_image">
+            <meta name="twitter:title" content="Civic Nightmare">
+            <meta name="twitter:description" content="A 16-bit political satire RPG where power becomes bureaucracy.">
+            <meta name="twitter:image" content="https://daniele-cangi.github.io/civic-nightmare/og-preview.png">"""
+
+          if "</head>" not in html:
+              raise RuntimeError("Godot Web export has no closing head tag")
+          if 'property="og:title"' in html:
+              raise RuntimeError("Godot Web export already contains Open Graph metadata")
+
+          updated = html.replace("</head>", f"{metadata}\n</head>", 1)
+          required = (
+              'property="og:title"',
+              'property="og:image"',
+              'name="twitter:card"',
+              'name="twitter:image"',
+          )
+          if any(value not in updated for value in required):
+              raise RuntimeError("Social metadata injection was incomplete")
+          index_path.write_text(updated, encoding="utf-8")
+          PY
+          test -s build/web/og-preview.png
+
       - name: "Deploy to GitHub Pages"
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: JamesIves/github-pages-deploy-action@v4
