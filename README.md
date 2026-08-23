@@ -59,7 +59,7 @@ Trump, Ursula, Lagarde, and Putin now defend their doors with playable procedure
 - **Historical Contamination**: A pathetic, spectral "Hitler" parody who haunts the map, opening his military overcoat (Superman style) to reveal "ZZ" branding.
 - **The Southern Sanctuary**: Find **Sam Altman** searching for trillion-dollar funding near an unstable Nuclear Plant (and its Neural Core).
 - **Intercepted Channels**: Meet **Xi Jinping** at the Great Wall, or overhear **Kim Jong-un** using the Red Phone to negotiate grocery deliveries with **Russia**, **Iran (Mojtaba)**, and **Sweden**.
-- **The Quantum UFO**: Get abducted into an observation deck where **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg** debate the monetization of the universe—and where the case clock stops making sense.
+- **The Quantum UFO**: Before reaching **Albert Einstein** and a crying 80s-anime **Mark Zuckerberg**, survive **The Observation Problem**: record temporal echoes, occupy three places at once, and certify that all three are still one citizen while the case clocks disagree.
 - **The Hidden Bunker**: Ignore a direct protocol warning, survive a one-minute transfer corridor where bombs arrive and funding departs, then find **Zelensky** making a final plea while **Death** waits to void the paperwork.
 - **The Drone Escalation**: Follow an unsolicited delivery system into the Fulfillment Cathedral, contest a cybernetic Bezos in a first-to-two arcade match with paperwork, objections, impact foley, and the dedicated **Goofy Arcade Steel Strike** soundtrack, then discover whether a physical victory is contractually recognizable.
 
@@ -186,7 +186,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
 - `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.
 - `scripts/sequences/`: title, news broadcast, playable approach, Administrative Hold, MK, and ending presentation timelines.
-- `scripts/encounters/`: self-contained Xi, Kim, UFO, Bezos, bunker, Greatest Deal, Consensus Engine, and Price Stability Pinball logic.
+- `scripts/encounters/`: self-contained Xi, Kim, UFO world/observation, Bezos, bunker, Greatest Deal, Consensus Engine, Price Stability Pinball, and Special Operation logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
 - `scenes/interiors/`: reusable interior scenes and room-local behavior.
 - `scenes/areas/`: authored exterior travel containers that reuse the room transition contract without indoor presentation.

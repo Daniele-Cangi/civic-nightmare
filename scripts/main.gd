@@ -20,6 +20,7 @@ const BEZOS_DRONE_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/bezos_dro
 const WORLD_LANDMARK_BUILDER_SCRIPT = preload("res://scripts/managers/world_landmark_builder.gd")
 const AUTHORITY_WORLD_PATCH_BUILDER_SCRIPT = preload("res://scripts/managers/authority_world_patch_builder.gd")
 const UFO_ENCOUNTER_SCRIPT = preload("res://scripts/encounters/ufo_encounter.gd")
+const UFO_OBSERVATION_PROBLEM_SCRIPT = preload("res://scripts/encounters/ufo_observation_problem.gd")
 const CHARACTER_VISUAL_CATALOG = preload("res://scripts/data/character_visual_catalog.gd")
 const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
@@ -318,6 +319,11 @@ var _pack_ready: bool = false
 var _path_cells: Dictionary = {}
 var _solid_positions: Dictionary = {}
 var ufo_encounter: Node
+var ufo_observation_problem: Node
+var ufo_observation_complete: bool = false
+var ufo_observation_problem_active: bool:
+	get:
+		return bool(ufo_observation_problem.get("active")) if ufo_observation_problem else false
 var ufo_abduction_active: bool = false
 var bezos_drone_encounter: Node
 
@@ -505,6 +511,7 @@ func _ready() -> void:
 	_setup_southern_annex()
 	world_landmark_builder.create_southern_annex_gate(SOUTHERN_ANNEX_GATE_TILE)
 	_setup_ufo_encounter()
+	_setup_ufo_observation_problem()
 	_setup_bezos_drone_encounter()
 	world_landmark_builder.create_hidden_bunker(district_world_bounds, HIDDEN_BUNKER_TILE)
 	_ensure_contamination_figure()
@@ -567,6 +574,14 @@ func _setup_ufo_encounter() -> void:
 	var spawn_position := _tile_to_body_position(UFO_TILE) + UFO_FLOAT_OFFSET
 	ufo_encounter.setup(player, entities_layer, spawn_position)
 
+
+func _setup_ufo_observation_problem() -> void:
+	ufo_observation_problem = UFO_OBSERVATION_PROBLEM_SCRIPT.new()
+	ufo_observation_problem.name = "UfoObservationProblem"
+	add_child(ufo_observation_problem)
+	ufo_observation_problem.completed.connect(_on_ufo_observation_problem_completed)
+	ufo_observation_problem.setup(self)
+
 func _setup_bezos_drone_encounter() -> void:
 	_clear_decor_patch(BEZOS_DRONE_TILE, 2, 2)
 	bezos_drone_encounter = BEZOS_DRONE_ENCOUNTER_SCRIPT.new()
@@ -602,26 +617,13 @@ func _start_bezos_cinematic() -> void:
 	bezos_encounter.start()
 
 func _on_ufo_triggered() -> void:
-	if ufo_abduction_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
+	if ufo_abduction_active or ufo_observation_problem_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
 	call_deferred("_start_ufo_abduction")
 
 func _start_ufo_abduction() -> void:
-	if ufo_abduction_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
+	if ufo_abduction_active or ufo_observation_problem_active or is_room_transition or opening_active or ending_active or is_dialogue_open or active_room_id != "":
 		return
-	dossier_manager.record_anomaly(
-		"anomaly:ufo_time_discontinuity",
-		"ufo_lab",
-		"Location and elapsed-time records could not be reconciled after an unscheduled transfer.",
-		{
-			"before_time": "14:03",
-			"invalid_time": "14:04",
-			"return_time": "14:04",
-			"elapsed_local": "01:12",
-			"recorded_system": "17:44",
-		}
-	)
-	_request_autosave()
 	ufo_abduction_active = true
 	is_room_transition = true
 	player.velocity = Vector2.ZERO
@@ -637,8 +639,49 @@ func _start_ufo_abduction() -> void:
 
 	_show_room_title("UNIDENTIFIED CRAFT", "Please remain vaguely calm.")
 	await _fade_transition(1.0, 0.08)
+	if not ufo_observation_complete:
+		if transition_overlay:
+			transition_overlay.visible = false
+			transition_overlay.modulate.a = 0.0
+		is_room_transition = false
+		ufo_observation_problem.start()
+		return
+	await _finish_ufo_abduction_transfer()
+
+
+func _on_ufo_observation_problem_completed(observation_result: Dictionary) -> void:
+	ufo_observation_complete = true
+	var metadata := {
+		"before_time": "14:03",
+		"invalid_time": "14:04",
+		"return_time": "14:04",
+		"elapsed_local": "01:12",
+		"recorded_system": "17:44",
+	}
+	metadata.merge(observation_result, true)
+	dossier_manager.record_anomaly(
+		"anomaly:ufo_time_discontinuity",
+		"ufo_observation_chamber",
+		"Three simultaneous observations were accepted for one registered citizen; temporal reconciliation was postponed.",
+		metadata
+	)
+	_refresh_behavioral_world_state()
+	_request_autosave()
+	call_deferred("_finish_ufo_abduction_transfer")
+
+
+func _finish_ufo_abduction_transfer() -> void:
+	if not ufo_abduction_active:
+		return
+	is_room_transition = true
+	player.velocity = Vector2.ZERO
+	player.set_physics_process(false)
+	await _fade_transition(1.0, 0.08)
 	_enter_room("ufo_lab", "EntryMarker")
 	_set_room_presentation(true)
+	var ufo_room = room_registry.get("ufo_lab")
+	if ufo_encounter and ufo_room:
+		ufo_encounter.prepare_lab(ufo_room, CHARACTER_VISUAL_CATALOG.NPC_SPRITE_PATHS)
 	_show_room_title("OBSERVATION DECK", "Two geniuses. One functioning calculator.")
 	await _fade_transition(0.0, 0.14)
 	if not is_dialogue_open:
@@ -752,7 +795,7 @@ func _setup_interiors() -> void:
 
 
 func use_door(destination: String, spawn_marker: String) -> void:
-	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active or price_stability_pinball_active or putin_special_operation_active:
+	if is_dialogue_open or is_room_transition or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active or bunker_access_active or greatest_deal_active or consensus_engine_active or price_stability_pinball_active or putin_special_operation_active or ufo_abduction_active:
 		return
 	if destination == "oval_office" and not trump_deal_complete:
 		_start_greatest_deal()
@@ -903,6 +946,9 @@ func _process(delta: float) -> void:
 		return
 	if intro_active:
 		intro_sequence.process_frame(delta)
+		return
+	if ufo_observation_problem_active:
+		ufo_observation_problem.process_frame(delta)
 		return
 	if greatest_deal_active:
 		greatest_deal.process_frame(delta)
@@ -2708,6 +2754,7 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 	ursula_consensus_complete = false
 	lagarde_price_stability_complete = false
 	putin_special_operation_complete = false
+	ufo_observation_complete = false
 	authority_access_intro_pending = ""
 	if world_landmark_builder:
 		world_landmark_builder.set_hidden_bunker_gate_cleared(false)
@@ -2721,6 +2768,8 @@ func _begin_new_game(clear_existing_save: bool = true) -> void:
 		price_stability_pinball.stop()
 	if putin_special_operation:
 		putin_special_operation.stop()
+	if ufo_observation_problem:
+		ufo_observation_problem.stop()
 	_close_start_menu()
 	_setup_news_broadcast_sequence()
 
@@ -2761,6 +2810,7 @@ func _build_save_snapshot() -> Dictionary:
 			"ursula_consensus_complete": ursula_consensus_complete,
 			"lagarde_price_stability_complete": lagarde_price_stability_complete,
 			"putin_special_operation_complete": putin_special_operation_complete,
+			"ufo_observation_complete": ufo_observation_complete,
 			"hidden_bunker_exit_acknowledged": hidden_bunker_exit_acknowledged,
 			"hidden_bunker_ai_ack_pending": hidden_bunker_ai_ack_pending,
 			"contamination_seen_sources": contamination_seen_sources.duplicate(true),
@@ -2829,6 +2879,7 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	ursula_consensus_complete = bool(story.get("ursula_consensus_complete", restored_quest_completed.has("ursula_von_der_leyen")))
 	lagarde_price_stability_complete = bool(story.get("lagarde_price_stability_complete", restored_quest_completed.has("christine_lagarde")))
 	putin_special_operation_complete = bool(story.get("putin_special_operation_complete", restored_quest_completed.has("vladimir_putin")))
+	ufo_observation_complete = bool(story.get("ufo_observation_complete", dossier_manager.has_event("anomaly:ufo_time_discontinuity")))
 	authority_access_intro_pending = ""
 	if seen_hidden_bunker_scene:
 		bunker_access_complete = true
@@ -2844,6 +2895,8 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 		price_stability_pinball.stop()
 	if putin_special_operation:
 		putin_special_operation.stop()
+	if ufo_observation_problem:
+		ufo_observation_problem.stop()
 	hidden_bunker_exit_acknowledged = bool(story.get("hidden_bunker_exit_acknowledged", false))
 	hidden_bunker_ai_ack_pending = bool(story.get("hidden_bunker_ai_ack_pending", false))
 	hidden_bunker_ai_ack_active = false
