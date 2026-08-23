@@ -23,7 +23,12 @@ Opening an issue first is **not** required for small bug fixes, documentation im
 2. Install **Godot 4.6 Standard**.
 3. Open `project.godot` in Godot.
 4. Run the main scene, `scenes/main.tscn`.
-5. Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before changing behavior that crosses systems.
+5. Choose an open [`up-for-grabs` issue](https://github.com/Daniele-Cangi/civic-nightmare/issues?q=state%3Aopen%20label%3Aup-for-grabs) and leave a short comment before starting so contributors do not duplicate work.
+6. Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before changing behavior that crosses systems.
+
+The validation commands below assume the Godot executable is available as
+`godot`. Substitute `godot4` or the full executable path if that is how your
+installation is exposed.
 
 The short repository map is:
 
