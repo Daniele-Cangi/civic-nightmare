@@ -19,21 +19,25 @@ alter the character dialogue that follows.
 ## The Greatest Deal
 
 The procedure is blackjack before it becomes satire. The HUD permanently shows
-`TARGET: 21`, round, Trump total, Citizen total, and remaining challenges. Both
+`TARGET: 21`, deal, certified score, Trump total, Citizen total, and remaining challenges. Both
 hands are rendered as complete physical playing cards. Left/Right selects
 `HIT` or `STAND`; Space confirms.
 
-The three deterministic hands teach the grammar without a tutorial wall: the
-first should be stood on, the second needs one hit, and the third needs two.
-The real result is always displayed first, including exact scores or a bust.
-Only a genuine Citizen win allows Trump to introduce a separate gold event
-card—Poll Numbers, Executive Order, or Dealer Recount—and place the result
-under review. Special moves are never presented as cards in the Citizen hand.
+Five distinct deterministic hands create a fixed certified-majority match. Four
+are winnable with readable play; one gives Trump a legitimate 21. The real
+result is always displayed first, including exact scores or a bust. Trump then
+introduces a separate gold certification event and claims every hand, even the
+one he actually won. Special moves are never presented as cards in the Citizen
+hand.
 
-After the intervention, the player chooses Accept or Challenge. Three visible
-challenges correspond to the three deals. The dossier separately retains hits,
-stands, busts, original wins, accepted claims, successful challenges, attempts,
-and the named interference events. These are observations about play and
+After the intervention, the player chooses Accept or Challenge. Accept certifies
+Trump's point and advances; a correct Challenge certifies the Citizen point,
+while an incorrect Challenge spends the objection and certifies Trump. Four
+visible objections allow one error across five always-advancing deals. Three
+Citizen points produce a majority, but either certified outcome opens the door
+with different final language and dossier evidence. The dossier separately
+retains blackjack play, certified points, false claims accepted, valid claims
+accepted, and challenge accuracy. These are observations about play and
 negotiation, not morality points.
 
 ## The Consensus Engine

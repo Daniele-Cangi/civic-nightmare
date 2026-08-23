@@ -1,13 +1,13 @@
 extends Node
 
 signal completed(result: Dictionary)
-signal cancelled
 
 const BACKGROUND_PATH := "res://assets/encounters/greatest_deal_stage_v1.png"
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_greatest_deal_snake_eyes.ogg"
 const VIEW_SIZE := Vector2(1280, 720)
 const TARGET := 21
-const STARTING_CHALLENGES := 3
+const REQUIRED_MAJORITY := 3
+const STARTING_CHALLENGES := 4
 const MUSIC_VOLUME_DB := -8.5
 const MUSIC_LOOP_OFFSET := 10.0
 const DEFAULT_INTRO_DURATION := 1.45
@@ -22,13 +22,13 @@ enum State {
 	INTERFERENCE,
 	CLAIM,
 	VERDICT,
-	ROUND_LOST,
 	CLEARED,
 }
 
-# Every hand is deterministic. The first teaches STAND, the second one HIT,
-# and the third two HITs. Trump may alter the declared result only after the
-# real blackjack result has been shown and frozen on screen.
+# Five distinct hands create a fixed certified-majority match. Four are
+# winnable with readable blackjack play; one is a legitimate Trump 21. Trump
+# claims every hand only after the mathematical result has been frozen, so a
+# challenge can finally be correct or wrong without hiding the arithmetic.
 const ROUND_DATA := [
 	{
 		"trump": [
@@ -70,6 +70,25 @@ const ROUND_DATA := [
 	},
 	{
 		"trump": [
+			{"rank": "A", "suit": "♠", "value": 11},
+			{"rank": "K", "suit": "♦", "value": 10},
+		],
+		"citizen": [
+			{"rank": "9", "suit": "♠", "value": 9},
+			{"rank": "9", "suit": "♥", "value": 9},
+		],
+		"draw": [
+			{"rank": "2", "suit": "♣", "value": 2},
+			{"rank": "10", "suit": "♦", "value": 10},
+		],
+		"event": {
+			"title": "ACCURATE FOR ONCE",
+			"line": "DEALER TOTAL REMAINS: 21",
+			"claim": "TRUMP CLAIMS ACTUAL VICTORY",
+		},
+	},
+	{
+		"trump": [
 			{"rank": "K", "suit": "♥", "value": 10},
 			{"rank": "Q", "suit": "♦", "value": 10},
 		],
@@ -85,6 +104,25 @@ const ROUND_DATA := [
 		"event": {
 			"title": "DEALER RECOUNT",
 			"line": "20  →  22",
+			"claim": "TRUMP CLAIMS VICTORY",
+		},
+	},
+	{
+		"trump": [
+			{"rank": "K", "suit": "♣", "value": 10},
+			{"rank": "8", "suit": "♥", "value": 8},
+		],
+		"citizen": [
+			{"rank": "7", "suit": "♠", "value": 7},
+			{"rank": "8", "suit": "♦", "value": 8},
+		],
+		"draw": [
+			{"rank": "4", "suit": "♣", "value": 4},
+			{"rank": "Q", "suit": "♥", "value": 10},
+		],
+		"event": {
+			"title": "TARIFF RECOUNT",
+			"line": "19  →  17  IMPORTED POINTS",
 			"claim": "TRUMP CLAIMS VICTORY",
 		},
 	},
@@ -144,6 +182,10 @@ var stand_count := 0
 var bust_count := 0
 var actual_wins := 0
 var attempts := 1
+var citizen_deals := 0
+var trump_deals := 0
+var accepted_false_claims := 0
+var accepted_valid_claims := 0
 var interference_events: Array[String] = []
 var result: Dictionary = {}
 
@@ -172,13 +214,17 @@ func start(options: Dictionary = {}) -> void:
 	bust_count = 0
 	actual_wins = 0
 	attempts = 1
+	citizen_deals = 0
+	trump_deals = 0
+	accepted_false_claims = 0
+	accepted_valid_claims = 0
 	interference_events.clear()
 	result.clear()
 	active = true
 	layer.visible = true
 	_layout_frame()
 	_start_audio()
-	_reset_round()
+	_deal_round()
 	_set_state(State.INTRO)
 
 
@@ -194,9 +240,8 @@ func process_frame(delta: float) -> void:
 	if not active:
 		return
 	if Input.is_action_just_pressed("ui_cancel"):
-		stop()
-		cancelled.emit()
-		return
+		prompt_label.text = "CERTIFICATION CANNOT BE SUSPENDED"
+		_play_ruling_audio(0.62)
 	state_timer += delta
 	match state:
 		State.INTRO:
@@ -215,10 +260,6 @@ func process_frame(delta: float) -> void:
 		State.VERDICT:
 			if state_timer >= beat_duration:
 				_after_verdict()
-		State.ROUND_LOST:
-			if state_timer >= beat_duration:
-				_reset_round()
-				_set_state(State.PLAYER_TURN)
 		State.CLEARED:
 			if state_timer >= outro_duration:
 				_finish_success()
@@ -264,15 +305,22 @@ func choose_claim(challenge: bool) -> void:
 		challenges_remaining -= 1
 		if true_player_won:
 			successful_challenges += 1
-			round_index += 1
-			prompt_label.text = "ORIGINAL RESULT RESTORED"
+			citizen_deals += 1
+			prompt_label.text = "ORIGINAL RESULT RESTORED  ·  CITIZEN +1"
 		else:
 			failed_challenges += 1
-			prompt_label.text = "CHALLENGE DENIED"
+			trump_deals += 1
+			prompt_label.text = "CHALLENGE DENIED  ·  TRUMP +1"
 	else:
 		accepted_claims += 1
-		attempts += 1
-		prompt_label.text = "CLAIM ACCEPTED  ·  DEAL AGAIN"
+		trump_deals += 1
+		if true_player_won:
+			accepted_false_claims += 1
+			prompt_label.text = "CLAIM ACCEPTED  ·  TRUMP +1"
+		else:
+			accepted_valid_claims += 1
+			prompt_label.text = "RESULT ACCEPTED  ·  TRUMP +1"
+	round_index += 1
 	claim_panel.visible = false
 	interference_panel.visible = false
 	_refresh_header()
@@ -323,11 +371,6 @@ func _resolve_true_result() -> void:
 
 
 func _after_true_result() -> void:
-	if not true_player_won:
-		attempts += 1
-		prompt_label.text = "DEAL LOST  ·  RETRY"
-		_set_state(State.ROUND_LOST)
-		return
 	var event: Dictionary = ROUND_DATA[round_index]["event"]
 	var event_title := str(event.get("title", "RESULT UNDER REVIEW"))
 	interference_events.append(event_title)
@@ -351,10 +394,18 @@ func _open_claim() -> void:
 
 func _after_verdict() -> void:
 	if round_index >= ROUND_DATA.size():
+		var citizen_majority := citizen_deals >= REQUIRED_MAJORITY
 		result = {
 			"outcome": "access_granted",
+			"certified_winner": "citizen" if citizen_majority else "trump",
+			"citizen_deals": citizen_deals,
+			"trump_deals": trump_deals,
+			"required_majority": REQUIRED_MAJORITY,
+			"hands_played": ROUND_DATA.size(),
 			"target": TARGET,
 			"accepted_claims": accepted_claims,
+			"accepted_false_claims": accepted_false_claims,
+			"accepted_valid_claims": accepted_valid_claims,
 			"successful_challenges": successful_challenges,
 			"failed_challenges": failed_challenges,
 			"challenges_remaining": challenges_remaining,
@@ -365,20 +416,20 @@ func _after_verdict() -> void:
 			"attempts": attempts,
 			"interference_events": interference_events.duplicate(),
 		}
-		header_label.text = "ACCESS GRANTED — TREMENDOUS"
-		round_label.text = "3 / 3 DEALS CERTIFIED"
+		header_label.text = "CITIZEN MAJORITY — ACCESS GRANTED" if citizen_majority else "TRUMP WINS TREMENDOUSLY — ACCESS GRANTED"
+		round_label.text = "FINAL  C %d · T %d" % [citizen_deals, trump_deals]
 		target_label.text = "TARGET: 21"
-		challenge_label.text = "CHALLENGES: 0"
-		true_result_label.text = "ORIGINAL RESULTS ACCEPTED"
+		challenge_label.text = "CHALLENGES: %s" % ("◆".repeat(challenges_remaining) if challenges_remaining > 0 else "0")
+		true_result_label.text = "CERTIFIED DEALS  ·  CITIZEN %d  /  TRUMP %d" % [citizen_deals, trump_deals]
 		true_result_label.visible = true
-		prompt_label.text = ""
+		prompt_label.text = "ACCESS GRANTED — SURPRISING" if citizen_majority else "ACCESS GRANTED TO WITNESS THE CELEBRATION"
 		_set_state(State.CLEARED)
 		return
-	_reset_round()
+	_deal_round()
 	_set_state(State.PLAYER_TURN)
 
 
-func _reset_round() -> void:
+func _deal_round() -> void:
 	var round_data: Dictionary = ROUND_DATA[round_index]
 	trump_hand = _duplicate_hand(round_data.get("trump", []))
 	citizen_hand = _duplicate_hand(round_data.get("citizen", []))
@@ -420,7 +471,7 @@ func _hand_total(hand: Array[Dictionary]) -> int:
 
 func _refresh_header() -> void:
 	header_label.text = "THE GREATEST DEAL"
-	round_label.text = "ROUND %d / 3" % (round_index + 1)
+	round_label.text = "DEAL %d / %d   C %d · T %d" % [round_index + 1, ROUND_DATA.size(), citizen_deals, trump_deals]
 	target_label.text = "TARGET: 21"
 	challenge_label.text = "CHALLENGES: %s" % ("◆".repeat(challenges_remaining) if challenges_remaining > 0 else "0")
 
