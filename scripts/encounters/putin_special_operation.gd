@@ -140,6 +140,7 @@ var strategic_bear_alarm_lights: Array[OmniLight3D] = []
 var strategic_bear_alarm_strips: Array[MeshInstance3D] = []
 var recovered_appliance_roots: Array[Node3D] = []
 var result: Dictionary = {}
+var touch_control_state: Dictionary = {}
 
 var shot_audio: AudioStreamPlayer
 var reload_audio: AudioStreamPlayer
@@ -168,6 +169,7 @@ func start(options: Dictionary = {}) -> void:
 	cameras_destroyed = 0
 	matryoshka_splits = 0
 	result.clear()
+	touch_control_state.clear()
 	active = true
 	layer.visible = true
 	_layout_frame()
@@ -176,6 +178,7 @@ func start(options: Dictionary = {}) -> void:
 
 func stop() -> void:
 	active = false
+	touch_control_state.clear()
 	state = State.INACTIVE
 	_clear_enemies()
 	if strategic_bear_target:
@@ -219,6 +222,14 @@ func process_frame(delta: float) -> void:
 				_finish_success()
 
 	_update_hud()
+
+
+func set_touch_control(control_id: String, pressed: bool) -> void:
+	touch_control_state[control_id] = pressed
+
+
+func _touch_down(control_id: String) -> bool:
+	return bool(touch_control_state.get(control_id, false))
 
 
 func get_result() -> Dictionary:
@@ -1182,21 +1193,21 @@ func _process_active_run(delta: float) -> void:
 
 func _process_player_input(delta: float) -> void:
 	var turn_input := 0.0
-	if Input.is_action_pressed("ui_left"):
+	if Input.is_action_pressed("ui_left") or _touch_down("turn_left"):
 		turn_input += 1.0
-	if Input.is_action_pressed("ui_right"):
+	if Input.is_action_pressed("ui_right") or _touch_down("turn_right"):
 		turn_input -= 1.0
 	player_yaw += turn_input * TURN_SPEED * delta
 
 	var forward_input := 0.0
-	if Input.is_action_pressed("ui_up") or Input.is_physical_key_pressed(Key.KEY_W):
+	if Input.is_action_pressed("ui_up") or Input.is_physical_key_pressed(Key.KEY_W) or _touch_down("forward"):
 		forward_input += 1.0
-	if Input.is_action_pressed("ui_down") or Input.is_physical_key_pressed(Key.KEY_S):
+	if Input.is_action_pressed("ui_down") or Input.is_physical_key_pressed(Key.KEY_S) or _touch_down("backward"):
 		forward_input -= 1.0
 	var strafe_input := 0.0
-	if Input.is_physical_key_pressed(Key.KEY_D) or Input.is_physical_key_pressed(Key.KEY_E):
+	if Input.is_physical_key_pressed(Key.KEY_D) or Input.is_physical_key_pressed(Key.KEY_E) or _touch_down("strafe_right"):
 		strafe_input += 1.0
-	if Input.is_physical_key_pressed(Key.KEY_A) or Input.is_physical_key_pressed(Key.KEY_Q):
+	if Input.is_physical_key_pressed(Key.KEY_A) or Input.is_physical_key_pressed(Key.KEY_Q) or _touch_down("strafe_left"):
 		strafe_input -= 1.0
 	var forward := _forward_vector()
 	var right := _right_vector()
@@ -1205,9 +1216,9 @@ func _process_player_input(delta: float) -> void:
 		motion = motion.normalized() * MOVE_SPEED
 	_try_move(motion * delta)
 
-	if Input.is_physical_key_pressed(Key.KEY_R) and reload_remaining <= 0.0 and notes_loaded < NOTE_MAGAZINE_SIZE:
+	if (Input.is_physical_key_pressed(Key.KEY_R) or _touch_down("reload")) and reload_remaining <= 0.0 and notes_loaded < NOTE_MAGAZINE_SIZE:
 		_begin_reload()
-	var fire_pressed := Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	var fire_pressed := Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or _touch_down("fire")
 	if fire_pressed and shot_cooldown_remaining <= 0.0 and reload_remaining <= 0.0:
 		_fire()
 
