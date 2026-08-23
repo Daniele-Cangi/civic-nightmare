@@ -12,9 +12,11 @@ The approved browser-runtime tracks are:
   generated using Google Flow Music for Trump's blackjack procedure.
 - `civic_nightmare_bezos_goofy_arcade_steel_strike.ogg` — **Goofy Arcade
   Steel Strike**, generated using Google Flow Music for the Bezos battle.
+- `civic_nightmare_price_stability_jackpot_jive.ogg` — **Jackpot Jive**,
+  generated using Google Flow Music for Lagarde's monetary pinball.
 
 All current and future soundtrack deliveries use Google Flow Music unless a
-track-specific record explicitly says otherwise. All five current tracks are 48 kHz
+track-specific record explicitly says otherwise. All six current tracks are 48 kHz
 stereo Ogg Vorbis runtime conversions of WAV masters delivered by project owner
 Daniele Cangi. The source masters are not required by the exported game and
 remain outside the runtime tree. See

@@ -74,6 +74,10 @@ purchasing power and household effects outside the measurement perimeter. The
 dossier retains the route, policy and household hits, liquidity injection,
 rate shock, bailouts, acceptable losses, and elapsed time.
 
+The table owns **Jackpot Jive** as its dedicated music bed. Its flippers,
+bumpers, liquidity injection, rate shock, systemic bailout, and certification
+remain mixed above the track, which stops before Lagarde's existing dialogue.
+
 ## Verification
 
 `tests/smoke_test.gd` proves blackjack totals, HIT/STAND progression, physical

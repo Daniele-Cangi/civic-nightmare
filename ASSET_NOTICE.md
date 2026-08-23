@@ -139,6 +139,14 @@ crossfades its final two seconds with source time 12–14, and loops from 14
 seconds so its opening is heard once. The WAV master is not shipped, and the
 runtime track remains project media outside the MIT source-code grant.
 
+`assets/audio/civic_nightmare_price_stability_jackpot_jive.ogg` is **Jackpot
+Jive**, generated for Civic Nightmare using **Google Flow Music** and delivered
+by project owner Daniele Cangi for Lagarde's monetary pinball. The supplied 48
+kHz stereo WAV master was attenuated by 1.5 dB, converted to Ogg Vorbis for
+browser delivery, and trimmed only after the musical ending to remove its final
+silent tail. The WAV master is not shipped, and the runtime track remains
+project media outside the MIT source-code grant.
+
 ## Marketing artwork
 
 `asset_sources/marketing/civic_nightmare_itch_cover_v1.png` is an original
