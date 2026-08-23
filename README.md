@@ -71,6 +71,8 @@ The title screen offers **Continue** and **New Game**. Progress, encounter conse
 
 Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
 
+Touchscreen play uses one contextual landscape overlay rather than a permanent virtual keyboard. It changes from movement and interaction controls to each procedure's actual actions—including held inputs, simultaneous pinball flippers, Trump's claims, Bezos objections, and Putin's movement/fire/reload controls—then releases every held input when the scene changes. Title and Administrative Hold buttons remain directly tappable.
+
 ## 🎞️ Civic Nightmare 2.0
 
 These images are all loaded by the current game runtime—not superseded concept art.
@@ -175,7 +177,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 
 `scripts/main.gd` is the composition root: it builds the overworld and coordinates the game-specific story transitions. Reusable state and UI behavior live in focused modules:
 
-- `scripts/managers/`: dialogue, quest progression, behavioural evidence, versioned save data, room transitions, environment setup, and static world landmarks.
+- `scripts/managers/`: dialogue, quest progression, behavioural evidence, versioned save data, room transitions, contextual touch input, environment setup, and static world landmarks.
 - `scripts/data/`: read-only character colors, portraits, world sprites, and authority-facade metadata.
 - `assets/landmarks/`: runtime-sized exterior hero facades for the six required-signature locations.
 - `assets/interiors/`: opaque authored room backgrounds aligned to the shared indoor gameplay canvas.
@@ -202,7 +204,7 @@ godot --headless --path . --editor --quit
 godot --headless --path . --log-file .godot/flow-smoke.log --script res://tests/smoke_test.gd
 ```
 
-The smoke test loads the main scene and covers the title flow, six-signature dossier interpretation, Dossier-to-world consequences, authority access rules, save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip. Pull requests run parse, smoke, and Web export before they can reach the Pages deploy step.
+The smoke test loads the main scene and covers the title flow, six-signature dossier interpretation, Dossier-to-world consequences, authority access rules, contextual multitouch state, save/restore round trips, Administrative Hold, AI dialogue, and an interior round trip. Pull requests run parse, smoke, and Web export before they can reach the Pages deploy step.
 
 Asset ownership and repository-weight decisions are recorded in [`docs/ASSET_INVENTORY.md`](docs/ASSET_INVENTORY.md); release verification lives in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 

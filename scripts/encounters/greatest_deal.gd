@@ -269,6 +269,28 @@ func get_result() -> Dictionary:
 	return result.duplicate(true)
 
 
+func get_touch_profile() -> String:
+	if state == State.PLAYER_TURN:
+		return "greatest_play"
+	if state == State.CLAIM:
+		return "greatest_claim"
+	return ""
+
+
+func set_touch_control(control_id: String, pressed: bool) -> void:
+	if not pressed:
+		return
+	match control_id:
+		"hit":
+			hit()
+		"stand":
+			stand()
+		"accept":
+			choose_claim(false)
+		"challenge":
+			choose_claim(true)
+
+
 func hit() -> bool:
 	if not active or state != State.PLAYER_TURN:
 		return false

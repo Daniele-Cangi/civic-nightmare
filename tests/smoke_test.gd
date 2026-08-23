@@ -14,6 +14,7 @@ const PUTIN_SPECIAL_OPERATION_SCRIPT = preload("res://scripts/encounters/putin_s
 const UFO_OBSERVATION_PROBLEM_SCRIPT = preload("res://scripts/encounters/ufo_observation_problem.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 const NEWS_BROADCAST_SEQUENCE_SCRIPT = preload("res://scripts/sequences/news_broadcast_sequence.gd")
+const TOUCH_CONTROL_LAYER_SCRIPT = preload("res://scripts/managers/touch_control_layer.gd")
 
 const TEST_SAVE_PATH := "user://civic_nightmare_smoke_dossier.json"
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
@@ -56,6 +57,14 @@ const AUTHORED_INTERIOR_PATHS := {
 var failures: Array[String] = []
 
 
+class TouchReceiver:
+	extends Node
+	var control_state: Dictionary = {}
+
+	func set_touch_control(control_id: String, pressed: bool) -> void:
+		control_state[control_id] = pressed
+
+
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -72,6 +81,7 @@ func _run() -> void:
 	_test_combat_portraits()
 	_test_bezos_battle_stage()
 	_test_bunker_access_gauntlet()
+	_test_touch_control_layer()
 	_test_greatest_deal()
 	_test_consensus_engine()
 	_test_price_stability_pinball()
@@ -117,6 +127,7 @@ func _run() -> void:
 	var consensus_engine: Node = game.get("consensus_engine")
 	var price_stability_pinball: Node = game.get("price_stability_pinball")
 	var putin_special_operation: Node = game.get("putin_special_operation")
+	var touch_controls: Node = game.get("touch_controls")
 	var contamination_root: Node = game.get("contamination_root")
 	var registry: Dictionary = game.get("room_registry")
 	_check(start_menu != null and bool(start_menu.get("active")), "start menu owns the initial flow")
@@ -205,6 +216,7 @@ func _run() -> void:
 	_check(consensus_engine != null and consensus_engine.get("layer") != null, "Ursula's entrance owns the Consensus Engine procedure")
 	_check(price_stability_pinball != null and price_stability_pinball.get("layer") != null, "Lagarde's entrance owns the Price Stability procedure")
 	_check(putin_special_operation != null and putin_special_operation.get("layer") != null, "Putin's entrance owns the Special Administrative Operation")
+	_check(touch_controls != null and touch_controls.get("layer") != null, "the main composition mounts one contextual touch-control layer")
 	var trump_access_lines: Array = game.call("_authority_access_intro_lines", "donald_trump")
 	var ursula_access_lines: Array = game.call("_authority_access_intro_lines", "ursula_von_der_leyen")
 	var lagarde_access_lines: Array = game.call("_authority_access_intro_lines", "christine_lagarde")
@@ -1131,6 +1143,47 @@ func _test_ufo_observation_problem() -> void:
 	_check(str(observation_result.get("outcome", "")) == "identity_verified", "UFO chamber emits a semantic identity result")
 	_check(int(observation_result.get("concurrent_subject_count", 0)) == 3 and int(observation_result.get("registered_citizen_count", 0)) == 1, "UFO result preserves the contradiction consumed by the dossier")
 	observation.queue_free()
+
+
+func _test_touch_control_layer() -> void:
+	var host := Node.new()
+	root.add_child(host)
+	var touch := TOUCH_CONTROL_LAYER_SCRIPT.new()
+	host.add_child(touch)
+	touch.setup(host, true)
+	_check(touch.is_enabled() and bool(touch.get("layer").visible), "touch controls can be explicitly enabled for browser-device verification")
+
+	touch.apply_orientation_for_test(Vector2(844.0, 390.0))
+	touch.apply_context_for_test("pinball")
+	var pinball_controls: Array[String] = touch.get_active_control_ids()
+	_check(pinball_controls.has("left_flipper") and pinball_controls.has("right_flipper"), "pinball exposes two independent touch flippers")
+	_check(touch.press_control("left_flipper", 11) and touch.press_control("right_flipper", 12), "two touch pointers can press both flippers simultaneously")
+	_check(Input.is_action_pressed("ui_left") and Input.is_action_pressed("ui_right"), "multitouch feeds both existing gameplay actions")
+	touch.release_control("left_flipper", 11)
+	_check(not Input.is_action_pressed("ui_left") and Input.is_action_pressed("ui_right"), "releasing one pointer does not release another held control")
+	touch.apply_orientation_for_test(Vector2(390.0, 844.0))
+	_check(bool(touch.get("rotate_overlay").visible) and not bool(touch.get("controls_root").visible), "portrait orientation replaces gameplay controls with the landscape notice")
+	_check(not Input.is_action_pressed("ui_right"), "rotating to portrait releases a control held before the overlay is hidden")
+	touch.release_control("right_flipper", 12)
+	touch.apply_orientation_for_test(Vector2(844.0, 390.0))
+	_check(not bool(touch.get("rotate_overlay").visible) and bool(touch.get("controls_root").visible), "returning to landscape restores the current contextual controls")
+	touch.apply_context_for_test("consensus")
+	_check(not Input.is_action_pressed("ui_right"), "changing touch context releases every action from the previous scene")
+	_check(touch.get_active_control_ids().has("process"), "the Consensus Engine exposes one touch action that can remain held")
+
+	var receiver := TouchReceiver.new()
+	host.add_child(receiver)
+	touch.apply_context_for_test("putin", receiver)
+	touch.press_control("forward", 21)
+	touch.press_control("fire", 22)
+	_check(bool(receiver.control_state.get("forward", false)) and bool(receiver.control_state.get("fire", false)), "exceptional touch controls reach Putin through semantic input instead of fake keyboard keys")
+	touch.release_control("forward", 21)
+	touch.apply_context_for_test("bezos_objection", receiver)
+	_check(not bool(receiver.control_state.get("fire", true)), "a target/profile transition releases custom controls before rebuilding the overlay")
+	_check(touch.get_active_control_ids() == ["objection"], "Bezos exposes only the action requested by the live combat prompt")
+	touch.set_enabled(false)
+	_check(not bool(touch.get("layer").visible), "desktop mode can hide the entire touch presentation")
+	host.queue_free()
 
 
 func _test_greatest_deal() -> void:

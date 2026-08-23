@@ -26,6 +26,7 @@ const SAVE_MANAGER_SCRIPT = preload("res://scripts/managers/save_manager.gd")
 const START_MENU_SCRIPT = preload("res://scripts/sequences/start_menu.gd")
 const DOSSIER_MANAGER_SCRIPT = preload("res://scripts/managers/dossier_manager.gd")
 const ADMINISTRATIVE_HOLD_SCRIPT = preload("res://scripts/sequences/administrative_hold.gd")
+const TOUCH_CONTROL_LAYER_SCRIPT = preload("res://scripts/managers/touch_control_layer.gd")
 const SOUTHERN_ANNEX_SCENE = preload("res://scenes/areas/southern_annex.tscn")
 
 const WORLD_DISTRICT_PLATE_PATH := "res://assets/backgrounds/world_district_plate_v3.png"
@@ -193,6 +194,7 @@ var save_manager: Node
 var dossier_manager: Node
 var behavioural_world_state: Dictionary = {}
 var administrative_hold: Node
+var touch_controls: Node
 var start_menu: Node
 var start_menu_active: bool:
 	get:
@@ -528,6 +530,7 @@ func _ready() -> void:
 	_setup_save_manager()
 	_setup_start_menu()
 	_setup_administrative_hold()
+	_setup_touch_controls()
 	_refresh_behavioral_world_state()
 
 func _remove_world_npcs() -> void:
@@ -2713,6 +2716,55 @@ func _setup_administrative_hold() -> void:
 	add_child(administrative_hold)
 	administrative_hold.state_changed.connect(_on_administrative_hold_state_changed)
 	administrative_hold.setup(self, dossier_manager, Callable(self, "_can_open_administrative_hold"))
+
+
+func _setup_touch_controls() -> void:
+	touch_controls = TOUCH_CONTROL_LAYER_SCRIPT.new()
+	touch_controls.name = "TouchControls"
+	add_child(touch_controls)
+	touch_controls.setup(self, false, Callable(self, "_touch_control_context"))
+
+
+func _touch_control_context() -> Dictionary:
+	if start_menu_active or final_mission_awaiting_input or is_room_transition:
+		return {}
+	if administrative_hold and bool(administrative_hold.get("opened")):
+		return {}
+	if news_broadcast_active:
+		return {"profile": "skip"}
+	if intro_active:
+		return {"profile": "drive"}
+	if ufo_observation_problem_active:
+		return {"profile": "move_action"}
+	if greatest_deal_active:
+		return {
+			"profile": str(greatest_deal.call("get_touch_profile")),
+			"target": greatest_deal,
+		}
+	if consensus_engine_active:
+		return {"profile": "consensus"}
+	if price_stability_pinball_active:
+		return {"profile": "pinball"}
+	if putin_special_operation_active:
+		return {"profile": "putin", "target": putin_special_operation}
+	if bunker_access_active:
+		return {"profile": "bunker"}
+	if ufo_abduction_active:
+		return {}
+	if bezos_drone_encounter and bool(bezos_drone_encounter.get("bezos_escalation_active")):
+		return {"profile": "confirm"}
+	if bezos_cinematic_active:
+		var stage := bezos_encounter.get("battle_stage") as Node if bezos_encounter else null
+		if stage and bool(stage.get("active")):
+			return {"profile": str(stage.call("get_touch_profile")), "target": stage}
+		return {}
+	if mk_sequence and bool(mk_sequence.get("mk_sequence_active")):
+		return {}
+	if ending_active or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
+		return {"profile": "confirm"}
+	if is_dialogue_open:
+		return {"profile": "choice" if is_choosing else "confirm"}
+	return {"profile": "overworld"}
 
 
 func _can_open_administrative_hold() -> bool:

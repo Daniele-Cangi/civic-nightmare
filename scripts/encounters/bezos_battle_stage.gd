@@ -46,6 +46,8 @@ var contest_cooldown: float = 0.0
 var pose_until: float = -1.0
 var contest_latched: bool = false
 var objection_latched: bool = false
+var touch_contest_down: bool = false
+var touch_objection_down: bool = false
 var contest_count: int = 0
 var objection_count: int = 0
 var intercepted_attacks: int = 0
@@ -103,6 +105,8 @@ func start() -> void:
 	mistake_count = 0
 	damage_shake_until = -1.0
 	battle_result.clear()
+	touch_contest_down = false
+	touch_objection_down = false
 	contest_latched = Input.is_physical_key_pressed(KEY_Z)
 	objection_latched = Input.is_physical_key_pressed(KEY_X)
 	_set_pose(bezos_sprite, Vector2i(0, 0))
@@ -118,6 +122,8 @@ func start() -> void:
 
 func stop() -> void:
 	active = false
+	touch_contest_down = false
+	touch_objection_down = false
 	visible = false
 	_clear_attack_fx()
 	_stop_audio()
@@ -221,6 +227,20 @@ func advance_objection_hold(delta: float) -> bool:
 
 func get_result() -> Dictionary:
 	return battle_result.duplicate(true)
+
+
+func get_touch_profile() -> String:
+	if not active or round_transition_active:
+		return ""
+	return "bezos_objection" if active_attack != "" else "bezos_contest"
+
+
+func set_touch_control(control_id: String, pressed: bool) -> void:
+	match control_id:
+		"contest":
+			touch_contest_down = pressed
+		"objection":
+			touch_objection_down = pressed
 
 
 func get_round_maxima() -> Dictionary:
@@ -495,11 +515,11 @@ func _create_prompt_progress(accent: Color) -> ProgressBar:
 
 
 func _read_actions(delta: float) -> void:
-	var contest_down := Input.is_physical_key_pressed(KEY_Z)
+	var contest_down := Input.is_physical_key_pressed(KEY_Z) or touch_contest_down
 	if contest_down and not contest_latched:
 		perform_contest()
 	contest_latched = contest_down
-	var objection_down := Input.is_physical_key_pressed(KEY_X)
+	var objection_down := Input.is_physical_key_pressed(KEY_X) or touch_objection_down
 	if active_attack == "":
 		if objection_down and not objection_latched:
 			perform_objection()

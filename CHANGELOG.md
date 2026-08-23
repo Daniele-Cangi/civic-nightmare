@@ -7,6 +7,11 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- Context-sensitive touchscreen controls across free-roam, dialogue, the opening
+  drive, every mandatory access procedure, the UFO, bunker, and Bezos battle;
+  multitouch holds and scene transitions share the existing keyboard actions
+  without leaving stuck inputs, while portrait devices receive a landscape
+  orientation notice.
 - **The Observation Problem**, a short mandatory UFO access game in which the
   citizen records temporal echoes, occupies three observation nodes
   concurrently, and certifies one identity from contradictory evidence before

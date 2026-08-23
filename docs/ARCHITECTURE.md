@@ -15,6 +15,8 @@ scenes/main.tscn
     ├── managers/room_manager.gd    interiors, doors, transitions, reparenting
     ├── managers/environment_effects.gd
     │                               lighting, CRT, persistent world music, particles
+    ├── managers/touch_control_layer.gd
+    │                               touchscreen detection and contextual input overlay
     ├── managers/world_landmark_builder.gd
     │                               static landmark nodes and entry triggers
     ├── managers/authority_world_patch_builder.gd
@@ -66,6 +68,7 @@ scenes/main.tscn
 | Static landmark construction and entry triggers | `WorldLandmarkBuilder` | Builds the full-width northern Great Wall, its physical gate/collision contract, the nuclear plant, hidden bunker, and Pyongyang entrances. |
 | Main-authority exterior composition | `AuthorityWorldPatchBuilder` | Creates each facade, soft terrain contact, optional physical motif, and visible-mass collision footprint as one unit. |
 | Global visual and ambient setup | `EnvironmentEffects` | Creates lighting, the CRT shader, door audio, atmospheric particles, and persistent exterior music with fades/ducking. |
+| Contextual touchscreen input | `TouchControlLayer` | Detects touchscreen devices, presents only the live scene's controls, forwards standard Godot actions or encounter-local semantic actions, and releases all held state at context boundaries. |
 | Overworld and global story orchestration | `main.gd` | Coordinates systems that need world nodes or multiple narrative states. |
 | Room-local actors and geometry | `scripts/oval_office_room.gd`, `scenes/interiors/` | Separate from global travel. |
 
@@ -79,6 +82,7 @@ scenes/main.tscn
 - `main.gd` forwards existing choice metadata and selected encounter boundaries to `DossierManager`; it does not derive traits or write Administrative Hold copy.
 - `DossierManager` treats `file_tag` and `file_note` as source evidence. It never owns dialogue mechanics, quest order, or persistence I/O.
 - `RoomManager` owns movement between world, exterior-area, and interior containers. `main.gd` retains narrative hooks around travel.
+- `TouchControlLayer` is presentation/input adaptation only: `main.gd` selects a profile, standard controls reuse existing input actions, and exceptional encounters expose `set_touch_control(...)` without learning about device detection or overlay layout.
 - Compatibility properties in `main.gd` expose manager-owned state to remaining encounter code. They are migration seams, not duplicate sources of truth.
 
 ## Content and scenes
