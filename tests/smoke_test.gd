@@ -11,6 +11,7 @@ const GREATEST_DEAL_SCRIPT = preload("res://scripts/encounters/greatest_deal.gd"
 const CONSENSUS_ENGINE_SCRIPT = preload("res://scripts/encounters/consensus_engine.gd")
 const PRICE_STABILITY_PINBALL_SCRIPT = preload("res://scripts/encounters/price_stability_pinball.gd")
 const PUTIN_SPECIAL_OPERATION_SCRIPT = preload("res://scripts/encounters/putin_special_operation.gd")
+const UFO_OBSERVATION_PROBLEM_SCRIPT = preload("res://scripts/encounters/ufo_observation_problem.gd")
 const XI_PRE_SCENE_SCRIPT = preload("res://scripts/encounters/xi_pre_scene.gd")
 const NEWS_BROADCAST_SEQUENCE_SCRIPT = preload("res://scripts/sequences/news_broadcast_sequence.gd")
 
@@ -75,6 +76,7 @@ func _run() -> void:
 	_test_consensus_engine()
 	_test_price_stability_pinball()
 	_test_putin_special_operation()
+	_test_ufo_observation_problem()
 	_test_authority_facades()
 	_test_authority_interiors()
 	_test_world_district_plate()
@@ -107,6 +109,7 @@ func _run() -> void:
 	var environment_effects: Node = game.get("environment_effects")
 	var world_landmark_builder: Node = game.get("world_landmark_builder")
 	var ufo_encounter: Node = game.get("ufo_encounter")
+	var ufo_observation_problem: Node = game.get("ufo_observation_problem")
 	var bezos_drone_encounter: Node = game.get("bezos_drone_encounter")
 	var bezos_encounter: Node = game.get("bezos_encounter")
 	var bunker_access_gauntlet: Node = game.get("bunker_access_gauntlet")
@@ -194,6 +197,7 @@ func _run() -> void:
 		game.call("_update_northern_wall_camera", 0.5)
 		_check(overworld_camera.position.is_zero_approx(), "leaving the northern approach restores the neutral overworld framing")
 	_check(ufo_encounter != null, "UFO encounter is initialized")
+	_check(ufo_observation_problem != null, "UFO Observation Problem is initialized behind the overworld encounter")
 	_check(bezos_drone_encounter != null, "Bezos drone encounter is initialized")
 	_check(bezos_encounter != null and bezos_encounter.get("battle_stage") != null, "Bezos encounter owns a playable battle stage")
 	_check(bunker_access_gauntlet != null and bunker_access_gauntlet.get("layer") != null, "hidden bunker owns a modular access gauntlet")
@@ -757,6 +761,13 @@ func _run() -> void:
 	_check(bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude starts")
 	bezos_drone_encounter.call("prepare_cinematic")
 	_check(not bool(bezos_drone_encounter.get("bezos_escalation_active")), "Bezos drone prelude hands off cleanly")
+	dossier_manager.record_anomaly(
+		"anomaly:ufo_time_discontinuity",
+		"ufo_observation_chamber",
+		"Three observations accepted for one citizen.",
+		{"concurrent_subject_count": 3, "registered_citizen_count": 1, "reconciliation": "postponed"}
+	)
+	game.set("ufo_observation_complete", true)
 
 	var resume_snapshot: Dictionary = game.call("_build_save_snapshot")
 	resume_snapshot["story"]["bunker_access_complete"] = true
@@ -774,24 +785,27 @@ func _run() -> void:
 	await process_frame
 	_check(player.global_position.is_equal_approx(Vector2(160, 224)), "Continue restores the safe overworld checkpoint")
 	_check(int(game.get("quest_index")) == 2, "Continue restores quest progression")
-	_check((dossier_manager.get("events") as Array).size() == 2, "Continue restores integrated behavioural evidence")
+	_check((dossier_manager.get("events") as Array).size() == 3, "Continue restores integrated behavioural evidence")
 	_check(player.get_parent() == entities, "Continue always resumes in the overworld")
 	_check(bool(game.get("bunker_access_complete")), "Continue preserves cleared bunker access without resuming the gauntlet")
 	_check(bool(game.get("trump_deal_complete")), "Continue preserves Greatest Deal access clearance")
 	_check(bool(game.get("ursula_consensus_complete")), "Continue preserves Consensus Engine access clearance")
 	_check(bool(game.get("lagarde_price_stability_complete")), "Continue preserves Price Stability access clearance")
 	_check(bool(game.get("putin_special_operation_complete")), "Continue preserves Putin access clearance without resuming the operation")
+	_check(bool(game.get("ufo_observation_complete")), "Continue preserves the completed UFO identity procedure")
 	var legacy_access_snapshot := resume_snapshot.duplicate(true)
 	legacy_access_snapshot["story"].erase("trump_deal_complete")
 	legacy_access_snapshot["story"].erase("ursula_consensus_complete")
 	legacy_access_snapshot["story"].erase("lagarde_price_stability_complete")
 	legacy_access_snapshot["story"].erase("putin_special_operation_complete")
+	legacy_access_snapshot["story"].erase("ufo_observation_complete")
 	legacy_access_snapshot["quest"]["quest_completed"]["ursula_von_der_leyen"] = true
 	legacy_access_snapshot["quest"]["quest_completed"]["christine_lagarde"] = true
 	legacy_access_snapshot["quest"]["quest_completed"]["vladimir_putin"] = true
 	game.call("_apply_save_snapshot", legacy_access_snapshot)
 	await process_frame
 	_check(bool(game.get("trump_deal_complete")) and bool(game.get("ursula_consensus_complete")) and bool(game.get("lagarde_price_stability_complete")) and bool(game.get("putin_special_operation_complete")), "older dossiers infer access clearance from signatures already obtained")
+	_check(bool(game.get("ufo_observation_complete")), "older dossiers infer UFO clearance from the raw anomaly event")
 	if hidden_bunker:
 		var restored_shutter := hidden_bunker.get_node_or_null("AidGateShutter") as Node2D
 		var restored_shutter_shape := hidden_bunker.get_node_or_null("AidGateShutterCollision/CollisionShape2D") as CollisionShape2D
@@ -1059,6 +1073,64 @@ func _test_bunker_access_gauntlet() -> void:
 	_check(not bool(gauntlet.get("active")), "surviving the authored interval closes the corridor cleanly")
 	_check(str(gauntlet.get_result().get("outcome", "")) == "access_granted", "bunker corridor emits a semantic access result")
 	gauntlet.queue_free()
+
+
+func _test_ufo_observation_problem() -> void:
+	var observation := UFO_OBSERVATION_PROBLEM_SCRIPT.new()
+	root.add_child(observation)
+	observation.setup(root)
+	observation.start({
+		"intro_duration": 0.0,
+		"transition_duration": 0.0,
+		"collapse_duration": 0.0,
+		"outro_duration": 0.0,
+		"scanner_enabled": false,
+		"manual_input_enabled": false,
+	})
+	observation.process_frame(0.01)
+	_check(str(observation.get_state_name()) == "PHASE_ONE", "UFO chamber starts with a readable two-observation proof")
+	Input.action_press("ui_cancel")
+	observation.process_frame(0.01)
+	Input.action_release("ui_cancel")
+	_check(bool(observation.get("active")), "the mandatory UFO procedure cannot be skipped with Administrative Hold")
+	_check((observation.get_pad_positions() as Array).size() == 2, "the first proof exposes exactly two physical observation nodes")
+	for audio_name in ["hum_audio", "record_audio", "error_audio", "phase_audio", "collapse_audio"]:
+		var observation_audio := observation.get(audio_name) as AudioStreamPlayer
+		_check(observation_audio != null and observation_audio.stream != null, "UFO chamber owns %s feedback" % audio_name)
+	var first_phase_pads: Array = observation.get_pad_positions()
+	observation.set("citizen_position", first_phase_pads[0])
+	observation.call("_sync_citizen_node")
+	_check(observation.commit_recording(), "the citizen can record a movement timeline from an observation node")
+	observation.set("citizen_position", first_phase_pads[1])
+	observation.call("_sync_citizen_node")
+	observation.process_frame(0.10)
+	observation.process_frame(0.01)
+	_check(str(observation.get_state_name()) == "PHASE_TWO", "two concurrent observations escalate to the three-node contradiction")
+	var second_phase_pads: Array = observation.get_pad_positions()
+	_check(second_phase_pads.size() == 3, "the final proof requires two echoes and the present citizen")
+	observation.set("citizen_position", second_phase_pads[0])
+	observation.call("_sync_citizen_node")
+	_check(observation.commit_recording(), "the first final timeline is accepted")
+	_check(observation.simulate_scan_hit(), "a scan can invalidate the latest timeline without restarting the chamber")
+	_check(int(observation.get("scanner_resets")) == 1 and (observation.get("echoes") as Array).is_empty(), "scanner pressure removes only the latest echo")
+	observation.set("citizen_position", second_phase_pads[0])
+	observation.call("_sync_citizen_node")
+	_check(observation.commit_recording(), "the invalidated timeline can be re-recorded immediately")
+	observation.set("citizen_position", second_phase_pads[1])
+	observation.call("_sync_citizen_node")
+	_check(observation.commit_recording(), "the second final timeline is accepted")
+	observation.set("citizen_position", second_phase_pads[2])
+	observation.call("_sync_citizen_node")
+	observation.process_frame(0.10)
+	_check(str(observation.get_state_name()) == "CERTIFY", "three occupied observations produce one explicit identity certification")
+	_check(observation.certify_identity(), "the player can certify the administrative contradiction")
+	observation.process_frame(0.01)
+	observation.process_frame(0.01)
+	_check(not bool(observation.get("active")), "certification closes the UFO chamber cleanly")
+	var observation_result: Dictionary = observation.get_result()
+	_check(str(observation_result.get("outcome", "")) == "identity_verified", "UFO chamber emits a semantic identity result")
+	_check(int(observation_result.get("concurrent_subject_count", 0)) == 3 and int(observation_result.get("registered_citizen_count", 0)) == 1, "UFO result preserves the contradiction consumed by the dossier")
+	observation.queue_free()
 
 
 func _test_greatest_deal() -> void:
@@ -1720,6 +1792,18 @@ func _test_dossier_manager_round_trip() -> void:
 	var corridor_activity: Array = corridor_only.get_pause_summary("recorded_activity").get("lines", [])
 	_check(not corridor_activity.is_empty() and str(corridor_activity[0]).contains("incoming ordnance"), "Administrative Hold interprets corridor evidence without exposing a score")
 	_check(str(corridor_only.claim_claudia_observation().get("id", "")) == "claudia_bunker_access_corridor", "bunker access evidence creates a sparse CLAUDIA callback")
+	var ufo_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(ufo_only)
+	ufo_only.record_anomaly(
+		"anomaly:ufo_time_discontinuity",
+		"ufo_observation_chamber",
+		"Three observations accepted for one citizen.",
+		{"concurrent_subject_count": 3, "registered_citizen_count": 1, "reconciliation": "postponed"}
+	)
+	_check(ufo_only.has_event("anomaly:ufo_time_discontinuity"), "dossier exposes stable event ownership for legacy clearance inference")
+	var ufo_unresolved: Array = ufo_only.get_pause_summary("unresolved_material").get("lines", [])
+	_check(not ufo_unresolved.is_empty() and str(ufo_unresolved[0]).contains("Subjects observed concurrently: 3"), "Administrative Hold retains the UFO identity contradiction")
+	_check(str(ufo_only.claim_claudia_observation().get("id", "")) == "claudia_ufo_observation_problem", "the observation chamber creates one sparse CLAUDIA callback")
 	var putin_operation_only := DOSSIER_MANAGER_SCRIPT.new()
 	root.add_child(putin_operation_only)
 	putin_operation_only.record_contest(
@@ -1791,6 +1875,7 @@ func _test_dossier_manager_round_trip() -> void:
 	investigation_only.queue_free()
 	bezos_only.queue_free()
 	corridor_only.queue_free()
+	ufo_only.queue_free()
 	six_signature_manager.queue_free()
 	late_profile_manager.queue_free()
 	legacy_manager.queue_free()

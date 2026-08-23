@@ -7,6 +7,12 @@ web deployment and tagged releases for major public milestones.
 
 ### Added
 
+- **The Observation Problem**, a short mandatory UFO access game in which the
+  citizen records temporal echoes, occupies three observation nodes
+  concurrently, and certifies one identity from contradictory evidence before
+  reaching the existing Einstein/Zuckerberg scene.
+- UFO completion now leaves semantic anomaly evidence in Administrative Hold,
+  persists across Continue, and enables one sparse C.L.A.U.D.I.A. callback.
 - **Jackpot Jive**, a Google Flow Music-generated soundtrack for Lagarde's
   monetary pinball, with a browser-ready runtime edit and table effects mixed
   clearly above the music.

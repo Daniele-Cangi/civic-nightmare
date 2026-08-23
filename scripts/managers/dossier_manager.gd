@@ -176,6 +176,10 @@ func record_anomaly(event_id: String, source: String, note: String, metadata: Di
 	return record_event(event_id, source, "anomaly", "data-invalid", note, "unresolved", metadata)
 
 
+func has_event(event_id: String) -> bool:
+	return _has_event(event_id)
+
+
 func record_contest(event_id: String, source: String, tag: String, note: String, metadata: Dictionary = {}) -> bool:
 	return record_event(event_id, source, "contest", tag, note, "recorded", metadata)
 
@@ -620,6 +624,19 @@ func claim_claudia_observation() -> Dictionary:
 				"The system recorded both as transfer traffic. It considers the distinction emotional.",
 			],
 		})
+	if _has_event("anomaly:ufo_time_discontinuity"):
+		var ufo_anomaly := _event_with_id("anomaly:ufo_time_discontinuity")
+		var ufo_metadata: Dictionary = ufo_anomaly.get("metadata", {})
+		var observed_subjects := int(ufo_metadata.get("concurrent_subject_count", 0))
+		if observed_subjects >= 3:
+			candidates.append({
+				"id": "claudia_ufo_observation_problem",
+				"tone": "sad",
+				"lines": [
+					"You were recorded entering the same room three times. Only one of you left.",
+					"Statistically, this is an improvement.",
+				],
+			})
 	if _has_event("contest:putin_special_operation"):
 		var putin_operation := _event_with_id("contest:putin_special_operation")
 		var putin_metadata: Dictionary = putin_operation.get("metadata", {})
@@ -828,14 +845,21 @@ func _unresolved_lines() -> Array:
 			)
 		elif category == "anomaly":
 			var metadata: Dictionary = event.get("metadata", {})
+			var observation_detail := ""
+			if int(metadata.get("concurrent_subject_count", 0)) > 1:
+				observation_detail = "\n\nSubjects observed concurrently: %d\nCitizens registered: %d\nIdentity reconciliation: %s" % [
+					int(metadata.get("concurrent_subject_count", 0)),
+					int(metadata.get("registered_citizen_count", 1)),
+					str(metadata.get("reconciliation", "pending")).to_upper(),
+				]
 			lines.append(
-				"LOCATION HISTORY\n%s — Overworld\n%s — [DATA INVALID]\n%s — Overworld\n\nElapsed local time: %s\nRecorded system time: %s" % [
+				("LOCATION HISTORY\n%s — Overworld\n%s — [DATA INVALID]\n%s — Overworld\n\nElapsed local time: %s\nRecorded system time: %s" % [
 					str(metadata.get("before_time", "14:03")),
 					str(metadata.get("invalid_time", "14:04")),
 					str(metadata.get("return_time", "14:04")),
 					str(metadata.get("elapsed_local", "01:12")),
 					str(metadata.get("recorded_system", "17:44")),
-				]
+				]) + observation_detail
 			)
 	if lines.is_empty():
 		lines.append("No unresolved material is available for citizen review.")
