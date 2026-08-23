@@ -35,6 +35,7 @@ const CAMERA_PATH := "res://assets/encounters/putin_operation/state_television_c
 const STRATEGIC_BEAR_PATH := "res://assets/encounters/putin_operation/strategic_bear_washer_boss_v1.png"
 const WEAPON_PATH := "res://assets/encounters/putin_operation/diplomatic_note_launcher_centered_v2.png"
 const MUSIC_PATH := "res://assets/audio/civic_nightmare_putin_special_operation.ogg"
+const MUSIC_VOLUME_DB := -1.5
 const STRATEGIC_BEAR_MAX_HEALTH := 6
 const STRATEGIC_BEAR_RELOAD_DURATION := 2.25
 const STRATEGIC_BEAR_ALARM_RELOAD_DURATION := 1.70
@@ -230,6 +231,21 @@ func set_touch_control(control_id: String, pressed: bool) -> void:
 
 func _touch_down(control_id: String) -> bool:
 	return bool(touch_control_state.get(control_id, false))
+
+
+func _has_active_touch_control() -> bool:
+	for pressed in touch_control_state.values():
+		if bool(pressed):
+			return true
+	return false
+
+
+func _fire_requested(accept_just_pressed: bool, mouse_pressed: bool) -> bool:
+	if accept_just_pressed or _touch_down("fire"):
+		return true
+	# Godot emulates a held left mouse button for every screen touch. Ignore that
+	# synthetic mouse state while a semantic touch control owns the pointer.
+	return mouse_pressed and not _has_active_touch_control()
 
 
 func get_result() -> Dictionary:
@@ -1073,7 +1089,7 @@ func _create_hud() -> void:
 func _create_audio() -> void:
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "SpecialOperationMusic"
-	music_player.volume_db = -4.0
+	music_player.volume_db = MUSIC_VOLUME_DB
 	if ResourceLoader.exists(MUSIC_PATH):
 		music_player.stream = load(MUSIC_PATH)
 	music_player.finished.connect(_on_music_finished)
@@ -1218,7 +1234,10 @@ func _process_player_input(delta: float) -> void:
 
 	if (Input.is_physical_key_pressed(Key.KEY_R) or _touch_down("reload")) and reload_remaining <= 0.0 and notes_loaded < NOTE_MAGAZINE_SIZE:
 		_begin_reload()
-	var fire_pressed := Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or _touch_down("fire")
+	var fire_pressed := _fire_requested(
+		Input.is_action_just_pressed("ui_accept"),
+		Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	)
 	if fire_pressed and shot_cooldown_remaining <= 0.0 and reload_remaining <= 0.0:
 		_fire()
 

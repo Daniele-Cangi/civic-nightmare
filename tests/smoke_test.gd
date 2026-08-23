@@ -1504,10 +1504,17 @@ func _test_putin_special_operation() -> void:
 	_check(str(operation.call("get_music_asset_path")) == "res://assets/audio/civic_nightmare_putin_special_operation.ogg", "the Special Operation exposes its approved runtime music path")
 	_check(operation_music != null and operation_music.stream != null and operation_music.stream.get_length() >= 165.0 and operation_music.stream.get_length() <= 167.0, "the delivered Three-Minute Special Operation track loads at its verified duration")
 	_check(operation_music != null and operation_music.playing, "the soundtrack starts with the Special Operation")
-	_check(operation_music != null and is_equal_approx(operation_music.volume_db, -4.0), "the Special Operation soundtrack uses its raised arena mix")
-	for effect_name in ["shot_audio", "reload_audio", "hit_audio", "damage_audio", "gate_audio", "success_audio"]:
-		var effect_player := operation.get(effect_name) as AudioStreamPlayer
-		_check(effect_player != null and effect_player.volume_db > operation_music.volume_db, "%s remains louder than the soundtrack" % effect_name)
+	_check(operation_music != null and is_equal_approx(operation_music.volume_db, -1.5), "the Special Operation soundtrack uses its closer gameplay mix")
+	var shot_player := operation.get("shot_audio") as AudioStreamPlayer
+	var damage_player := operation.get("damage_audio") as AudioStreamPlayer
+	_check(shot_player != null and damage_player != null and shot_player.volume_db > operation_music.volume_db and damage_player.volume_db > operation_music.volume_db, "primary combat impacts retain a small peak above the raised soundtrack")
+	_check(bool(operation.call("_fire_requested", false, true)), "a real desktop mouse press still fires")
+	operation.set_touch_control("forward", true)
+	_check(not bool(operation.call("_fire_requested", false, true)), "touch movement suppresses Godot's emulated held mouse fire")
+	operation.set_touch_control("fire", true)
+	_check(bool(operation.call("_fire_requested", false, true)), "the explicit touch FIRE control still shoots during multitouch movement")
+	operation.set_touch_control("fire", false)
+	operation.set_touch_control("forward", false)
 	_check(bool(operation.get("active")) and operation.get("render_viewport") != null and operation.get("camera_3d") != null, "Putin's operation owns an isolated low-resolution 3D world")
 	var operation_world := operation.get("world_root") as Node3D
 	var reserve_ceiling := operation_world.get_node_or_null("StrategicReserveCeiling") as MeshInstance3D
