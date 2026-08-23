@@ -101,6 +101,7 @@ var controls: Dictionary = {}
 var pointer_controls: Dictionary = {}
 var control_pointers: Dictionary = {}
 var action_press_counts: Dictionary = {}
+var orientation_blocked := false
 
 
 func setup(owner: Node, force_enabled := false, provider := Callable()) -> void:
@@ -143,6 +144,10 @@ func process_frame(context: Dictionary) -> void:
 
 func apply_context_for_test(profile: String, target: Node = null) -> void:
 	_apply_context(profile, target)
+
+
+func apply_orientation_for_test(viewport_size: Vector2) -> void:
+	_apply_orientation(viewport_size)
 
 
 func get_active_control_ids() -> Array[String]:
@@ -338,8 +343,14 @@ func _release_all() -> void:
 func _update_orientation() -> void:
 	if not layer or not root_control:
 		return
-	var viewport_size := get_viewport().get_visible_rect().size
+	_apply_orientation(get_viewport().get_visible_rect().size)
+
+
+func _apply_orientation(viewport_size: Vector2) -> void:
 	var portrait := viewport_size.y > 0.0 and viewport_size.x / viewport_size.y < LANDSCAPE_MIN_RATIO
+	if portrait and not orientation_blocked:
+		_release_all()
+	orientation_blocked = portrait
 	rotate_overlay.visible = enabled and portrait
 	controls_root.visible = enabled and not portrait and controls.size() > 0
 
