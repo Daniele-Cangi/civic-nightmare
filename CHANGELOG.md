@@ -33,6 +33,9 @@ web deployment and tagged releases for major public milestones.
   expanded the visible round clock, and moved the soundtrack entrance to the
   pre-fight presentation without restarting it at `FIGHT!`; a straight win now
   targets the intended two-to-two-and-a-half-minute encounter length.
+- Prevented movement touches in Putin's operation from becoming continuous fire
+  through Godot's emulated mouse input, while preserving explicit multitouch
+  FIRE and desktop mouse controls; raised the operation soundtrack by 2.5 dB.
 
 ## [2.1.1] - 2026-08-22
 
