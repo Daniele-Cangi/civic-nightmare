@@ -14,7 +14,7 @@ runtime until a tested cleanup proves otherwise.
 | `assets/interiors/` | 11 | 7.59 MiB | Runtime authored interiors |
 | `assets/landmarks/` | 13 | 4.66 MiB | Runtime exterior structures and gates |
 | `assets/encounters/` | 8 | 11.69 MiB | Runtime bunker, authority-access stages, and Putin operation billboards/centered weapon |
-| `assets/sequences/` | 6 | 14.24 MiB | Runtime opening-drive highway, citizen vehicle, and four civic road set pieces |
+| `assets/sequences/` | 7 | 16.79 MiB | Runtime opening-drive set plus the final-determinations chamber |
 | `assets/audio/` | 7 | 15.96 MiB | Six runtime soundtracks plus their delivery note |
 | `assets/tiles/` | 21 | 2.32 MiB | Runtime atlases plus legacy grids |
 | `assets/runtime/props/` | 6 | <0.01 MiB | Promoted runtime copies of the six referenced vendor props |
@@ -30,9 +30,10 @@ no runtime references. It has been removed from tracking and now regenerates in
 `tmp/generated/civic_asset_lab/`. Together with the small inventory/policy files
 and six promoted props, the checkout before the authority-access games was
 roughly 473 files / 63 MiB. The three authority-access runtime stages brought it
-to about 69.8 MiB. The complete opening-drive art group now contributes 14.24
-MiB of intentional runtime art: 4.65 MiB for its background and vehicle plus
-9.59 MiB for four physical civic set pieces.
+to about 69.8 MiB. The opening-drive art group contributes 14.24 MiB of
+intentional runtime art: 4.65 MiB for its background and vehicle plus 9.59 MiB
+for four physical civic set pieces. The final-determinations chamber adds 2.55
+MiB as a separate runtime sequence asset.
 
 A local Godot 4.6 Standard Web export after separation produced a 37.93 MiB PCK,
 down from the 43.44 MiB PCK in the previously deployed Pages tree. WASM remains
@@ -67,6 +68,7 @@ generation note, confirmed rights, and parse/smoke/export verification.
 | Authored encounter stages | `bunker_access_gauntlet.gd`, `greatest_deal.gd`, `consensus_engine.gd`, `price_stability_pinball.gd`, `putin_special_operation.gd` | Project-authored/generated art; runtime promotion recorded in `ASSET_NOTICE.md` |
 | Putin-operation figures | `putin_special_operation.gd` | Four original corridor/boss billboards, including the transparent Strategic Bear washing-machine cutout; OpenAI built-in generation provenance recorded in `ASSET_NOTICE.md` |
 | Opening-drive art | `intro_sequence.gd` | Project-specific OpenAI-generated art; prompts and delivery contract recorded in `ASSET_NOTICE.md` and `docs/OPENING_DRIVE_SEQUENCE.md` |
+| Final-determinations chamber | `ending_sequence.gd` | Project-specific OpenAI-generated background; provenance recorded in `ASSET_NOTICE.md`; passport, dossier, lamps, CRT copy and motion remain code-owned |
 | Opening-drive music | `intro_sequence.gd` | **Coastline Dash**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Putin-operation music | `putin_special_operation.gd` | **Three-Minute Special Operation**, generated with Google Flow Music and delivered by project owner Daniele Cangi; runtime conversion and generation disclosure recorded in `ASSET_NOTICE.md` |
 | Overworld music | `environment_effects.gd` | **Dead Man's Hand**, generated with Google Flow Music and delivered by project owner Daniele Cangi; intro-preserving loop conversion and generation disclosure recorded in `ASSET_NOTICE.md` |

@@ -356,14 +356,18 @@ func derive_classification() -> String:
 	var choice_count := _events_in_category("choice").size()
 	if choice_count < 2:
 		return "ASSESSMENT INCOMPLETE"
-	if not _events_in_category("anomaly").is_empty() and not _events_in_category("protocol_deviation").is_empty():
+	var contradictions := derive_contradictions()
+	var has_anomaly := not _events_in_category("anomaly").is_empty()
+	var has_protocol_deviation := not _events_in_category("protocol_deviation").is_empty()
+	if choice_count >= 6 and contradictions.size() >= 2 and has_anomaly and has_protocol_deviation:
+		return "CLASSIFICATION FAILED"
+	if has_anomaly and has_protocol_deviation:
 		return "ADMINISTRATIVELY UNPREDICTABLE"
 	var notification_comparison := _derive_post_profile_shift()
 	if str(notification_comparison.get("id", "")) == "post_profile_behaviour_shift":
 		return "COOPERATIVE UNDER OBSERVATION"
 	if str(notification_comparison.get("id", "")) == "post_profile_consistency":
 		return "CONSISTENT UNDER OBSERVATION"
-	var contradictions := derive_contradictions()
 	if choice_count >= 6 and contradictions.size() >= 2:
 		return "ADMINISTRATIVELY CONTEXTUAL"
 	var modes: Dictionary = derive_observation_summary().get("response_modes", {})
@@ -374,6 +378,75 @@ func derive_classification() -> String:
 	if not contradictions.is_empty():
 		return "SELECTIVELY COMPLIANT"
 	return "INTERPRETATION PENDING"
+
+
+func record_final_response(response_id: String) -> bool:
+	var outcomes := {
+		"acknowledge": "Receipt acknowledged. Consent recorded retroactively.",
+		"correct": "Correction requested. Disagreement appended as corroborating material.",
+		"refuse": "Signature withheld. Non-response interpreted as procedural resistance.",
+	}
+	if not outcomes.has(response_id):
+		return false
+	return record_event(
+		"final_response",
+		"final_determinations",
+		"final_response",
+		response_id,
+		str(outcomes[response_id]),
+		"recorded",
+		{"response_id": response_id}
+	)
+
+
+func get_final_assessment() -> Dictionary:
+	var classification := derive_classification()
+	var evidence: Array = []
+	var representative_choice := _representative_choice_evidence()
+	if not representative_choice.is_empty():
+		evidence.append(representative_choice)
+
+	var patterns := derive_patterns()
+	var selected_pattern := _select_final_pattern(patterns)
+	if not selected_pattern.is_empty():
+		evidence.append(_final_evidence_item("PATTERN", selected_pattern))
+
+	var contradictions := derive_contradictions()
+	if not contradictions.is_empty():
+		evidence.append(_final_evidence_item("CONTRADICTION", contradictions[0]))
+
+	var anomalies := _events_in_category("anomaly")
+	var deviations := _events_in_category("protocol_deviation")
+	if not anomalies.is_empty():
+		evidence.append({
+			"kind": "UNRESOLVED MATERIAL",
+			"title": "LOCATION RECORD INVALID",
+			"body": "The evidence system accepted mutually incompatible observations of the same citizen.",
+			"note": "Classification continued because stopping was not an available field.",
+		})
+	elif not deviations.is_empty():
+		evidence.append({
+			"kind": "PROTOCOL DEVIATION",
+			"title": "EXCLUDED ROUTE ENTERED",
+			"body": "Subject continued into a location explicitly removed from case instructions.",
+			"note": "Intent remains curiosity, defiance, poor signage, or all approved alternatives.",
+		})
+
+	if evidence.size() > 4:
+		evidence.resize(4)
+
+	var final_response := _event_with_id("final_response")
+	return {
+		"classification": classification,
+		"classification_failed": classification == "CLASSIFICATION FAILED",
+		"classification_detail": "SUBJECT CANNOT BE REDUCED TO AVAILABLE ADMINISTRATIVE CATEGORIES" if classification == "CLASSIFICATION FAILED" else "",
+		"evidence": evidence,
+		"notification": _final_notification_line(),
+		"claudia_lines": _final_claudia_lines(classification),
+		"claudia_expression": _final_claudia_expression(classification),
+		"response_id": str(final_response.get("tag", "")),
+		"response_note": str(final_response.get("note", "")),
+	}
 
 
 func get_world_state() -> Dictionary:
@@ -510,7 +583,8 @@ func get_hold_sections() -> Array:
 	if not _events_in_category("protocol_deviation").is_empty() or not _events_in_category("anomaly").is_empty():
 		sections.append({"id": "unresolved_material", "label": "Unresolved material"})
 	if _events_in_category("choice").size() >= 5:
-		sections.append({"id": "final_assessment", "label": "Final assessment: PENDING"})
+		var assessment_state := "COMPLETE" if _has_event("final_response") else "PENDING"
+		sections.append({"id": "final_assessment", "label": "Final assessment: %s" % assessment_state})
 	return sections
 
 
@@ -541,6 +615,16 @@ func get_pause_summary(section_id: String) -> Dictionary:
 				"lines": _unresolved_lines(),
 			}
 		"final_assessment":
+			if _has_event("final_response"):
+				var response := _event_with_id("final_response")
+				return {
+					"title": "FINAL ASSESSMENT: COMPLETE",
+					"lines": [
+						"PASSPORT DETERMINATION\nAPPROVED",
+						"CITIZEN CLASSIFICATION\n%s" % derive_classification(),
+						"RECEIPT RESPONSE\n%s" % str(response.get("note", "Response retained.")),
+					],
+				}
 			return {
 				"title": "FINAL ASSESSMENT: PENDING",
 				"lines": [
@@ -902,6 +986,94 @@ func _claudia_choice_comparison_line() -> String:
 	if _has_tag("insufficiently-enthusiastic") and _has_tag("platform-opted-in"):
 		return "You resisted the desk and accepted the platform. Your objection may be architectural."
 	return "Your last two answers used the same procedure for different reasons. The procedure has discarded the reasons."
+
+
+func _representative_choice_evidence() -> Dictionary:
+	var choices := _events_in_category("choice")
+	if choices.is_empty():
+		return {}
+	var selected: Dictionary = choices.back()
+	for event in choices:
+		var metadata: Dictionary = event.get("metadata", {})
+		var observation := _observation_for_event(event)
+		if bool(metadata.get("profile_was_known", false)) or str(observation.get("response_mode", "")) == "inspect":
+			selected = event
+			break
+	var selected_observation := _observation_for_event(selected)
+	var mode := str(selected_observation.get("response_mode", ""))
+	var resource := str(selected_observation.get("resource", "unspecified resource")).replace("_", " ")
+	var body := "Subject completed an authority interaction using a strategy retained for later comparison."
+	match mode:
+		"concede":
+			body = "Subject surrendered %s to preserve procedural momentum." % resource
+		"contest":
+			body = "Subject protected %s and redirected authority toward the stated service." % resource
+		"inspect":
+			body = "Subject requested legible conditions before allowing %s to become procedural." % resource
+	return {
+		"kind": "OBSERVED ACTION",
+		"title": "ACCESS STRATEGY RETAINED",
+		"body": body,
+		"note": "The action was retained. The reason was not a required field.",
+	}
+
+
+func _select_final_pattern(patterns: Array) -> Dictionary:
+	for pattern in patterns:
+		if str(pattern.get("id", "")) not in ["full_authority_comparison", "post_profile_behaviour_shift", "post_profile_consistency"]:
+			return pattern
+	for pattern in patterns:
+		if str(pattern.get("id", "")) == "full_authority_comparison":
+			return pattern
+	return patterns[0] if not patterns.is_empty() else {}
+
+
+func _final_evidence_item(kind: String, source_item: Dictionary) -> Dictionary:
+	return {
+		"kind": kind,
+		"title": str(source_item.get("title", "INTERPRETATION RETAINED")),
+		"body": str(source_item.get("body", "")),
+		"note": str(source_item.get("note", "Explanation pending.")),
+	}
+
+
+func _final_notification_line() -> String:
+	var shift := _derive_post_profile_shift()
+	match str(shift.get("id", "")):
+		"post_profile_behaviour_shift":
+			return "SUBJECT NOTIFICATION PRECEDED BEHAVIOURAL VARIATION.\nCausality unavailable. Attribution retained."
+		"post_profile_consistency":
+			return "SUBJECT REPEATED THE PRIOR STRATEGY AFTER NOTIFICATION.\nConsistency and performed consistency remain administratively equivalent."
+	if profile_discovered:
+		return "SUBJECT ACCESSED THE RECORD AFTER OBSERVATION BEGAN.\nNo later authority sample was available."
+	return "CITIZEN NOTIFICATION OCCURRED AFTER ASSESSMENT COMPLETION."
+
+
+func _final_claudia_lines(classification: String) -> Array:
+	var lines: Array = [
+		"I was assigned to help with your passport. I was not told the passport was helping with you.",
+	]
+	if classification == "CLASSIFICATION FAILED":
+		lines.append("Good news. You cannot be reduced to the available categories. Bad news. The failure has been retained as a category.")
+	else:
+		var shift := _derive_post_profile_shift()
+		if str(shift.get("id", "")) == "post_profile_behaviour_shift":
+			lines.append("You changed after reading the file. The system called that evidence of the file.")
+		elif profile_discovered:
+			lines.append("You looked at the observer. The observer added the looking.")
+		else:
+			lines.append("You were not informed because an uninformed subject produces cleaner paperwork.")
+	lines.append("That was the procedure you were completing. This was the procedure completing you.")
+	lines.append("Take the passport. The dossier stays.")
+	return lines
+
+
+func _final_claudia_expression(classification: String) -> String:
+	if classification == "CLASSIFICATION FAILED":
+		return "exalted"
+	if str(_derive_post_profile_shift().get("id", "")) == "post_profile_behaviour_shift":
+		return "sad"
+	return "smile" if profile_discovered else "neutral"
 
 
 func _has_event(event_id: String) -> bool:
