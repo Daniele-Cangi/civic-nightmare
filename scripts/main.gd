@@ -526,7 +526,6 @@ func _ready() -> void:
 	_create_bezos_cinematic_overlay()
 	_setup_bunker_access_gauntlet()
 	_setup_authority_access_procedures()
-	_setup_mk_sequence()
 	_setup_save_manager()
 	_setup_start_menu()
 	_setup_administrative_hold()
@@ -979,8 +978,6 @@ func _process(delta: float) -> void:
 	if bezos_drone_encounter:
 		bezos_drone_encounter.process_frame(delta)
 	_process_ai_terminal(delta)
-	if mk_sequence:
-		mk_sequence.process_frame(delta)
 	if kim_phone_encounter and bool(kim_phone_encounter.get("active")):
 		kim_phone_encounter.process_frame(delta)
 	if xi_pre_scene_active and Input.is_action_just_pressed("ui_accept"):
@@ -1009,7 +1006,6 @@ func _update_world_music_context() -> void:
 		or consensus_engine_active
 		or price_stability_pinball_active
 		or putin_special_operation_active
-		or (mk_sequence and bool(mk_sequence.get("mk_sequence_active")))
 	)
 	var hold_opened := administrative_hold and bool(administrative_hold.get("opened"))
 	var should_play := exterior_active and not start_menu_active and not full_screen_sequence_active
@@ -2758,9 +2754,9 @@ func _touch_control_context() -> Dictionary:
 		if stage and bool(stage.get("active")):
 			return {"profile": str(stage.call("get_touch_profile")), "target": stage}
 		return {}
-	if mk_sequence and bool(mk_sequence.get("mk_sequence_active")):
+	if ending_active:
 		return {}
-	if ending_active or hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
+	if hidden_bunker_scene_active or contamination_active or xi_pre_scene_active:
 		return {"profile": "confirm"}
 	if is_dialogue_open:
 		return {"profile": "choice" if is_choosing else "confirm"}
@@ -2976,7 +2972,6 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	postgame_free_roam_started = bool(story.get("postgame_free_roam_started", false))
 	if final_mission_done:
 		final_mission_active = false
-		postgame_free_roam_started = true
 	ending_triggered = final_mission_active or final_mission_done
 
 	var world = snapshot.get("world", {})
@@ -2997,8 +2992,8 @@ func _apply_save_snapshot(snapshot: Dictionary) -> void:
 	if seen_hidden_bunker_scene:
 		_prepare_hidden_bunker_actors()
 	_restore_contamination_presentation()
-	if final_mission_active and not final_mission_done:
-		call_deferred("_spawn_self_npc")
+	if (final_mission_active and not final_mission_done) or (final_mission_done and not postgame_free_roam_started):
+		call_deferred("start_ending_sequence")
 	player.set_physics_process(true)
 
 
@@ -3132,7 +3127,7 @@ func _create_ending_overlay() -> void:
 	ending_sequence = ENDING_SEQUENCE_SCRIPT.new()
 	ending_sequence.name = "EndingSequence"
 	add_child(ending_sequence)
-	ending_sequence.final_mission_requested.connect(_trigger_final_mission)
+	ending_sequence.receipt_submitted.connect(_on_final_receipt_submitted)
 	ending_sequence.postgame_requested.connect(_start_postgame_free_roam)
 	ending_sequence.setup(self)
 
@@ -3142,39 +3137,28 @@ func start_ending_sequence() -> void:
 	player.set_physics_process(false)
 	is_dialogue_open = false
 	dialogue_anchor.visible = false
+	final_mission_active = not final_mission_done
+	ending_sequence.configure_assessment(dossier_manager.get_final_assessment())
 	ending_sequence.start(final_mission_done)
+	_write_save_checkpoint(true)
 
 
-func _trigger_final_mission() -> void:
-	if final_mission_active or final_mission_done:
-		player.set_physics_process(true)
+func _on_final_receipt_submitted(response_id: String) -> void:
+	if final_mission_done:
 		return
-	final_mission_active = true
-	_request_autosave()
-	# Force-close any open room so the world is visible
-	if active_room_id != "":
-		var old_room = room_registry.get(active_room_id)
-		if old_room and old_room.has_method("hide_room"):
-			old_room.hide_room()
-		active_room_id = ""
-	is_room_transition = false
-	is_dialogue_open = false
-	player.set_physics_process(true)
-	# Reset player near AI terminal (terminal is at pixel (64,16))
-	player.global_position = Vector2(64, 80)
-	# C.L.A.U.D.I.A. cryptic message before player finds the NPC
-	get_tree().create_timer(1.2).timeout.connect(func() -> void:
-		ai_override_lines = [
-			"One signature is missing.",
-			"The system flagged it.",
-			"I didn't notice before.",
-			"...",
-			"Neither did you.",
-		]
-		open_dialogue("ai_terminal")
-	)
-	# Spawn NPC-self with delay (player needs to explore)
-	get_tree().create_timer(0.5).timeout.connect(_spawn_self_npc)
+	match response_id:
+		"acknowledge": final_mission_choice = 0
+		"correct": final_mission_choice = 1
+		"refuse": final_mission_choice = 2
+		_: final_mission_choice = -1
+	final_mission_margin_text = ""
+	dossier_manager.record_final_response(response_id)
+	final_mission_active = false
+	final_mission_done = true
+	ending_triggered = true
+	_write_save_checkpoint(true)
+	ending_sequence.confirm_receipt(dossier_manager.get_final_assessment())
+
 
 func _start_postgame_free_roam() -> void:
 	if postgame_free_roam_started:
@@ -3189,9 +3173,6 @@ func _start_postgame_free_roam() -> void:
 	is_room_transition = false
 	is_dialogue_open = false
 	player.set_physics_process(true)
-	if final_mission_npc:
-		final_mission_npc.queue_free()
-		final_mission_npc = null
 	final_mission_active = false
 	if active_room_id != "":
 		var room = room_registry.get(active_room_id)
@@ -3202,12 +3183,9 @@ func _start_postgame_free_roam() -> void:
 		active_room_id = ""
 	player.global_position = Vector2(64, 80)
 	ai_override_lines = [
-		"The file is filed. The catastrophe, I am delighted to report, remains fully operational.",
-		"Congratulations. You completed the official process and unlocked the unofficial one: wandering freely through the surviving nonsense.",
-		"No more signatures. No more protocol. Just monuments, delusions, optional scandals, and several premium-grade civic hallucinations.",
-		"If you encounter anything ridiculous, spiritually offensive, or administratively impossible, do not panic. That is our highest fidelity mode."
+		"Free movement restored. The record remains stationary, which is how it follows you.",
 	]
-	_request_autosave()
+	_write_save_checkpoint(true)
 	get_tree().create_timer(0.8).timeout.connect(func() -> void:
 		open_dialogue("ai_terminal")
 	)

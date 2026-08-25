@@ -114,7 +114,6 @@ func _run() -> void:
 	var dialogue_manager: Node = game.get("dialogue_manager")
 	var dossier_manager: Node = game.get("dossier_manager")
 	var administrative_hold: Node = game.get("administrative_hold")
-	var mk_sequence: Node = game.get("mk_sequence")
 	var ending_sequence: Node = game.get("ending_sequence")
 	var environment_effects: Node = game.get("environment_effects")
 	var world_landmark_builder: Node = game.get("world_landmark_builder")
@@ -162,7 +161,6 @@ func _run() -> void:
 		_check(contamination_sprite != null and contamination_sprite.texture != null, "historical contamination apparition mounts its authored sprite")
 		if contamination_sprite and contamination_sprite.texture:
 			_check(contamination_sprite.texture.resource_path == HISTORICAL_CONTAMINATION_SPRITE_PATH, "historical contamination uses the corrected face variant")
-	_check(mk_sequence != null, "MK sequence is initialized")
 	_check(ending_sequence != null, "ending sequence is initialized")
 	_check(environment_effects != null, "environment effects are initialized")
 	_check(ResourceLoader.exists(OVERWORLD_MUSIC_PATH), "Dead Man's Hand overworld delivery exists")
@@ -385,14 +383,31 @@ func _run() -> void:
 	_check(ground_map.get_cell_source_id(1, Vector2i(-34, -32)) == -1, "the HD plate is not overlaid with a legacy 16-bit tree border")
 	_check(solid_positions.has(Vector2i(-34, -32)), "the invisible world boundary remains solid without legacy border art")
 	if ending_sequence:
-		for final_case in [[0, "wouldn't matter"], [1, "almost didn't"], [-1, "only honest"]]:
-			ending_sequence.call("configure_final_credits", final_case[0], "still here")
-			var configured_scenes: Array = ending_sequence.get("ending_scenes")
-			_check(configured_scenes.size() == 13, "final credits contain every scene")
-			_check(str(configured_scenes[2]).contains(final_case[1]), "final credits reflect choice %s" % final_case[0])
-			_check(str(configured_scenes[10]) == "\"still here\"", "final credits include the margin note")
-		ending_sequence.call("configure_final_credits", 0, "")
-		_check(str((ending_sequence.get("ending_scenes") as Array)[10]) == "[left blank]", "final credits preserve a blank margin")
+		ending_sequence.call("configure_assessment", {
+			"classification": "ADMINISTRATIVELY CONTEXTUAL",
+			"classification_failed": false,
+			"evidence": [{
+				"kind": "CONTRADICTION",
+				"title": "CONTEXT VARIATION DETECTED",
+				"body": "Subject changed strategy with the shape of authority.",
+				"note": "Intent was not requested.",
+			}],
+			"notification": "CITIZEN NOTIFICATION OCCURRED AFTER ASSESSMENT COMPLETION.",
+			"claudia_lines": ["The passport was helping with you."],
+			"claudia_expression": "smile",
+			"response_id": "correct",
+			"response_note": "Disagreement appended as corroborating material.",
+		})
+		ending_sequence.call("_build_assessment_text")
+		var final_background := ending_sequence.get("background") as TextureRect
+		var final_evidence := ending_sequence.get("evidence_text") as RichTextLabel
+		var final_choices := ending_sequence.get("choice_panel") as HBoxContainer
+		_check(final_background != null and final_background.texture.resource_path == "res://assets/sequences/final_determinations_office_v1.png", "final processing uses its authored administrative machine")
+		_check(final_evidence != null and final_evidence.text.contains("CONTEXT VARIATION DETECTED"), "final processing renders dossier-derived evidence")
+		_check(final_evidence != null and not final_evidence.text.contains("Trump signed"), "final processing does not repeat leader-by-leader recaps")
+		_check(final_choices != null and final_choices.get_child_count() == 3, "final receipt presents three clear native choices")
+		ending_sequence.call("_resume_completed_determination")
+		_check(str((ending_sequence.get("response_label") as Label).text).contains("corroborating"), "Continue restores the post-receipt finale instead of skipping to free roam")
 	var great_wall := game.get_node_or_null("Entities/GreatWallEntrance") as Node2D
 	_check(great_wall != null, "Great Wall landmark is created")
 	if great_wall:
@@ -1959,6 +1974,23 @@ func _test_dossier_manager_round_trip() -> void:
 	_check(str(six_signature_manager.get_room_response("elysee").get("notice", "")).contains("TERMS REQUESTED"), "Macron routing retains financial-legibility evidence")
 	var first_choice_event: Dictionary = (six_signature_manager.get("events") as Array)[0]
 	_check(str((first_choice_event.get("metadata", {}) as Dictionary).get("choice_text", "")) == "Approve the performance.", "choice evidence stores the visible label instead of an empty legacy field")
+	var final_assessment: Dictionary = six_signature_manager.get_final_assessment()
+	var final_evidence: Array = final_assessment.get("evidence", [])
+	_check(final_evidence.size() >= 3 and final_evidence.size() <= 4, "final assessment selects a small legible evidence set")
+	_check(str(final_evidence[0].get("body", "")).begins_with("Subject"), "final assessment describes behaviour instead of recapping a leader")
+	_check(str(final_assessment.get("notification", "")).contains("AFTER ASSESSMENT"), "an undiscovered profile is disclosed only after final assessment")
+	six_signature_manager.record_protocol_deviation("deviation:smoke", "restricted_route", "Excluded route entered.")
+	six_signature_manager.record_anomaly("anomaly:smoke", "invalid_room", "Location record could not be reconciled.")
+	_check(six_signature_manager.derive_classification() == "CLASSIFICATION FAILED", "only a contradictory complete run with anomaly and deviation defeats available categories")
+	_check(six_signature_manager.record_final_response("correct"), "the receipt response becomes one final raw dossier event")
+	var completed_assessment: Dictionary = six_signature_manager.get_final_assessment()
+	_check(str(completed_assessment.get("response_note", "")).contains("corroborating"), "requesting correction changes the system's final interpretation")
+	var completed_hold: Dictionary = six_signature_manager.get_pause_summary("final_assessment")
+	_check(str(completed_hold.get("title", "")) == "FINAL ASSESSMENT: COMPLETE", "Administrative Hold preserves the completed determination after the ending")
+	var final_round_trip := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(final_round_trip)
+	final_round_trip.restore_save_data(six_signature_manager.get_save_data())
+	_check(str(final_round_trip.get_final_assessment().get("response_note", "")).contains("corroborating"), "save restore retains the receipt response and reconstructs the same finale")
 
 	var late_profile_manager := DOSSIER_MANAGER_SCRIPT.new()
 	root.add_child(late_profile_manager)
@@ -1981,6 +2013,7 @@ func _test_dossier_manager_round_trip() -> void:
 	corridor_only.queue_free()
 	ufo_only.queue_free()
 	six_signature_manager.queue_free()
+	final_round_trip.queue_free()
 	late_profile_manager.queue_free()
 	legacy_manager.queue_free()
 

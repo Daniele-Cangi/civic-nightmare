@@ -60,6 +60,15 @@ OpenAI built-in image generation and promoted without third-party source art:
 The sequence adds its road motion, signs, hazards, privilege lane, toll logic,
 receipt, scanner, failed barrier, smoke, damage and display layers in code.
 
+`assets/sequences/final_determinations_office_v1.png` is an original 1672×941
+final-processing chamber generated specifically for Civic Nightmare with OpenAI
+built-in image generation and no third-party source art. It depicts a decayed
+contemporary administrative machine, blank CRT housing, paper rollers, physical
+stamp stations and empty passport tray. The six signature lamps, passport,
+printed citizen dossier, classification, receipt choices, C.L.A.U.D.I.A. text,
+scanlines and ending transitions are separate runtime layers owned by
+`EndingSequence`.
+
 The short Putin access operation uses five original isolated runtime assets
 generated with OpenAI built-in image generation without third-party source art.
 The three corridor-enemy billboards were locally alpha-cropped and downscaled:

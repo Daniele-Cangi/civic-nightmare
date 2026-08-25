@@ -187,7 +187,7 @@ Or [play the current build directly in your browser](https://daniele-cangi.githu
 - `assets/runtime/props/`: the small promoted vendor subset actually used by interiors.
 - `asset_sources/`: non-exported editable masters and retained source material; heavyweight source formats use Git LFS here only.
 - `tmp/generated/`: ignored, reproducible generator output; selected runtime art must be promoted deliberately into `assets/`.
-- `scripts/sequences/`: title, news broadcast, playable approach, Administrative Hold, MK, and ending presentation timelines.
+- `scripts/sequences/`: title, news broadcast, playable approach, Administrative Hold, and the dossier-driven final determination.
 - `scripts/encounters/`: self-contained Xi, Kim, UFO world/observation, Bezos, bunker, Greatest Deal, Consensus Engine, Price Stability Pinball, and Special Operation logic.
 - `data/characters.json`: character dialogue, choices, and presentation metadata.
 - `scenes/interiors/`: reusable interior scenes and room-local behavior.
