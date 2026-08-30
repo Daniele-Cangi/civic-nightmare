@@ -5,8 +5,23 @@ web deployment and tagged releases for major public milestones.
 
 ## Unreleased
 
+## [2.2.0] - 2026-08-30
+
+### Release title
+
+**Civic Nightmare 2.2 — The Final Determination Update**
+
 ### Added
 
+- **The Office of Final Determinations**, a dossier-driven ending that approves
+  the passport before printing a compact administrative interpretation built
+  from the player's recorded choices, patterns, contradictions, investigations,
+  anomalies, and protocol deviations.
+- Three final receipt responses—acknowledge, request correction, or refuse to
+  sign—that preserve the approved passport while becoming new behavioural
+  evidence themselves.
+- Personalized final C.L.A.U.D.I.A. observations and a deterministic rare
+  outcome for records the available administrative categories cannot reconcile.
 - Context-sensitive touchscreen controls across free-roam, dialogue, the opening
   drive, every mandatory access procedure, the UFO, bunker, and Bezos battle;
   multitouch holds and scene transitions share the existing keyboard actions
@@ -21,9 +36,15 @@ web deployment and tagged releases for major public milestones.
 - **Jackpot Jive**, a Google Flow Music-generated soundtrack for Lagarde's
   monetary pinball, with a browser-ready runtime edit and table effects mixed
   clearly above the music.
+- Open Graph and large-card social metadata for the deployed Web build, using
+  current runtime artwork as the share preview.
 
 ### Changed
 
+- Continue now restores final-processing progress safely, including the receipt
+  and C.L.A.U.D.I.A. stages, instead of skipping the remaining determination.
+- Replaced the former leader-by-leader ending recap with a shorter consequence
+  sequence centered on what the system recorded and how the player responds.
 - Rebuilt **The Greatest Deal** as five distinct, always-advancing blackjack
   hands with a visible certified score and a three-of-five majority. Accept now
   awards Trump the official point instead of replaying identical cards; correct

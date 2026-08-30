@@ -28,7 +28,7 @@
 
 <p align="center">
   <img alt="Godot 4.6" src="https://img.shields.io/badge/Godot-4.6-478CBF?logo=godot-engine&logoColor=white">
-  <a href="https://github.com/Daniele-Cangi/civic-nightmare/releases/tag/v2.1.1"><img alt="Civic Nightmare 2.1.1" src="https://img.shields.io/badge/Release-v2.1.1-ffcc33"></a>
+  <a href="https://github.com/Daniele-Cangi/civic-nightmare/releases/tag/v2.2.0"><img alt="Civic Nightmare 2.2.0" src="https://img.shields.io/badge/Release-v2.2.0-ffcc33"></a>
   <img alt="Civic surrealism" src="https://img.shields.io/badge/Aesthetic-Civic_Surrealism-f39c3d">
   <img alt="Source code licensed under MIT" src="https://img.shields.io/badge/Source_Code-MIT-8bd5ca">
   <a href="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml"><img alt="GitHub Pages deployment" src="https://github.com/Daniele-Cangi/civic-nightmare/actions/workflows/deploy.yml/badge.svg"></a>
@@ -69,11 +69,14 @@ Your central hub is a satirical 90s digital mascot—a parody of modern AI assis
 ### 💾 Persistent Dossier
 The title screen offers **Continue** and **New Game**. Progress, encounter consequences, and final-mission state are archived in a versioned local dossier; Continue always returns the player to the latest safe overworld checkpoint instead of reopening a cutscene or room transition midway through it. ESC places the case under a diegetic **Administrative Hold** whose available material changes as the procedure develops.
 
+### 🗂️ Office of Final Determinations
+After the sixth signature, the passport procedure ends in a dedicated final-processing office. The passport is approved first; only then does the system print a compact interpretation assembled from the citizen's choices, contradictions, investigations, and unresolved events. Acknowledge it, request a correction, or refuse the receipt: the passport remains valid, but the response does not disappear.
+
 Web persistence uses the browser's IndexedDB-backed `user://` storage and therefore requires site storage to be allowed; private browsing may not retain the dossier. See the [Godot Web export limitations](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#using-cookies-for-data-persistence).
 
 Touchscreen play uses one contextual landscape overlay rather than a permanent virtual keyboard. It changes from movement and interaction controls to each procedure's actual actions—including held inputs, simultaneous pinball flippers, Trump's claims, Bezos objections, and Putin's movement/fire/reload controls—then releases every held input when the scene changes. Title and Administrative Hold buttons remain directly tappable.
 
-## 🎞️ Civic Nightmare 2.0
+## 🎞️ Civic Nightmare 2.2
 
 These images are all loaded by the current game runtime—not superseded concept art.
 
@@ -216,4 +219,4 @@ Asset ownership and repository-weight decisions are recorded in [`docs/ASSET_INV
 
 ---
 
-*"Your passport will arrive in 4-6 business years. Thank you for your patience."*
+*"Your passport is valid. Your interpretation remains under review."*
