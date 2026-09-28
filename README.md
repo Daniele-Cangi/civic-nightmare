@@ -12,8 +12,13 @@
 <p align="center">
   <a href="https://daniele-cangi.github.io/civic-nightmare/"><img alt="Play Civic Nightmare in the browser" src="https://img.shields.io/badge/PLAY_IN_BROWSER-ffcc33?style=for-the-badge&logo=godot-engine&logoColor=111111"></a>
   <a href="https://unityloop.itch.io/civic-nightmare"><img alt="Civic Nightmare on itch.io" src="https://img.shields.io/badge/ITCH.IO-FA5C5C?style=for-the-badge&logo=itchdotio&logoColor=white"></a>
-  <a href="https://github.com/OpenSourceVideoGames/list#rpg"><img alt="Featured in OpenSourceVideoGames" src="https://img.shields.io/badge/FEATURED_IN-OpenSourceVideoGames-8bd5ca?style=for-the-badge&logo=github&logoColor=111111"></a>
   <a href="CONTRIBUTING.md"><img alt="Contributors welcome" src="https://img.shields.io/badge/CONTRIBUTORS-WELCOME-62d6a8?style=for-the-badge&logo=github&logoColor=111111"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/OpenSourceVideoGames/list#rpg"><img alt="Listed in OpenSourceVideoGames" src="https://img.shields.io/badge/LISTED_IN-OpenSourceVideoGames-8bd5ca?style=for-the-badge&logo=github&logoColor=111111"></a>
+  <a href="https://github.com/Trilarion/opensourcegames/blob/master/entries/civic_nightmare.md"><img alt="Listed in OpenSourceGames" src="https://img.shields.io/badge/LISTED_IN-OpenSourceGames-8bd5ca?style=for-the-badge&logo=github&logoColor=111111"></a>
+  <a href="https://github.com/up-for-grabs/up-for-grabs.net/blob/master/_data/projects/civic-nightmare.yml"><img alt="Listed on Up for Grabs" src="https://img.shields.io/badge/LISTED_ON-Up_for_Grabs-8bd5ca?style=for-the-badge&logo=github&logoColor=111111"></a>
 </p>
 
 <p align="center">
