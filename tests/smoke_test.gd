@@ -1820,7 +1820,26 @@ func _test_save_manager_round_trip() -> void:
 	_check(str(restored["world"]["area_id"]) == "southern_annex", "dossier preserves checkpoint area identity")
 	_check((restored["dossier"]["events"] as Array).size() == 1, "versioned save preserves behavioural evidence")
 	_check(int(manager.get_save_summary().get("signatures", 0)) == 1, "dossier summary reports signatures")
+	var corrupt_file := FileAccess.open(TEST_SAVE_PATH, FileAccess.WRITE)
+	_check(corrupt_file != null, "corrupt dossier fixture can be written")
+	if corrupt_file:
+		corrupt_file.store_string("{\"version\": 1, \"snapshot\":")
+		corrupt_file.close()
+	_check(manager.load_game().is_empty(), "malformed JSON produces an empty snapshot")
+	_check(not manager.has_valid_save(), "malformed JSON is not offered as Continue")
+	var incompatible_file := FileAccess.open(TEST_SAVE_PATH, FileAccess.WRITE)
+	_check(incompatible_file != null, "incompatible dossier fixture can be written")
+	if incompatible_file:
+		incompatible_file.store_string(JSON.stringify({
+			"version": 999,
+			"saved_at_unix": 0,
+			"snapshot": snapshot,
+		}))
+		incompatible_file.close()
+	_check(manager.load_game().is_empty(), "unsupported dossier version produces an empty snapshot")
+	_check(not manager.has_valid_save(), "unsupported dossier version is not offered as Continue")
 	_check(manager.clear_save() == OK, "smoke dossier can be removed")
+	_check(not FileAccess.file_exists(TEST_SAVE_PATH), "temporary smoke dossier is removed")
 	manager.queue_free()
 
 
