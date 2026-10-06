@@ -1909,6 +1909,20 @@ func _test_dossier_manager_round_trip() -> void:
 	root.add_child(investigation_only)
 	investigation_only.record_investigation("investigation:red_phone", "pyongyang_red_phone", "Private channel remained open.")
 	_check(str(investigation_only.claim_claudia_observation().get("id", "")) == "claudia_red_phone", "Red Phone evidence creates a later CLAUDIA callback")
+	var annex_only := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(annex_only)
+	_check(annex_only.claim_claudia_observation().is_empty(), "Southern Annex callback is unavailable before the investigation")
+	annex_only.record_investigation(
+		"investigation:southern_annex",
+		"southern_annex",
+		"Citizen entered a jurisdiction classified as irrelevant."
+	)
+	_check(str(annex_only.claim_claudia_observation().get("id", "")) == "claudia_southern_annex", "Southern Annex evidence creates one CLAUDIA callback")
+	_check(annex_only.claim_claudia_observation().is_empty(), "Southern Annex callback does not repeat after delivery")
+	var restored_annex := DOSSIER_MANAGER_SCRIPT.new()
+	root.add_child(restored_annex)
+	restored_annex.restore_save_data(annex_only.get_save_data())
+	_check(restored_annex.claim_claudia_observation().is_empty(), "Southern Annex callback remains delivered after save and restore")
 	var bezos_only := DOSSIER_MANAGER_SCRIPT.new()
 	root.add_child(bezos_only)
 	bezos_only.record_contest(
