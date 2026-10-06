@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ai_terminal",
+    "phases": {"intro": {"lines": "not an array"}}
+  },
+  {
+    "id": "invalid_dialogue",
+    "quest_dialogue": {
+      "lines": ["Valid line", 42],
+      "choices": [{"label": false, "response": "not an array"}]
+    }
+  }
+]
