@@ -78,6 +78,16 @@ The same parse, smoke, and Web export commands run on pull requests. The Pages
 deployment step runs only after a successful push to `main`; never weaken a
 smoke assertion to make a feature mergeable.
 
+Validate dialogue and character data before submitting content changes:
+
+```bash
+godot --headless --path . --script res://tools/validate_character_data.gd
+```
+
+Pass a project-relative fixture after `--` to inspect invalid examples, such as
+`res://tests/fixtures/characters_invalid_types.json`. The validator exits
+non-zero and names the affected character and field when it finds an error.
+
 Add a manual check when your change is visual, interactive, audio-related, or outside the smoke test's reach. Include the commands and manual checks in the pull request.
 
 ## Media and asset provenance

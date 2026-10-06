@@ -1,0 +1,6 @@
+[
+  {"id": "", "quest_dialogue": {"lines": []}},
+  {"id": "duplicate", "quest_dialogue": {"lines": []}},
+  {"id": "duplicate", "quest_dialogue": {"lines": []}},
+  {"name": "Missing ID", "quest_dialogue": {"lines": []}}
+]
