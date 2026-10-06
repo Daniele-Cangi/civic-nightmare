@@ -699,6 +699,15 @@ func claim_claudia_observation() -> Dictionary:
 				"You allowed it to continue. The distinction between restraint and listening has been postponed.",
 			],
 		})
+	if _has_event("investigation:southern_annex"):
+		candidates.append({
+			"id": "claudia_southern_annex",
+			"tone": "exalted",
+			"lines": [
+				"You entered a jurisdiction the passport process classifies as irrelevant.",
+				"It has now become relevant to your file. The passport process remains uninvolved.",
+			],
+		})
 	if _has_event("investigation:bunker_access_corridor"):
 		candidates.append({
 			"id": "claudia_bunker_access_corridor",
