@@ -47,6 +47,10 @@
 
 **Civic Nightmare** is a satirical, top-down RPG built in **Godot 4.6** that explores the absurdity of modern global governance, corporate dominance, and the digital age. You play as a scrawny, debt-burdened citizen on a desperate quest to renew a passport, crossing high-detail districts where pixel-scale citizens, monumental political caricature, arcade confrontation, and CRT bureaucracy occupy the same collapsing reality.
 
+## 🎙️ Interviews & Media
+
+- **Power Data News — Civic Nightmare interview** (October 2026): [Listen on Spotify](https://open.spotify.com/episode/1YIGejU7tPkybJAk7U3CaZ). A conversation with Bertrand Ond about the game and the ideas behind it.
+
 ## 🕹️ Game Features
 
 ### 🚗 The Administrative Approach
